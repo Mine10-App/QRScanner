@@ -3,110 +3,111 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instant QR Scanner</title>
+<title>Instant QR & Barcode Scanner</title>
 <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <style>
-    body {
-        margin: 0;
-        padding: 0;
-        background: #000;
-        font-family: Arial, sans-serif;
-        overflow: hidden;
-        height: 100vh;
-    }
-    #scanner {
-        width: 100%;
-        height: 100%;
-        position: relative;
-    }
-    .scan-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        pointer-events: none;
-    }
-    .scan-box {
-        width: 80%;
-        max-width: 300px;
-        height: 300px;
-        border: 4px solid rgba(255, 255, 255, 0.5);
-        border-radius: 10px;
-        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
-    }
-    .status {
-        position: absolute;
-        bottom: 20px;
-        left: 0;
-        width: 100%;
-        text-align: center;
-        color: white;
-        font-size: 16px;
-    }
-    @media (max-height: 700px) {
-        .scan-box { height: 200px; }
-    }
+  body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #scanner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  .scan-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+  }
+  .scan-box {
+    width: 80%;
+    max-width: 300px;
+    height: 300px;
+    border: 4px solid rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
+  }
+  .status {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    color: #fff;
+    font-size: 16px;
+  }
+  @media (max-height: 700px) {
+    .scan-box { height: 200px; }
+  }
 </style>
 </head>
 <body>
+
 <div id="scanner">
-    <div class="scan-overlay">
-        <div class="scan-box"></div>
-    </div>
-    <div class="status" id="status">Starting camera...</div>
+  <div class="scan-overlay">
+    <div class="scan-box"></div>
+  </div>
+  <div class="status" id="status">Initializing scanner...</div>
 </div>
 
 <script>
-let scanner;
-const statusElement = document.getElementById("status");
+let html5QrScanner;
+const statusEl = document.getElementById("status");
 
-// Scanner config
-const config = {
-    fps: 10,
-    qrbox: { width: 250, height: 250 },
-    aspectRatio: 1.0
+// Scanner configuration
+const scannerConfig = {
+  fps: 10,
+  qrbox: { width: 250, height: 250 },
+  aspectRatio: 1.0
 };
 
-// Start rear camera
+// Start scanner
 async function startScanner() {
-    try {
-        if (scanner) await scanner.stop(); // stop previous instance if exists
-        scanner = new Html5Qrcode("scanner");
+  try {
+    if (html5QrScanner) await html5QrScanner.stop();
+    html5QrScanner = new Html5Qrcode("scanner");
 
-        await scanner.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess,
-            onScanError
-        );
-        statusElement.textContent = "Scanning...";
-    } catch (err) {
-        console.error("Camera error:", err);
-        statusElement.textContent = "Unable to access camera.";
-    }
+    await html5QrScanner.start(
+      { facingMode: "environment" },
+      scannerConfig,
+      onScanSuccess,
+      onScanError
+    );
+    statusEl.textContent = "Scanning...";
+  } catch (err) {
+    console.error("Camera error:", err);
+    statusEl.textContent = "Cannot access camera";
+  }
 }
 
-// Scan success callback
+// Called when a QR code or barcode is scanned
 function onScanSuccess(decodedText) {
-    statusElement.textContent = `Scanned: ${decodedText}`;
-    console.log("Scanned:", decodedText);
-    setTimeout(() => { statusElement.textContent = "Scanning..."; }, 2000);
+  statusEl.textContent = `Scanned: ${decodedText}`;
+  console.log("Scanned:", decodedText);
+  // Reset status after 2 seconds
+  setTimeout(() => { statusEl.textContent = "Scanning..."; }, 2000);
 }
 
-// Scan error callback
+// Called on scanning errors (ignored in most cases)
 function onScanError(err) {
-    // Usually can ignore
-    console.log("Scan error:", err);
+  console.log("Scan error:", err);
 }
 
 // Start scanner on page load
 document.addEventListener("DOMContentLoaded", () => {
-    startScanner();
+  startScanner();
 });
 </script>
+
 </body>
 </html>
