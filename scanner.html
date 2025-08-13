@@ -26,15 +26,15 @@
 
 <script>
   // Firebase config
- const firebaseConfig = {
-            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-            authDomain: "qr-scanner-4458e.firebaseapp.com",
-            projectId: "qr-scanner-4458e",
-            storageBucket: "qr-scanner-4458e.firebasestorage.app",
-            messagingSenderId: "1099262112748",
-            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-            measurementId: "G-15WXNEPKS9"
-        };
+  const firebaseConfig = {
+    apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+    authDomain: "qr-scanner-4458e.firebaseapp.com",
+    projectId: "qr-scanner-4458e",
+    storageBucket: "qr-scanner-4458e.appspot.com",
+    messagingSenderId: "1099262112748",
+    appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+    measurementId: "G-15WXNEPKS9"
+  };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
@@ -53,13 +53,25 @@
     }).catch(err => console.error(err));
   };
 
-  const config = { fps: 10, qrbox: 250, aspectRatio: 1.0 };
-  html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-    .catch(err => console.error(err));
+  // Updated configuration
+  const config = { 
+    fps: 10, 
+    qrbox: { width: 250, height: 250 }, // Specify both width and height
+    aspectRatio: 1.0,
+    disableFlip: true // Optional: prevents automatic rotation
+  };
+
+  // Start with preferred camera resolution
+  html5QrCode.start(
+    { facingMode: "environment" }, 
+    config, 
+    qrCodeSuccessCallback,
+    (errorMessage) => {
+      // Optional: if you want to handle initialization errors
+      console.error(errorMessage);
+    }
+  ).catch(err => console.error(err));
 </script>
 
 </body>
 </html>
-
-
-
