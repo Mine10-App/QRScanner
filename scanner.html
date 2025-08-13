@@ -3,26 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>QR Scanner</title>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
+<title>Instant QR Scanner</title>
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <style>
     body {
         margin: 0;
         padding: 0;
         background: #000;
         font-family: Arial, sans-serif;
-        height: 100vh;
         overflow: hidden;
-    }
-    #scanner-container {
-        width: 100%;
-        height: 100%;
-        position: relative;
+        height: 100vh;
     }
     #scanner {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        position: relative;
     }
     .scan-overlay {
         position: absolute;
@@ -51,10 +46,8 @@
         text-align: center;
         color: white;
         font-size: 16px;
-        background: rgba(0, 0, 0, 0.5);
-        padding: 10px;
     }
-    .error-message {
+    .permission-prompt {
         position: absolute;
         top: 0;
         left: 0;
@@ -70,7 +63,7 @@
         text-align: center;
         z-index: 100;
     }
-    .error-message button {
+    .permission-prompt button {
         background: #4285f4;
         color: white;
         border: none;
@@ -80,92 +73,92 @@
         font-size: 16px;
         cursor: pointer;
     }
+    @media (max-height: 700px) {
+        .scan-box { height: 200px; }
+    }
 </style>
 </head>
 <body>
-<div id="scanner-container">
-    <div id="scanner"></div>
+<div id="scanner">
     <div class="scan-overlay">
         <div class="scan-box"></div>
     </div>
-    <div class="status" id="status">Initializing scanner...</div>
+    <div class="status" id="status">Starting camera...</div>
 </div>
 
-<div class="error-message" id="errorMessage" style="display: none;">
-    <h2>Scanner Error</h2>
-    <p id="errorText"></p>
-    <button id="retryButton">Try Again</button>
+<div class="permission-prompt" id="permissionPrompt" style="display:none;">
+    <h2>Camera Access Required</h2>
+    <p id="permissionText">To scan QR codes, please allow camera access.</p>
+    <button id="grantPermission">Allow Camera Access</button>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Html5Qrcode === 'undefined') {
-        showError("QR Scanner library failed to load.");
-        return;
+let scanner;
+const statusElement = document.getElementById("status");
+const permissionPrompt = document.getElementById("permissionPrompt");
+const permissionText = document.getElementById("permissionText");
+const grantPermissionBtn = document.getElementById("grantPermission");
+
+// Scanner config
+const config = {
+    fps: 10,
+    qrbox: { width: 250, height: 250 },
+    aspectRatio: 1.0
+};
+
+// Start rear camera
+async function startRearCamera() {
+    try {
+        if (scanner) await scanner.stop(); // stop previous instance if exists
+        scanner = new Html5Qrcode("scanner");
+
+        await scanner.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            onScanError
+        );
+        statusElement.textContent = "Scanning...";
+        permissionPrompt.style.display = "none";
+    } catch (err) {
+        handleCameraError(err);
     }
+}
 
-    const statusElement = document.getElementById("status");
-    const errorMessage = document.getElementById("errorMessage");
-    const errorText = document.getElementById("errorText");
-    const retryButton = document.getElementById("retryButton");
-    let html5QrCode;
+// Scan success callback
+function onScanSuccess(decodedText) {
+    statusElement.textContent = `Scanned: ${decodedText}`;
+    console.log("Scanned:", decodedText);
+    setTimeout(() => { statusElement.textContent = "Scanning..."; }, 2000);
+}
 
-    function initScanner() {
-        try {
-            if (html5QrCode) {
-                html5QrCode.stop().catch(() => {}); // stop previous scanner if exists
-            }
-            html5QrCode = new Html5Qrcode("scanner");
-            startScanner();
-        } catch (err) {
-            showError("Failed to initialize scanner: " + err.message);
-        }
+// Scan error callback
+function onScanError(err) {
+    // Usually can ignore, scanner continues
+    console.log("Scan error:", err);
+}
+
+// Handle camera errors
+function handleCameraError(err) {
+    console.error("Camera error:", err);
+    permissionPrompt.style.display = "flex";
+    statusElement.textContent = "Camera access required";
+
+    if (err.name === 'NotAllowedError') {
+        permissionText.textContent = "Camera permission was denied. Please allow camera access to scan QR codes.";
     }
+}
 
-    async function startScanner() {
-        statusElement.textContent = "Starting camera...";
-        const config = { 
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-        };
+// Grant permission button
+grantPermissionBtn.addEventListener("click", () => {
+    permissionPrompt.style.display = "none";
+    statusElement.textContent = "Starting camera...";
+    startRearCamera();
+});
 
-        try {
-            await html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                onScanSuccess,
-                onScanError
-            );
-            statusElement.textContent = "Scanning...";
-            errorMessage.style.display = "none";
-        } catch (err) {
-            showError("Failed to start scanner: " + err.message);
-        }
-    }
-
-    function onScanSuccess(decodedText) {
-        statusElement.textContent = `Scanned: ${decodedText}`;
-        console.log("Scanned:", decodedText);
-        setTimeout(() => { statusElement.textContent = "Scanning..."; }, 2000);
-    }
-
-    function onScanError(errorMessage) {
-        console.log("Scan error:", errorMessage);
-    }
-
-    function showError(message) {
-        errorText.textContent = message;
-        errorMessage.style.display = "flex";
-        statusElement.textContent = "Scanner error";
-    }
-
-    retryButton.addEventListener("click", function() {
-        errorMessage.style.display = "none";
-        initScanner();
-    });
-
-    initScanner();
+// Start scanner automatically on page load
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(startRearCamera, 200);
 });
 </script>
 </body>
