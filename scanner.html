@@ -6,27 +6,24 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial; text-align: center; margin: 0; padding: 0; }
-    h1 { margin-top: 20px; }
+    body { font-family: Arial; margin: 0; padding: 0; text-align: center; }
+    h1 { margin: 20px 0; }
     #reader {
-      width: 95vw; 
-      height: 40vh; 
-      margin: 20px auto; 
-      border: 2px dashed #333; 
-      border-radius: 10px;
+      width: 100vw;    /* full width */
+      height: 80vh;    /* large preview height */
+      margin: auto;
     }
-    #info { margin-top: 10px; font-size: 16px; }
+    #info { margin: 10px; font-size: 16px; }
   </style>
 </head>
 <body>
 
-  <h1>QR Scanner</h1>
-  <div id="reader"></div>
-  <div id="info">Point your camera at a QR code</div>
+<h1>QR Scanner</h1>
+<div id="reader"></div>
+<div id="info">Point your camera at a QR code</div>
 
-  <script>
-    // ===== Firebase Configuration =====
-     const firebaseConfig = {
+<script>
+  const firebaseConfig = {
             apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
             authDomain: "qr-scanner-4458e.firebaseapp.com",
             projectId: "qr-scanner-4458e",
@@ -36,40 +33,32 @@
             measurementId: "G-15WXNEPKS9"
         };
 
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  // Save scan to Firebase
+  function saveScan(data) {
+    db.collection("scans").add({
+      text: data,
+      time: new Date()
+    }).then(() => {
+      document.getElementById("info").textContent = "Scanned: " + data;
+    }).catch(err => console.error(err));
+  }
 
-    // ===== Save scan to Firestore =====
-    function saveScan(data) {
-      db.collection("scans").add({
-        text: data,
-        time: new Date()
-      }).then(() => {
-        console.log("Scan saved:", data);
-        document.getElementById("info").textContent = "Scanned: " + data;
-      }).catch(err => console.error(err));
-    }
+  // On scan success
+  function onScanSuccess(decodedText) {
+    saveScan(decodedText);
+  }
 
-    // ===== On QR scan success =====
-    function onScanSuccess(decodedText) {
-      saveScan(decodedText);
-    }
-
-    // ===== Start QR scanner =====
-    const html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start(
-      { facingMode: "environment" }, 
-      { fps: 10, qrbox: false }, 
-      onScanSuccess
-    ).catch(err => console.error(err));
-  </script>
+  // Start scanner like a normal camera
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" }, 
+    { fps: 10, qrbox: false },   // full preview, no zoomed-in box
+    onScanSuccess
+  ).catch(err => console.error(err));
+</script>
 
 </body>
 </html>
-
-
-
-
-
