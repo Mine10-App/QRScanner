@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { margin-bottom: 10px; }
+        button { margin-bottom: 10px; padding: 5px 10px; }
+        select { margin-bottom: 10px; padding: 5px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li { padding: 5px 0; border-bottom: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Scanned QR Codes Dashboard</h1>
+
+    <!-- Button to go to scanner page -->
+    <button onclick="window.location.href='scanner.html'">Go to Scanner</button>
+
+    <!-- Dropdown to select scanner -->
+    <label for="scannerSelect">Filter by Scanner:</label>
+    <select id="scannerSelect">
+        <option value="all">All Scanners</option>
+    </select>
+
+    <ul id="scanList"></ul>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+            authDomain: "qr-scanner-4458e.firebaseapp.com",
+            projectId: "qr-scanner-4458e",
+            storageBucket: "qr-scanner-4458e.firebasestorage.app",
+            messagingSenderId: "1099262112748",
+            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+            measurementId: "G-15WXNEPKS9"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const scanList = document.getElementById("scanList");
+        const scannerSelect = document.getElementById("scannerSelect");
+
+        let allScans = [];
+
+        // Fetch scans from Firestore
+        db.collection("scans").orderBy("time", "desc").onSnapshot(snapshot => {
+            allScans = [];
+            let scannersSet = new Set();
+            snapshot.forEach(doc => {
+                let data = doc.data();
+                allScans.push(data);
+                if (data.scanner) scannersSet.add(data.scanner);
+            });
+
+            // Update dropdown with scanner names
+            scannerSelect.innerHTML = '<option value="all">All Scanners</option>';
+            scannersSet.forEach(name => {
+                let opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                scannerSelect.appendChild(opt);
+            });
+
+            // Show scans
+            displayScans();
+        });
+
+        // Display scans based on selected scanner
+        function displayScans() {
+            let selectedScanner = scannerSelect.value;
+            scanList.innerHTML = '';
+            let filtered = selectedScanner === 'all' ? allScans : allScans.filter(s => s.scanner === selectedScanner);
+            filtered.forEach(d => {
+                let li = document.createElement('li');
+                li.textContent = `${d.text} - ${d.scanner || 'Unknown'} - ${d.time.toDate().toLocaleString()}`;
+                scanList.appendChild(li);
+            });
+        }
+
+        // Update list when dropdown changes
+        scannerSelect.addEventListener('change', displayScans);
+    </script>
+</body>
+</html>
