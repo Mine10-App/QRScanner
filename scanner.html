@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>QR Scanner</h1>
-    <div id="reader" style="width: 500px;"></div>
+    <div id="reader" style="width: 600px;"></div>
     <h3>Scanned Values</h3>
     <ul id="list"></ul>
 
@@ -33,7 +33,7 @@
 
         new Html5Qrcode("reader").start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: 500 },
+            { fps: 10, qrbox: 600 },
             onScanSuccess
         );
 
@@ -41,4 +41,5 @@
     </script>
 </body>
 </html>
+
 
