@@ -2,32 +2,31 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>QR Scanner</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR & Barcode Scanner</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <style>
-  body { margin: 0; font-family: Arial; text-align: center; }
-  h1 { margin: 20px 0; }
-  #reader {
-    width: 95vw;       /* almost full screen width */
-    height: 80vh;      /* large height for easy focus */
-    margin: auto;
-    border: 2px solid #333;
-    border-radius: 10px;
-  }
-  #info { margin: 10px; font-size: 16px; color: green; }
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  #scanner { width: 100%; max-width: 500px; margin: auto; }
+  #scans { margin-top: 20px; }
 </style>
 </head>
 <body>
 
-<h1>QR Scanner</h1>
-<div id="reader"></div>
-<div id="info">Point your camera at a QR code</div>
+<h2>QR & Barcode Scanner</h2>
+
+<div id="scanner"></div>
+
+<div id="scans">
+  <h3>Scanned Values:</h3>
+  <ul id="scan-list"></ul>
+</div>
 
 <script>
-  // ===== Firebase config =====
-  const firebaseConfig = {
+  // Firebase config
+ const firebaseConfig = {
             apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
             authDomain: "qr-scanner-4458e.firebaseapp.com",
             projectId: "qr-scanner-4458e",
@@ -40,31 +39,23 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ===== Save scan =====
-  const scanned = new Set();
-  function saveScan(data) {
-    if(scanned.has(data)) return; // prevent duplicates
-    scanned.add(data);
-    db.collection("scans").add({ text: data, time: new Date() })
-      .then(() => document.getElementById("info").textContent = "Scanned: " + data)
-      .catch(err => console.error(err));
-  }
+  // Scanner
+  const html5QrCode = new Html5Qrcode("scanner");
+  const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+    // Save scan to Firestore
+    db.collection("scans").add({
+      value: decodedText,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      const li = document.createElement("li");
+      li.textContent = decodedText;
+      document.getElementById("scan-list").appendChild(li);
+    }).catch(err => console.error(err));
+  };
 
-  // ===== On QR success =====
-  function onScanSuccess(decodedText) {
-    saveScan(decodedText);
-  }
-
-  // ===== Start scanner =====
-  const html5QrCode = new Html5Qrcode("reader");
-  html5QrCode.start(
-    { facingMode: { exact: "environment" } },   // rear camera
-    {
-      fps: 10,
-      qrbox: { width: 300, height: 300 }       // medium box = close focus
-    },
-    onScanSuccess
-  ).catch(err => console.error(err));
+  const config = { fps: 10, qrbox: 250, aspectRatio: 1.0 };
+  html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+    .catch(err => console.error(err));
 </script>
 
 </body>
