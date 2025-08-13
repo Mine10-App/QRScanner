@@ -4,13 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Close-Range QR & Barcode Scanner</title>
-<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
 body { font-family: Arial; text-align: center; padding: 20px; }
-#reader { width: 100%; max-width: 400px; margin: auto; }
+video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
 #status { font-weight: bold; margin-top: 10px; }
 #scannedList { margin-top: 20px; list-style: none; padding: 0; }
 #scannedList li { padding: 5px; border-bottom: 1px solid #ccc; }
@@ -19,12 +18,13 @@ body { font-family: Arial; text-align: center; padding: 20px; }
 <body>
 
 <h2>Close-Range QR & Barcode Scanner</h2>
-<div id="reader"></div>
-<p id="status">Waiting for scane...</p>
+<video id="video" autoplay></video>
+<p id="status">Waiting for scan...</p>
 <h3>Scanned Data</h3>
 <ul id="scannedList"></ul>
 
 <script>
+// 🔹 Firebase setup
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -36,48 +36,52 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const html5QrCode = new Html5Qrcode("reader");
+// 🔹 Video element
+const video = document.getElementById("video");
 
-function onScanSuccess(decodedText, decodedResult) {
-    document.getElementById("status").innerText = `Scanned: ${decodedText}`;
-
-    // Save to Firebase
-    db.collection("scanned_codes").add({
-        code: decodedText,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Add to local list
-    const li = document.createElement("li");
-    li.textContent = decodedText;
-    document.getElementById("scannedList").appendChild(li);
+// 🔹 BarcodeDetector check
+if (!('BarcodeDetector' in window)) {
+    alert("Your browser does not support BarcodeDetector API. Use Chrome or Edge on mobile.");
 }
 
-function onScanFailure(error) {
-    // optional: console.warn(`Scan error: ${error}`);
-}
+// 🔹 Start camera
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+.then(stream => {
+    video.srcObject = stream;
 
-// Safe way to start camera
-Html5Qrcode.getCameras().then(cameras => {
-    if (cameras && cameras.length) {
-        // Start first available camera
-        html5QrCode.start(
-            cameras[0].id,
-            { fps: 10, qrbox: false, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
-            onScanSuccess,
-            onScanFailure
-        ).catch(err => {
-            console.error("Camera start error:", err);
-            alert("Cannot access camera. Make sure you allow camera permissions.");
-        });
-    } else {
-        alert("No camera found on this device.");
-    }
-}).catch(err => {
-    console.error("Camera detection error:", err);
-    alert("Camera error: " + err);
+    const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+
+    const scanLoop = () => {
+        barcodeDetector.detect(video).then(barcodes => {
+            barcodes.forEach(barcode => {
+                const text = barcode.rawValue;
+                if (text && !document.getElementById(text)) { // avoid duplicates
+                    document.getElementById("status").innerText = `Scanned: ${text}`;
+
+                    // Save to Firebase
+                    db.collection("scanned_codes").add({
+                        code: text,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // Add to local list
+                    const li = document.createElement("li");
+                    li.id = text;
+                    li.textContent = text;
+                    document.getElementById("scannedList").appendChild(li);
+                }
+            });
+            requestAnimationFrame(scanLoop);
+        }).catch(err => console.error("Barcode detection error:", err));
+    };
+
+    requestAnimationFrame(scanLoop);
+})
+.catch(err => {
+    console.error("Camera access error:", err);
+    alert("Cannot access camera. Make sure to allow camera permissions.");
 });
 </script>
+
 </body>
 </html>
-
