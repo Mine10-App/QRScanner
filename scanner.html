@@ -1,140 +1,429 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR & Barcode Scanner</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  #scanner { 
-    width: 100%; 
-    max-width: 500px; 
-    margin: auto;
-    overflow: hidden;
-    position: relative;
-  }
-  #scanner video {
-    width: 100%;
-    transform-origin: center center;
-    transition: transform 0.3s ease;
-  }
-  #scans { margin-top: 20px; }
-  .zoom-controls {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    z-index: 100;
-    display: flex;
-    gap: 5px;
-  }
-  .zoom-btn {
-    background: rgba(0,0,0,0.5);
-    color: white;
-    border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    font-size: 16px;
-    cursor: pointer;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced QR & Barcode Scanner</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --error-color: #ea4335;
+            --warning-color: #fbbc05;
+            --light-gray: #f5f5f5;
+            --dark-gray: #333;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .scanner-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #scanner {
+            width: 100%;
+            min-height: 300px;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .scanner-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: #3367d6;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        button.secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        button.warning {
+            background-color: var(--warning-color);
+        }
+        
+        button.danger {
+            background-color: var(--error-color);
+        }
+        
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.active {
+            color: var(--secondary-color);
+        }
+        
+        .status.inactive {
+            color: var(--error-color);
+        }
+        
+        .scans-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        #scan-list {
+            list-style-type: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        #scan-list li {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #scan-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .scan-value {
+            font-family: monospace;
+            word-break: break-all;
+        }
+        
+        .scan-time {
+            font-size: 12px;
+            color: #777;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .scanner-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Advanced QR/Barcode Scanner</h1>
+            <p>Scan QR codes and barcodes with your device's camera</p>
+        </header>
+        
+        <div class="scanner-container">
+            <div id="scanner"></div>
+            <div class="scanner-overlay"></div>
+            
+            <div class="status inactive" id="scanner-status">Scanner inactive</div>
+            
+            <div class="scanner-controls">
+                <button id="start-btn">Start Scanner</button>
+                <button id="stop-btn" disabled>Stop Scanner</button>
+                <button id="toggle-camera" class="secondary" disabled>Switch Camera</button>
+                <button id="clear-scans" class="warning">Clear Scans</button>
+            </div>
+        </div>
+        
+        <div class="scans-container">
+            <h2>Scan History</h2>
+            <ul id="scan-list">
+                <li class="empty-state">No scans yet. Start scanning to see results here.</li>
+            </ul>
+        </div>
+    </div>
 
-<h2>QR & Barcode Scanner</h2>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+            authDomain: "qr-scanner-4458e.firebaseapp.com",
+            projectId: "qr-scanner-4458e",
+            storageBucket: "qr-scanner-4458e.appspot.com",
+            messagingSenderId: "1099262112748",
+            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+            measurementId: "G-15WXNEPKS9"
+        };
 
-<div id="scanner">
-  <div class="zoom-controls">
-    <button class="zoom-btn" id="zoom-out">-</button>
-    <button class="zoom-btn" id="zoom-in">+</button>
-  </div>
-</div>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-<div id="scans">
-  <h3>Scanned Values:</h3>
-  <ul id="scan-list"></ul>
-</div>
+        // Scanner variables
+        let html5QrCode;
+        let currentCameraId = null;
+        let isScannerActive = false;
+        let scans = [];
 
-<script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-    authDomain: "qr-scanner-4458e.firebaseapp.com",
-    projectId: "qr-scanner-4458e",
-    storageBucket: "qr-scanner-4458e.appspot.com",
-    messagingSenderId: "1099262112748",
-    appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-    measurementId: "G-15WXNEPKS9"
-  };
+        // DOM elements
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const toggleCameraBtn = document.getElementById('toggle-camera');
+        const clearScansBtn = document.getElementById('clear-scans');
+        const scannerStatus = document.getElementById('scanner-status');
+        const scanList = document.getElementById('scan-list');
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+        // Initialize scanner
+        function initScanner() {
+            html5QrCode = new Html5Qrcode("scanner");
+        }
 
-  // Scanner
-  const html5QrCode = new Html5Qrcode("scanner");
-  let currentZoom = 1;
-  const maxZoom = 3;
-  const minZoom = 0.5;
-  const zoomStep = 0.25;
+        // Start scanner
+        async function startScanner(cameraId = null) {
+            try {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                    disableFlip: false
+                };
 
-  const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-    // Save scan to Firestore
-    db.collection("scans").add({
-      value: decodedText,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      const li = document.createElement("li");
-      li.textContent = decodedText;
-      document.getElementById("scan-list").appendChild(li);
-    }).catch(err => console.error(err));
-  };
+                let cameraConfig;
+                if (cameraId) {
+                    cameraConfig = { deviceId: { exact: cameraId } };
+                } else {
+                    cameraConfig = { facingMode: "environment" };
+                }
 
-  // Updated configuration
-  const config = { 
-  fps: 10,
-  // Remove qrbox entirely to scan the entire viewport
-  // qrbox: { width: X, height: Y }, // Remove this line
-  aspectRatio: 1.0,
-  disableFlip: true
-};
+                await html5QrCode.start(
+                    cameraConfig,
+                    config,
+                    onScanSuccess,
+                    onScanError
+                ).then(() => {
+                    isScannerActive = true;
+                    updateUI();
+                    scannerStatus.textContent = "Scanner active";
+                    scannerStatus.className = "status active";
+                });
 
-  // Function to apply zoom
-  function applyZoom() {
-    const videoElement = document.querySelector('#scanner video');
-    if (videoElement) {
-      videoElement.style.transform = `scale(${currentZoom})`;
-    }
-  }
+                // Get current camera ID if we didn't specify one
+                if (!cameraId) {
+                    const devices = await Html5Qrcode.getCameras();
+                    if (devices && devices.length > 0) {
+                        currentCameraId = devices[0].id;
+                    }
+                }
+            } catch (err) {
+                console.error("Error starting scanner:", err);
+                alert("Failed to start scanner: " + err.message);
+            }
+        }
 
-  // Start scanner
-  html5QrCode.start(
-    { facingMode: "environment" }, 
-    config, 
-    qrCodeSuccessCallback,
-    (errorMessage) => {
-      console.error(errorMessage);
-    }
-  ).then(() => {
-    // Set up zoom controls after scanner starts
-    document.getElementById('zoom-in').addEventListener('click', () => {
-      if (currentZoom < maxZoom) {
-        currentZoom += zoomStep;
-        applyZoom();
-      }
-    });
+        // Stop scanner
+        async function stopScanner() {
+            try {
+                await html5QrCode.stop();
+                isScannerActive = false;
+                updateUI();
+                scannerStatus.textContent = "Scanner inactive";
+                scannerStatus.className = "status inactive";
+            } catch (err) {
+                console.error("Error stopping scanner:", err);
+            }
+        }
 
-    document.getElementById('zoom-out').addEventListener('click', () => {
-      if (currentZoom > minZoom) {
-        currentZoom -= zoomStep;
-        applyZoom();
-      }
-    });
-  }).catch(err => console.error(err));
-</script>
+        // Toggle between front and back camera
+        async function toggleCamera() {
+            if (!isScannerActive) return;
 
+            try {
+                await stopScanner();
+                const devices = await Html5Qrcode.getCameras();
+                if (devices.length < 2) {
+                    alert("Only one camera available");
+                    await startScanner(currentCameraId);
+                    return;
+                }
+
+                // Find the other camera
+                const otherCamera = devices.find(device => device.id !== currentCameraId);
+                if (otherCamera) {
+                    currentCameraId = otherCamera.id;
+                    await startScanner(currentCameraId);
+                }
+            } catch (err) {
+                console.error("Error toggling camera:", err);
+            }
+        }
+
+        // Scan success callback
+        function onScanSuccess(decodedText, decodedResult) {
+            // Avoid duplicate scans in quick succession
+            if (scans.length > 0 && scans[scans.length - 1].value === decodedText) {
+                const now = new Date();
+                const lastScanTime = scans[scans.length - 1].timestamp.toDate();
+                if ((now - lastScanTime) < 1000) { // 1 second threshold
+                    return;
+                }
+            }
+
+            const scanData = {
+                value: decodedText,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // Add to local array
+            scans.unshift(scanData);
+            updateScanList();
+
+            // Save to Firestore
+            db.collection("scans").add(scanData)
+                .catch(err => console.error("Error saving scan:", err));
+        }
+
+        // Scan error callback
+        function onScanError(errorMessage) {
+            // We can ignore this as the scanner will keep running
+            console.log("Scan error:", errorMessage);
+        }
+
+        // Update scan list UI
+        function updateScanList() {
+            if (scans.length === 0) {
+                scanList.innerHTML = '<li class="empty-state">No scans yet. Start scanning to see results here.</li>';
+                return;
+            }
+
+            scanList.innerHTML = scans.map(scan => {
+                const date = scan.timestamp.toDate();
+                const timeString = date.toLocaleTimeString();
+                const dateString = date.toLocaleDateString();
+                
+                return `
+                    <li>
+                        <span class="scan-value">${scan.value}</span>
+                        <span class="scan-time">${dateString} ${timeString}</span>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        // Clear scan history
+        function clearScans() {
+            if (confirm("Are you sure you want to clear all scan history?")) {
+                scans = [];
+                updateScanList();
+            }
+        }
+
+        // Update UI based on scanner state
+        function updateUI() {
+            startBtn.disabled = isScannerActive;
+            stopBtn.disabled = !isScannerActive;
+            toggleCameraBtn.disabled = !isScannerActive;
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startScanner);
+        stopBtn.addEventListener('click', stopScanner);
+        toggleCameraBtn.addEventListener('click', toggleCamera);
+        clearScansBtn.addEventListener('click', clearScans);
+
+        // Load previous scans from Firestore
+        function loadPreviousScans() {
+            db.collection("scans")
+                .orderBy("timestamp", "desc")
+                .limit(50)
+                .get()
+                .then(querySnapshot => {
+                    scans = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        value: doc.data().value,
+                        timestamp: doc.data().timestamp
+                    }));
+                    updateScanList();
+                })
+                .catch(err => console.error("Error loading scans:", err));
+        }
+
+        // Initialize the app
+        function initApp() {
+            initScanner();
+            loadPreviousScans();
+            updateUI();
+        }
+
+        // Start the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
 </body>
 </html>
-
