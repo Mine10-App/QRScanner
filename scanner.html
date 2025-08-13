@@ -62,12 +62,15 @@
   };
 
   html5QrCode.start(
-    constraints,
-    { fps: 10, qrbox: false },  // full preview, no zoom box
-    onScanSuccess
-  ).catch(err => console.error(err));
+    const constraints = {
+  video: {
+    facingMode: "environment",
+    advanced: [{ zoom: 2 }]  // request digital zoom
+  }
+};
 </script>
 
 </body>
 </html>
+
 
