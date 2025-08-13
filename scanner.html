@@ -3,110 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instant QR & Barcode Scanner</title>
+<title>QR & Barcode Scanner</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <style>
-  body {
-    margin: 0;
-    padding: 0;
-    background: #000;
-    font-family: Arial, sans-serif;
-    height: 100vh;
-    overflow: hidden;
-  }
-  #scanner {
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
-  .scan-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none;
-  }
-  .scan-box {
-    width: 80%;
-    max-width: 300px;
-    height: 300px;
-    border: 4px solid rgba(255, 255, 255, 0.5);
-    border-radius: 10px;
-    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
-  }
-  .status {
-    position: absolute;
-    bottom: 20px;
-    width: 100%;
-    text-align: center;
-    color: #fff;
-    font-size: 16px;
-  }
-  @media (max-height: 700px) {
-    .scan-box { height: 200px; }
-  }
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  #scanner { width: 100%; max-width: 500px; margin: auto; }
+  #scans { margin-top: 20px; }
 </style>
 </head>
 <body>
 
-<div id="scanner">
-  <div class="scan-overlay">
-    <div class="scan-box"></div>
-  </div>
-  <div class="status" id="status">Initializing scanner...</div>
+<h2>QR & Barcode Scanner</h2>
+
+<div id="scanner"></div>
+
+<div id="scans">
+  <h3>Scanned Values:</h3>
+  <ul id="scan-list"></ul>
 </div>
 
 <script>
-let html5QrScanner;
-const statusEl = document.getElementById("status");
+  // Firebase config
+ const firebaseConfig = {
+            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+            authDomain: "qr-scanner-4458e.firebaseapp.com",
+            projectId: "qr-scanner-4458e",
+            storageBucket: "qr-scanner-4458e.firebasestorage.app",
+            messagingSenderId: "1099262112748",
+            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+            measurementId: "G-15WXNEPKS9"
+        };
 
-// Scanner configuration
-const scannerConfig = {
-  fps: 10,
-  qrbox: { width: 250, height: 250 },
-  aspectRatio: 1.0
-};
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-// Start scanner
-async function startScanner() {
-  try {
-    if (html5QrScanner) await html5QrScanner.stop();
-    html5QrScanner = new Html5Qrcode("scanner");
+  // Scanner
+  const html5QrCode = new Html5Qrcode("scanner");
+  const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+    // Save scan to Firestore
+    db.collection("scans").add({
+      value: decodedText,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      const li = document.createElement("li");
+      li.textContent = decodedText;
+      document.getElementById("scan-list").appendChild(li);
+    }).catch(err => console.error(err));
+  };
 
-    await html5QrScanner.start(
-      { facingMode: "environment" },
-      scannerConfig,
-      onScanSuccess,
-      onScanError
-    );
-    statusEl.textContent = "Scanning...";
-  } catch (err) {
-    console.error("Camera error:", err);
-    statusEl.textContent = "Cannot access camera";
-  }
-}
-
-// Called when a QR code or barcode is scanned
-function onScanSuccess(decodedText) {
-  statusEl.textContent = `Scanned: ${decodedText}`;
-  console.log("Scanned:", decodedText);
-  // Reset status after 2 seconds
-  setTimeout(() => { statusEl.textContent = "Scanning..."; }, 2000);
-}
-
-// Called on scanning errors (ignored in most cases)
-function onScanError(err) {
-  console.log("Scan error:", err);
-}
-
-// Start scanner on page load
-document.addEventListener("DOMContentLoaded", () => {
-  startScanner();
-});
+  const config = { fps: 10, qrbox: 250, aspectRatio: 1.0 };
+  html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+    .catch(err => console.error(err));
 </script>
 
 </body>
