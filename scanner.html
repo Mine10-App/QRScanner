@@ -1,96 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Close-Range QR & Barcode Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Close-Range QR & Barcode Scanner</title>
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-    <style>
-        body { font-family: Arial; text-align: center; padding: 20px; }
-        #reader { width: 100%; max-width: 400px; margin: auto; }
-        #scannedList { margin-top: 20px; list-style: none; padding: 0; }
-        #scannedList li { padding: 5px; border-bottom: 1px solid #ccc; }
-        #status { margin-top: 10px; font-weight: bold; }
-    </style>
+<style>
+body { font-family: Arial; text-align: center; padding: 20px; }
+#reader { width: 100%; max-width: 400px; margin: auto; }
+#status { font-weight: bold; margin-top: 10px; }
+#scannedList { margin-top: 20px; list-style: none; padding: 0; }
+#scannedList li { padding: 5px; border-bottom: 1px solid #ccc; }
+</style>
 </head>
 <body>
 
 <h2>Close-Range QR & Barcode Scanner</h2>
-
 <div id="reader"></div>
 <p id="status">Waiting for scan...</p>
-
 <h3>Scanned Data</h3>
 <ul id="scannedList"></ul>
 
 <script>
-    // 🔹 Firebase configuration
-    const firebaseConfig = {
-            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-            authDomain: "qr-scanner-4458e.firebaseapp.com",
-            projectId: "qr-scanner-4458e",
-            storageBucket: "qr-scanner-4458e.firebasestorage.app",
-            messagingSenderId: "1099262112748",
-            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-            measurementId: "G-15WXNEPKS9"
-        };
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+const html5QrCode = new Html5Qrcode("reader");
 
-    // 🔹 Initialize HTML5 QR Code scanner
-    const html5QrCode = new Html5Qrcode("reader");
+function onScanSuccess(decodedText, decodedResult) {
+    document.getElementById("status").innerText = `Scanned: ${decodedText}`;
 
-    // 🔹 Handle successful scan
-    function onScanSuccess(decodedText, decodedResult) {
-        document.getElementById("status").innerText = `Scanned: ${decodedText}`;
+    // Save to Firebase
+    db.collection("scanned_codes").add({
+        code: decodedText,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-        // Save to Firebase
-        db.collection("scanned_codes").add({
-            code: decodedText,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            console.log("Saved to Firebase:", decodedText);
-        }).catch(err => console.error(err));
+    // Add to local list
+    const li = document.createElement("li");
+    li.textContent = decodedText;
+    document.getElementById("scannedList").appendChild(li);
+}
 
-        // Add to local list
-        const li = document.createElement("li");
-        li.textContent = decodedText;
-        document.getElementById("scannedList").appendChild(li);
-    }
+function onScanFailure(error) {
+    // optional: console.warn(`Scan error: ${error}`);
+}
 
-    // 🔹 Handle scan failure (optional)
-    function onScanFailure(error) {
-        // console.warn(`Scan failed: ${error}`);
-    }
-
-    // 🔹 Scanner configuration for close-range scanning
-    const config = {
-        fps: 10,
-        qrbox: false, // full camera feed for close scanning
-        experimentalFeatures: { useBarCodeDetectorIfSupported: true } // enable barcode detection
-    };
-
-    // 🔹 Start camera
-   Html5Qrcode.getCameras().then(cameras => {
+// Safe way to start camera
+Html5Qrcode.getCameras().then(cameras => {
     if (cameras && cameras.length) {
+        // Start first available camera
         html5QrCode.start(
-            cameras[0].id, // first camera
+            cameras[0].id,
             { fps: 10, qrbox: false, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
             onScanSuccess,
             onScanFailure
-        );
+        ).catch(err => {
+            console.error("Camera start error:", err);
+            alert("Cannot access camera. Make sure you allow camera permissions.");
+        });
     } else {
-        alert("No camera found.");
+        alert("No camera found on this device.");
     }
-}).catch(err => console.error("Camera error:", err));
+}).catch(err => {
+    console.error("Camera detection error:", err);
+    alert("Camera error: " + err);
+});
 </script>
-
 </body>
 </html>
-
