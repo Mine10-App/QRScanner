@@ -53,12 +53,13 @@
     }).catch(err => console.error(err));
   };
 
-  const config = { fps: 10, qrbox: 150, aspectRatio: 0.0 };
+  const config = { fps: 10, qrbox: 250, aspectRatio: 1.0 };
   html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
     .catch(err => console.error(err));
 </script>
 
 </body>
 </html>
+
 
 
