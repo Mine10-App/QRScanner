@@ -1,186 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QR Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            font-family: Arial, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #scanner-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        #scanner {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .scan-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-        .scan-box {
-            width: 80%;
-            max-width: 300px;
-            height: 300px;
-            border: 4px solid rgba(255, 255, 255, 0.5);
-            border-radius: 10px;
-            box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
-        }
-        .status {
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: white;
-            font-size: 16px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-        }
-        .error-message {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            text-align: center;
-            z-index: 100;
-        }
-        .error-message button {
-            background: #4285f4;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            margin-top: 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QR Scanner</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        font-family: Arial, sans-serif;
+        height: 100vh;
+        overflow: hidden;
+    }
+    #scanner-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+    #scanner {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .scan-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+    }
+    .scan-box {
+        width: 80%;
+        max-width: 300px;
+        height: 300px;
+        border: 4px solid rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
+    }
+    .status {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: white;
+        font-size: 16px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+    }
+    .error-message {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        text-align: center;
+        z-index: 100;
+    }
+    .error-message button {
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        margin-top: 20px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+</style>
 </head>
 <body>
-    <div id="scanner-container">
-        <div id="scanner"></div>
-        <div class="scan-overlay">
-            <div class="scan-box"></div>
-        </div>
-        <div class="status" id="status">Initializing scanner...</div>
+<div id="scanner-container">
+    <div id="scanner"></div>
+    <div class="scan-overlay">
+        <div class="scan-box"></div>
     </div>
+    <div class="status" id="status">Initializing scanner...</div>
+</div>
 
-    <div class="error-message" id="errorMessage" style="display: none;">
-        <h2>Scanner Error</h2>
-        <p id="errorText"></p>
-        <button id="retryButton">Try Again</button>
-    </div>
+<div class="error-message" id="errorMessage" style="display: none;">
+    <h2>Scanner Error</h2>
+    <p id="errorText"></p>
+    <button id="retryButton">Try Again</button>
+</div>
 
-    <script>
-        // Wait for the HTML5QRCode library to be fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if Html5Qrcode is available
-            if (typeof Html5Qrcode === 'undefined') {
-                showError("QR Scanner library failed to load. Please check your internet connection.");
-                return;
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Html5Qrcode === 'undefined') {
+        showError("QR Scanner library failed to load.");
+        return;
+    }
+
+    const statusElement = document.getElementById("status");
+    const errorMessage = document.getElementById("errorMessage");
+    const errorText = document.getElementById("errorText");
+    const retryButton = document.getElementById("retryButton");
+    let html5QrCode;
+
+    function initScanner() {
+        try {
+            if (html5QrCode) {
+                html5QrCode.stop().catch(() => {}); // stop previous scanner if exists
             }
+            html5QrCode = new Html5Qrcode("scanner");
+            startScanner();
+        } catch (err) {
+            showError("Failed to initialize scanner: " + err.message);
+        }
+    }
 
-            const scannerElement = document.getElementById("scanner");
-            const statusElement = document.getElementById("status");
-            const errorMessage = document.getElementById("errorMessage");
-            const errorText = document.getElementById("errorText");
-            const retryButton = document.getElementById("retryButton");
+    async function startScanner() {
+        statusElement.textContent = "Starting camera...";
+        const config = { 
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
 
-            let html5QrCode;
-            
-            // Initialize the scanner
-            function initScanner() {
-                try {
-                    html5QrCode = new Html5Qrcode("scanner");
-                    startScanner();
-                } catch (err) {
-                    showError("Failed to initialize scanner: " + err.message);
-                }
-            }
+        try {
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            );
+            statusElement.textContent = "Scanning...";
+            errorMessage.style.display = "none";
+        } catch (err) {
+            showError("Failed to start scanner: " + err.message);
+        }
+    }
 
-            // Start the scanner
-            async function startScanner() {
-                statusElement.textContent = "Starting camera...";
-                
-                const config = { 
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0,
-                    disableFlip: true
-                };
+    function onScanSuccess(decodedText) {
+        statusElement.textContent = `Scanned: ${decodedText}`;
+        console.log("Scanned:", decodedText);
+        setTimeout(() => { statusElement.textContent = "Scanning..."; }, 2000);
+    }
 
-                try {
-                    await html5QrCode.start(
-                        { facingMode: "environment" },
-                        config,
-                        onScanSuccess,
-                        onScanError
-                    );
-                    statusElement.textContent = "Scanning...";
-                    errorMessage.style.display = "none";
-                } catch (err) {
-                    showError("Failed to start scanner: " + err.message);
-                }
-            }
+    function onScanError(errorMessage) {
+        console.log("Scan error:", errorMessage);
+    }
 
-            // Handle successful scan
-            function onScanSuccess(decodedText, decodedResult) {
-                statusElement.textContent = `Scanned: ${decodedText}`;
-                console.log("Scanned:", decodedText);
-                
-                // Reset status after 2 seconds
-                setTimeout(() => {
-                    statusElement.textContent = "Scanning...";
-                }, 2000);
-            }
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessage.style.display = "flex";
+        statusElement.textContent = "Scanner error";
+    }
 
-            // Handle scan errors
-            function onScanError(errorMessage) {
-                console.log("Scan error:", errorMessage);
-            }
+    retryButton.addEventListener("click", function() {
+        errorMessage.style.display = "none";
+        initScanner();
+    });
 
-            // Show error message
-            function showError(message) {
-                errorText.textContent = message;
-                errorMessage.style.display = "flex";
-                statusElement.textContent = "Scanner error";
-            }
-
-            // Retry button handler
-            retryButton.addEventListener("click", function() {
-                errorMessage.style.display = "none";
-                initScanner();
-            });
-
-            // Start the scanner
-            initScanner();
-        });
-    </script>
+    initScanner();
+});
+</script>
 </body>
 </html>
