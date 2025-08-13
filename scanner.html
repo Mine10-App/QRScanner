@@ -9,15 +9,49 @@
 <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; }
-  #scanner { width: 100%; max-width: 500px; margin: auto; }
+  #scanner { 
+    width: 100%; 
+    max-width: 500px; 
+    margin: auto;
+    overflow: hidden;
+    position: relative;
+  }
+  #scanner video {
+    width: 100%;
+    transform-origin: center center;
+    transition: transform 0.3s ease;
+  }
   #scans { margin-top: 20px; }
+  .zoom-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 100;
+    display: flex;
+    gap: 5px;
+  }
+  .zoom-btn {
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
 <h2>QR & Barcode Scanner</h2>
 
-<div id="scanner"></div>
+<div id="scanner">
+  <div class="zoom-controls">
+    <button class="zoom-btn" id="zoom-out">-</button>
+    <button class="zoom-btn" id="zoom-in">+</button>
+  </div>
+</div>
 
 <div id="scans">
   <h3>Scanned Values:</h3>
@@ -41,6 +75,11 @@
 
   // Scanner
   const html5QrCode = new Html5Qrcode("scanner");
+  let currentZoom = 1;
+  const maxZoom = 3;
+  const minZoom = 0.5;
+  const zoomStep = 0.25;
+
   const qrCodeSuccessCallback = (decodedText, decodedResult) => {
     // Save scan to Firestore
     db.collection("scans").add({
@@ -56,21 +95,43 @@
   // Updated configuration
   const config = { 
     fps: 10, 
-    qrbox: { width: 250, height: 250 }, // Specify both width and height
+    qrbox: { width: 250, height: 250 },
     aspectRatio: 1.0,
-    disableFlip: true // Optional: prevents automatic rotation
+    disableFlip: true
   };
 
-  // Start with preferred camera resolution
+  // Function to apply zoom
+  function applyZoom() {
+    const videoElement = document.querySelector('#scanner video');
+    if (videoElement) {
+      videoElement.style.transform = `scale(${currentZoom})`;
+    }
+  }
+
+  // Start scanner
   html5QrCode.start(
     { facingMode: "environment" }, 
     config, 
     qrCodeSuccessCallback,
     (errorMessage) => {
-      // Optional: if you want to handle initialization errors
       console.error(errorMessage);
     }
-  ).catch(err => console.error(err));
+  ).then(() => {
+    // Set up zoom controls after scanner starts
+    document.getElementById('zoom-in').addEventListener('click', () => {
+      if (currentZoom < maxZoom) {
+        currentZoom += zoomStep;
+        applyZoom();
+      }
+    });
+
+    document.getElementById('zoom-out').addEventListener('click', () => {
+      if (currentZoom > minZoom) {
+        currentZoom -= zoomStep;
+        applyZoom();
+      }
+    });
+  }).catch(err => console.error(err));
 </script>
 
 </body>
