@@ -53,12 +53,21 @@
 
   // Start scanner like a normal camera
   const html5QrCode = new Html5Qrcode("reader");
+  const constraints = {
+    video: {
+      facingMode: "environment",  // rear camera
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  };
+
   html5QrCode.start(
-    { facingMode: "environment" }, 
-    { fps: 10, qrbox: false },   // full preview, no zoomed-in box
+    constraints,
+    { fps: 10, qrbox: false },  // full preview, no zoom box
     onScanSuccess
   ).catch(err => console.error(err));
 </script>
 
 </body>
 </html>
+
