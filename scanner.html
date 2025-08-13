@@ -77,21 +77,20 @@
     };
 
     // 🔹 Start camera
-    Html5Qrcode.getCameras().then(cameras => {
-        if (cameras && cameras.length) {
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).then(() => {
-                console.log("Camera started. Hold phone close to the code.");
-            }).catch(err => console.error(err));
-        } else {
-            alert("No camera found on this device.");
-        }
-    }).catch(err => console.error(err));
+   Html5Qrcode.getCameras().then(cameras => {
+    if (cameras && cameras.length) {
+        html5QrCode.start(
+            cameras[0].id, // first camera
+            { fps: 10, qrbox: false, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
+            onScanSuccess,
+            onScanFailure
+        );
+    } else {
+        alert("No camera found.");
+    }
+}).catch(err => console.error("Camera error:", err));
 </script>
 
 </body>
 </html>
+
