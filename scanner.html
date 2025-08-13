@@ -94,11 +94,12 @@
 
   // Updated configuration
   const config = { 
-    fps: 10, 
-    qrbox: { width: 250, height: 250 },
-    aspectRatio: 1.0,
-    disableFlip: true
-  };
+  fps: 10,
+  // Remove qrbox entirely to scan the entire viewport
+  // qrbox: { width: X, height: Y }, // Remove this line
+  aspectRatio: 1.0,
+  disableFlip: true
+};
 
   // Function to apply zoom
   function applyZoom() {
@@ -136,3 +137,4 @@
 
 </body>
 </html>
+
