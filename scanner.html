@@ -1,78 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live QR/Barcode Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile QR/Barcode Scanner</title>
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<style>
+  #reader {
+    width: 100%;
+    max-width: 500px;
+    height: 400px;
+    border: 2px solid #333;
+    margin: 10px auto;
+  }
+  button {
+    display: block;
+    margin: 10px auto;
+    padding: 10px 20px;
+    font-size: 18px;
+  }
+</style>
 </head>
 <body>
-    <h2>Scan QR/Barcode</h2>
-    <div id="reader" style="width:100%; max-width:500px;"></div>
-    <h3>Scanned Codes:</h3>
-    <ul id="scanned-list"></ul>
 
-    <script>
-        // --- Firebase Setup ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-            authDomain: "qr-scanner-4458e.firebaseapp.com",
-            projectId: "qr-scanner-4458e",
-            storageBucket: "qr-scanner-4458e.firebasestorage.app",
-            messagingSenderId: "1099262112748",
-            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-            measurementId: "G-15WXNEPKS9"
-        };
+<h2>Mobile QR/Barcode Scanner</h2>
+<button id="startScan">Start Camera</button>
+<div id="reader"></div>
+<h3>Scanned Codes:</h3>
+<ul id="scanned-list"></ul>
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+<script>
+  // --- Firebase Setup ---
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-        // --- Function to add scanned code to Firebase ---
-        function saveCodeToFirebase(code) {
-            db.collection("scannedCodes").add({
-                code: code,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                console.log("Saved:", code);
-            }).catch(err => console.error("Error saving code:", err));
-        }
+  // --- Display code in the list ---
+  function addCodeToList(code) {
+    const li = document.createElement("li");
+    li.textContent = code;
+    document.getElementById("scanned-list").prepend(li);
+  }
 
-        // --- Function to display code on page ---
-        function addCodeToList(code) {
-            const li = document.createElement("li");
-            li.textContent = code;
-            document.getElementById("scanned-list").appendChild(li);
-        }
+  // --- Save scanned code to Firebase ---
+  function saveCodeToFirebase(code) {
+    db.collection("scannedCodes").add({
+      code: code,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      console.log("Saved:", code);
+    }).catch(err => console.error("Firebase error:", err));
+  }
 
-        // --- Listen to Firestore in real-time ---
-        db.collection("scannedCodes")
-          .orderBy("timestamp", "desc")
-          .onSnapshot(snapshot => {
-              document.getElementById("scanned-list").innerHTML = "";
-              snapshot.forEach(doc => {
-                  addCodeToList(doc.data().code);
-              });
-          });
+  // --- Listen for real-time updates ---
+  db.collection("scannedCodes")
+    .orderBy("timestamp", "desc")
+    .onSnapshot(snapshot => {
+      document.getElementById("scanned-list").innerHTML = "";
+      snapshot.forEach(doc => addCodeToList(doc.data().code));
+    });
 
-        // --- QR/Barcode Scanner ---
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" }, 
-            { fps: 10, qrbox: 250 }, 
-            (decodedText, decodedResult) => {
-                console.log(`Scanned: ${decodedText}`);
-                saveCodeToFirebase(decodedText);
-            },
-            (errorMessage) => {
-                // console.log(`Scan error: ${errorMessage}`);
-            }
-        ).catch(err => {
-            console.error("Camera start failed:", err);
-        });
-    </script>
+  // --- Start Scanner on button click ---
+  document.getElementById("startScan").addEventListener("click", function() {
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" }, // back camera
+      { fps: 10, qrbox: 250 },       // scanning config
+      (decodedText, decodedResult) => {
+        console.log("Scanned:", decodedText);
+        saveCodeToFirebase(decodedText);
+      },
+      (errorMessage) => {
+        // Optional: handle scan errors
+      }
+    ).catch(err => console.error("Camera start failed:", err));
+    this.disabled = true; // disable button after starting
+  });
+</script>
 </body>
 </html>
-
