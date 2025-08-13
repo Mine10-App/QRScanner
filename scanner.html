@@ -44,8 +44,8 @@ if (!('BarcodeDetector' in window)) {
     alert("Your browser does not support BarcodeDetector API. Use Chrome or Edge on mobile.");
 }
 
-// 🔹 Start camera
-navigator.mediaDevices.getUserMedia({ video: true }) // simple, lets phone handle zoom
+// 🔹 Start camera (rear)
+navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
 .then(stream => {
     video.srcObject = stream;
 
@@ -65,7 +65,7 @@ navigator.mediaDevices.getUserMedia({ video: true }) // simple, lets phone handl
         barcodeDetector.detect(video).then(barcodes => {
             barcodes.forEach(barcode => {
                 const text = barcode.rawValue;
-                if (text && !document.getElementById(text)) { // prevent duplicates
+                if (text && !document.getElementById(text)) {
                     document.getElementById("status").innerText = `Scanned: ${text}`;
 
                     // Save to Firebase
@@ -87,7 +87,8 @@ navigator.mediaDevices.getUserMedia({ video: true }) // simple, lets phone handl
 
     requestAnimationFrame(scanLoop);
 
-}).catch(err => {
+})
+.catch(err => {
     console.error("Camera access error:", err);
     alert("Cannot access camera. Allow permissions and use HTTPS.");
 });
