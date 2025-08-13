@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Instant QR Scanner</title>
 <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <style>
@@ -47,32 +47,6 @@
         color: white;
         font-size: 16px;
     }
-    .permission-prompt {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        color: white;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-        text-align: center;
-        z-index: 100;
-    }
-    .permission-prompt button {
-        background: #4285f4;
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 5px;
-        margin-top: 20px;
-        font-size: 16px;
-        cursor: pointer;
-    }
     @media (max-height: 700px) {
         .scan-box { height: 200px; }
     }
@@ -86,18 +60,9 @@
     <div class="status" id="status">Starting camera...</div>
 </div>
 
-<div class="permission-prompt" id="permissionPrompt" style="display:none;">
-    <h2>Camera Access Required</h2>
-    <p id="permissionText">To scan QR codes, please allow camera access.</p>
-    <button id="grantPermission">Allow Camera Access</button>
-</div>
-
 <script>
 let scanner;
 const statusElement = document.getElementById("status");
-const permissionPrompt = document.getElementById("permissionPrompt");
-const permissionText = document.getElementById("permissionText");
-const grantPermissionBtn = document.getElementById("grantPermission");
 
 // Scanner config
 const config = {
@@ -107,7 +72,7 @@ const config = {
 };
 
 // Start rear camera
-async function startRearCamera() {
+async function startScanner() {
     try {
         if (scanner) await scanner.stop(); // stop previous instance if exists
         scanner = new Html5Qrcode("scanner");
@@ -119,9 +84,9 @@ async function startRearCamera() {
             onScanError
         );
         statusElement.textContent = "Scanning...";
-        permissionPrompt.style.display = "none";
     } catch (err) {
-        handleCameraError(err);
+        console.error("Camera error:", err);
+        statusElement.textContent = "Unable to access camera.";
     }
 }
 
@@ -134,31 +99,13 @@ function onScanSuccess(decodedText) {
 
 // Scan error callback
 function onScanError(err) {
-    // Usually can ignore, scanner continues
+    // Usually can ignore
     console.log("Scan error:", err);
 }
 
-// Handle camera errors
-function handleCameraError(err) {
-    console.error("Camera error:", err);
-    permissionPrompt.style.display = "flex";
-    statusElement.textContent = "Camera access required";
-
-    if (err.name === 'NotAllowedError') {
-        permissionText.textContent = "Camera permission was denied. Please allow camera access to scan QR codes.";
-    }
-}
-
-// Grant permission button
-grantPermissionBtn.addEventListener("click", () => {
-    permissionPrompt.style.display = "none";
-    statusElement.textContent = "Starting camera...";
-    startRearCamera();
-});
-
-// Start scanner automatically on page load
+// Start scanner on page load
 document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(startRearCamera, 200);
+    startScanner();
 });
 </script>
 </body>
