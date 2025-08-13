@@ -1,28 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>QR Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <style>
-    body { font-family: Arial; margin: 0; padding: 0; text-align: center; }
-    h1 { margin: 20px 0; }
-    #reader {
-      width: 100vw;    /* full width */
-      height: 80vh;    /* large preview height */
-      margin: auto;
-    }
-    #info { margin: 10px; font-size: 16px; }
-  </style>
+<meta charset="UTF-8">
+<title>QR Scanner</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  h1 { margin-top: 10px; }
+  #camera {
+    width: 100vw;
+    height: 80vh;
+    background: #000;
+  }
+  #info {
+    margin: 10px;
+    font-size: 18px;
+    color: green;
+  }
+</style>
 </head>
 <body>
 
 <h1>QR Scanner</h1>
-<div id="reader"></div>
+<video id="camera" autoplay playsinline></video>
 <div id="info">Point your camera at a QR code</div>
 
+<script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
 <script>
+  // ===== Firebase config =====
   const firebaseConfig = {
             apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
             authDomain: "qr-scanner-4458e.firebaseapp.com",
@@ -36,41 +47,48 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // Save scan to Firebase
-  function saveScan(data) {
-    db.collection("scans").add({
-      text: data,
-      time: new Date()
-    }).then(() => {
-      document.getElementById("info").textContent = "Scanned: " + data;
-    }).catch(err => console.error(err));
-  }
+  // ===== Access camera =====
+  const video = document.getElementById('camera');
 
-  // On scan success
-  function onScanSuccess(decodedText) {
-    saveScan(decodedText);
-  }
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+  }).then(stream => {
+    video.srcObject = stream;
+  }).catch(err => {
+    console.error('Camera error:', err);
+  });
 
-  // Start scanner like a normal camera
-  const html5QrCode = new Html5Qrcode("reader");
-  const constraints = {
-    video: {
-      facingMode: "environment",  // rear camera
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+  // ===== QR scanning =====
+  function scanFrame() {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code) {
+      saveScan(code.data);
     }
-  };
-
-  html5QrCode.start(
-    const constraints = {
-  video: {
-    facingMode: "environment",
-    advanced: [{ zoom: 2 }]  // request digital zoom
+    requestAnimationFrame(scanFrame);
   }
-};
+
+  // ===== Save scan to Firebase =====
+  const scannedCodes = new Set(); // avoid duplicate saves
+  function saveScan(data) {
+    if (scannedCodes.has(data)) return;
+    scannedCodes.add(data);
+    db.collection('scans').add({ text: data, time: new Date() })
+      .then(() => document.getElementById('info').textContent = 'Scanned: ' + data)
+      .catch(err => console.error(err));
+  }
+
+  // Start scanning when video is ready
+  video.onloadedmetadata = () => {
+    scanFrame();
+  };
 </script>
 
 </body>
 </html>
-
-
