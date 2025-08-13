@@ -18,7 +18,7 @@ video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
 <body>
 
 <h2>Close-Range QR & Barcode Scanner</h2>
-<video id="video" autoplay></video>
+<video id="video" autoplay playsinline></video>
 <p id="status">Waiting for scan...</p>
 <h3>Scanned Data</h3>
 <ul id="scannedList"></ul>
@@ -39,23 +39,33 @@ const db = firebase.firestore();
 // 🔹 Video element
 const video = document.getElementById("video");
 
-// 🔹 BarcodeDetector check
+// 🔹 Check BarcodeDetector support
 if (!('BarcodeDetector' in window)) {
     alert("Your browser does not support BarcodeDetector API. Use Chrome or Edge on mobile.");
 }
 
 // 🔹 Start camera
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+navigator.mediaDevices.getUserMedia({ video: true }) // simple, lets phone handle zoom
 .then(stream => {
     video.srcObject = stream;
 
-    const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+    const track = stream.getVideoTracks()[0];
+    const capabilities = track.getCapabilities();
+
+    // Optional: reset digital zoom to normal
+    if (capabilities.zoom) {
+        track.applyConstraints({ advanced: [{ zoom: 1 }] });
+    }
+
+    const barcodeDetector = new BarcodeDetector({
+        formats: ['qr_code','code_128','ean_13','ean_8','upc_a','upc_e']
+    });
 
     const scanLoop = () => {
         barcodeDetector.detect(video).then(barcodes => {
             barcodes.forEach(barcode => {
                 const text = barcode.rawValue;
-                if (text && !document.getElementById(text)) { // avoid duplicates
+                if (text && !document.getElementById(text)) { // prevent duplicates
                     document.getElementById("status").innerText = `Scanned: ${text}`;
 
                     // Save to Firebase
@@ -72,14 +82,14 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                 }
             });
             requestAnimationFrame(scanLoop);
-        }).catch(err => console.error("Barcode detection error:", err));
+        }).catch(err => console.error("Detection error:", err));
     };
 
     requestAnimationFrame(scanLoop);
-})
-.catch(err => {
+
+}).catch(err => {
     console.error("Camera access error:", err);
-    alert("Cannot access camera. Make sure to allow camera permissions.");
+    alert("Cannot access camera. Allow permissions and use HTTPS.");
 });
 </script>
 
