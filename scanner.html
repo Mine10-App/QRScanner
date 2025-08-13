@@ -1,45 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>QR Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Close-Range QR & Barcode Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: Arial; text-align: center; padding: 20px; }
+        #reader { width: 100%; max-width: 400px; margin: auto; }
+        #scannedList { margin-top: 20px; list-style: none; padding: 0; }
+        #scannedList li { padding: 5px; border-bottom: 1px solid #ccc; }
+        #status { margin-top: 10px; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <h1>QR Scanner</h1>
-    <div id="reader" style="width: 600px;"></div>
-    <h3>Scanned Values</h3>
-    <ul id="list"></ul>
 
-    <script>
-        let list = JSON.parse(localStorage.getItem("qrData")) || [];
-        const ul = document.getElementById("list");
+<h2>Close-Range QR & Barcode Scanner</h2>
 
-        function renderList() {
-            ul.innerHTML = "";
-            list.forEach(item => {
-                let li = document.createElement("li");
-                li.textContent = item;
-                ul.appendChild(li);
-            });
+<div id="reader"></div>
+<p id="status">Waiting for scan...</p>
+
+<h3>Scanned Data</h3>
+<ul id="scannedList"></ul>
+
+<script>
+    // 🔹 Firebase configuration
+    const firebaseConfig = {
+            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+            authDomain: "qr-scanner-4458e.firebaseapp.com",
+            projectId: "qr-scanner-4458e",
+            storageBucket: "qr-scanner-4458e.firebasestorage.app",
+            messagingSenderId: "1099262112748",
+            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+            measurementId: "G-15WXNEPKS9"
+        };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 🔹 Initialize HTML5 QR Code scanner
+    const html5QrCode = new Html5Qrcode("reader");
+
+    // 🔹 Handle successful scan
+    function onScanSuccess(decodedText, decodedResult) {
+        document.getElementById("status").innerText = `Scanned: ${decodedText}`;
+
+        // Save to Firebase
+        db.collection("scanned_codes").add({
+            code: decodedText,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            console.log("Saved to Firebase:", decodedText);
+        }).catch(err => console.error(err));
+
+        // Add to local list
+        const li = document.createElement("li");
+        li.textContent = decodedText;
+        document.getElementById("scannedList").appendChild(li);
+    }
+
+    // 🔹 Handle scan failure (optional)
+    function onScanFailure(error) {
+        // console.warn(`Scan failed: ${error}`);
+    }
+
+    // 🔹 Scanner configuration for close-range scanning
+    const config = {
+        fps: 10,
+        qrbox: false, // full camera feed for close scanning
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true } // enable barcode detection
+    };
+
+    // 🔹 Start camera
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                console.log("Camera started. Hold phone close to the code.");
+            }).catch(err => console.error(err));
+        } else {
+            alert("No camera found on this device.");
         }
+    }).catch(err => console.error(err));
+</script>
 
-        function onScanSuccess(decodedText) {
-            if (!list.includes(decodedText)) {
-                list.push(decodedText);
-                localStorage.setItem("qrData", JSON.stringify(list));
-                renderList();
-            }
-        }
-
-        new Html5Qrcode("reader").start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: 600 },
-            onScanSuccess
-        );
-
-        renderList();
-    </script>
 </body>
 </html>
-
-
