@@ -1,111 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR & Barcode Scanner</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  #scanner { width: 100%; max-width: 500px; margin: auto; }
-  input, button { margin: 5px 0; padding: 8px; width: 100%; }
-  #scans { margin-top: 20px; }
-</style>
+    <title>QR Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
+    <h1>QR Scanner</h1>
+    <div id="reader" style="width: 300px;"></div>
+    <h3>Scanned Values</h3>
+    <ul id="list"></ul>
 
-<h2>QR & Barcode Scanner</h2>
+    <script>
+        let list = JSON.parse(localStorage.getItem("qrData")) || [];
+        const ul = document.getElementById("list");
 
-<div id="auth-section">
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="signup()">Sign Up</button>
-  <button onclick="login()">Login</button>
-  <button onclick="logout()">Logout</button>
-</div>
+        function renderList() {
+            ul.innerHTML = "";
+            list.forEach(item => {
+                let li = document.createElement("li");
+                li.textContent = item;
+                ul.appendChild(li);
+            });
+        }
 
-<div id="scanner-section" style="display:none;">
-  <div id="scanner"></div>
-  <div id="scans">
-    <h3>Scanned Values:</h3>
-    <ul id="scan-list"></ul>
-  </div>
-</div>
+        function onScanSuccess(decodedText) {
+            if (!list.includes(decodedText)) {
+                list.push(decodedText);
+                localStorage.setItem("qrData", JSON.stringify(list));
+                renderList();
+            }
+        }
 
-<script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+        new Html5Qrcode("reader").start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            onScanSuccess
+        );
 
-  // Auth functions
-  function signup() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    auth.createUserWithEmailAndPassword(email, password)
-      .then(() => alert('User created'))
-      .catch(err => alert(err.message));
-  }
-
-  function login() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    auth.signInWithEmailAndPassword(email, password)
-      .then(() => {
-        document.getElementById('scanner-section').style.display = 'block';
-        startScanner();
-      })
-      .catch(err => alert(err.message));
-  }
-
-  function logout() {
-    auth.signOut().then(() => {
-      document.getElementById('scanner-section').style.display = 'none';
-    });
-  }
-
-  // Scanner
-  function startScanner() {
-    const html5QrCode = new Html5Qrcode("scanner");
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-      const user = auth.currentUser;
-      if(!user) return;
-      db.collection("scans").add({
-        userId: user.uid,
-        value: decodedText,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        const li = document.createElement("li");
-        li.textContent = decodedText;
-        document.getElementById("scan-list").appendChild(li);
-      });
-    };
-
-    const config = { fps: 10, qrbox: 250, aspectRatio: 1.0 };
-    html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-      .catch(err => console.error(err));
-  }
-
-  // Show logged-in user scans
-  auth.onAuthStateChanged(user => {
-    if(user) {
-      document.getElementById('scanner-section').style.display = 'block';
-    } else {
-      document.getElementById('scanner-section').style.display = 'none';
-    }
-  });
-</script>
-
+        renderList();
+    </script>
 </body>
 </html>
