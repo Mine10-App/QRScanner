@@ -5,48 +5,24 @@
   <title>Live Display</title>
 </head>
 <body style="text-align:center; background:black; color:white; font-family:sans-serif;">
-  <h1>Token</h1>
-
-  <!-- Counter Display -->
-  <div id="displayCounter" style="font-size:100px; font-weight:bold; margin-top:20px;">
-    0
-  </div>
-
-  <!-- Message Display -->
-  <div id="displayMessage" style="font-size:48px; font-weight:bold; margin-top:50px;">
-    Waiting for message...
-  </div>
+  <h1>Room: <span id="displayRoom">---</span></h1>
+  <h1 style="font-size:100px;">Token: <span id="displayToken">0</span></h1>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-      authDomain: "qr-scanner-4458e.firebaseapp.com",
-      projectId: "qr-scanner-4458e",
-      storageBucket: "qr-scanner-4458e.firebasestorage.app",
-      messagingSenderId: "1099262112748",
-      appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-      measurementId: "G-15WXNEPKS9"
-    };
-
+    const firebaseConfig = { /* your config */ };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Live message listener
-    const messageRef = doc(db, "messages", "main");
-    onSnapshot(messageRef, (docSnap) => {
-      if (docSnap.exists()) {
-        document.getElementById("displayMessage").innerText = docSnap.data().text;
-      }
-    });
+    const displayRef = doc(db, "display", "main");
 
-    // Live counter listener
-    const counterRef = doc(db, "counters", "main");
-    onSnapshot(counterRef, (docSnap) => {
+    onSnapshot(displayRef, (docSnap) => {
       if (docSnap.exists()) {
-        document.getElementById("displayCounter").innerText = docSnap.data().value;
+        const data = docSnap.data();
+        document.getElementById("displayRoom").innerText = data.room;
+        document.getElementById("displayToken").innerText = data.token;
       }
     });
   </script>
