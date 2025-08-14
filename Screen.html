@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Live Token Display</title>
+  <meta charset="UTF-8" />
+  <title>Token Display</title>
   <style>
-    body { font-family: Arial; background:#222; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0;}
-    h1 { font-size:3em; color:#FFD700; margin-bottom:30px;}
-    .room { font-size:2.5em; margin:10px 0; padding:15px 40px; background:#444; border-radius:15px; min-width:300px; text-align:center;}
+    body { font-family: sans-serif; text-align: center; background: black; color: white; }
+    h1 { font-size: 2em; }
+    .token { font-size: 8em; font-weight: bold; }
   </style>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
 <body>
-  <h1>Current Tokens</h1>
-  <div id="tokenContainer"></div>
+  <h1 id="serviceName">Service</h1>
+  <div class="token" id="token">—</div>
 
-  <script>
-    const firebaseConfig = {
+  <script type="module">
+     const firebaseConfig = {
       apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
       authDomain: "qr-scanner-4458e.firebaseapp.com",
       databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
@@ -25,27 +26,24 @@
       appId: "1:1099262112748:web:a18f206bcf893c894546c9",
       measurementId: "G-15WXNEPKS9"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const tokensRef = db.ref('tokens');
 
-    const tokenContainer = document.getElementById('tokenContainer');
-    const rooms = Array.from({length: 20}, (_, i) => i+1); // Rooms 1-20
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-    rooms.forEach(room => {
-      const div = document.createElement('div');
-      div.id = 'room-' + room;
-      div.classList.add('room');
-      div.textContent = `Room ${room}: 0`;
-      tokenContainer.appendChild(div);
-    });
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    tokensRef.on('value', snapshot => {
-      const data = snapshot.val() || {};
-      rooms.forEach(room => {
-        const token = data[room] || 0;
-        document.getElementById('room-' + room).textContent = `Room ${room}: ${token}`;
-      });
+    const urlParams = new URLSearchParams(window.location.search);
+    const service = (urlParams.get("service") || "room1").toLowerCase();
+
+    document.getElementById("serviceName").textContent = `Service: ${service}`;
+
+    const tokenEl = document.getElementById("token");
+
+    const ref = doc(db, "tokens", service);
+    onSnapshot(ref, (snap) => {
+      const data = snap.data();
+      tokenEl.textContent = data?.value ?? 0;
     });
   </script>
 </body>
