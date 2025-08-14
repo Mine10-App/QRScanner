@@ -3,11 +3,10 @@
 <head>
   <title>Live Token Display</title>
   <style>
-    body { font-family: Arial; background: #222; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin:0; }
-    h1 { font-size: 3em; color: #FFD700; margin-bottom: 30px; }
-    .room { font-size: 2.5em; margin: 10px 0; padding: 15px 40px; background: #444; border-radius: 15px; min-width: 300px; text-align:center; }
+    body { font-family: Arial; background:#222; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0;}
+    h1 { font-size:3em; color:#FFD700; margin-bottom:30px;}
+    .room { font-size:2.5em; margin:10px 0; padding:15px 40px; background:#444; border-radius:15px; min-width:300px; text-align:center;}
   </style>
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
@@ -16,7 +15,7 @@
   <div id="tokenContainer"></div>
 
   <script>
-   const firebaseConfig = {
+    const firebaseConfig = {
             apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
             authDomain: "qr-scanner-4458e.firebaseapp.com",
             projectId: "qr-scanner-4458e",
@@ -25,20 +24,19 @@
             appId: "1:1099262112748:web:a18f206bcf893c894546c9",
             measurementId: "G-15WXNEPKS9"
         };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const tokensRef = db.ref('tokens');
 
-    const rooms = [1,2,3,4,5,6,7,8,9,10];
-    const container = document.getElementById('tokenContainer');
+    const tokenContainer = document.getElementById('tokenContainer');
+    const rooms = Array.from({length: 20}, (_, i) => i+1); // Rooms 1-20
 
     rooms.forEach(room => {
       const div = document.createElement('div');
       div.id = 'room-' + room;
       div.classList.add('room');
       div.textContent = `Room ${room}: 0`;
-      container.appendChild(div);
+      tokenContainer.appendChild(div);
     });
 
     tokensRef.on('value', snapshot => {
