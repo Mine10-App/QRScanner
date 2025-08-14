@@ -36,6 +36,15 @@
         document.getElementById("displayMessage").innerText = docSnap.data().text;
       }
     });
+
+    // 🔹 Listen to counter changes
+  const counterRef = doc(db, "counters", "main");
+  onSnapshot(counterRef, (docSnap) => {
+    if (docSnap.exists()) {
+      document.getElementById("displayCounter").innerText = docSnap.data().value;
+    }
+  });
   </script>
 </body>
 </html>
+
