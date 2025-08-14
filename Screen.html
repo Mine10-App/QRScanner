@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <title>Token Display</title>
   <style>
-    body { font-family: sans-serif; text-align: center; background: black; color: white; }
-    h1 { font-size: 2em; }
-    .token { font-size: 8em; font-weight: bold; }
+    body { font-family: sans-serif; text-align: center; background: black; color: white; margin: 0; padding: 0; }
+    h1 { font-size: 2em; margin-top: 20px; }
+    .token { font-size: 8em; font-weight: bold; margin-top: 50px; }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
@@ -16,7 +16,7 @@
   <div class="token" id="token">—</div>
 
   <script type="module">
-     const firebaseConfig = {
+    const firebaseConfig = {
       apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
       authDomain: "qr-scanner-4458e.firebaseapp.com",
       databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
