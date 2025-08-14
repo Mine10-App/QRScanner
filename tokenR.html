@@ -2,33 +2,23 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Live Counter Sender</title>
+  <title>Room Token Entry</title>
+</head>
+<body style="text-align:center; font-family:sans-serif; margin-top:50px;">
+  <h1>Room Token Entry</h1>
+  <div>
+    <label>Room Number:</label>
+    <input type="number" id="roomNumberInput" placeholder="Enter room number">
+  </div>
+  <div style="margin-top:20px;">
+    <label>Token:</label>
+    <input type="number" id="tokenInput" placeholder="Enter token">
+    <button id="submitBtn">Submit</button>
+  </div>
+  <div id="status" style="margin-top:20px; color:green;"></div>
+
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-    #counter { font-size: 70px; margin: 20px 0; }
-    button { font-size: 20px; padding: 10px 20px; margin: 5px; cursor: pointer; }
-    input[type=number] { font-size: 20px; width: 100px; text-align: center; }
-    #status { color: green; margin-left: 10px; font-weight: bold; }
-  </style>
-</head>
-<body>
-<div style="margin-top: 10px;">
-    <input type="number" id="setRoomNumberInput" placeholder="Set Room">
-    <button id="setBtn">Set Room No</button>
-  </div>  <h1>Token</h1>
-  <div id="counter">0</div>
-  <div>
-    <button id="increaseBtn">Next</button>
-    <button id="resetBtn">Reset</button>
-  </div>
-  <div style="margin-top: 10px;">
-    <input type="number" id="setNumberInput" placeholder="Set number">
-    <button id="setBtn">Set Token</button>
-  </div>
-  <div id="status"></div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
@@ -40,54 +30,24 @@
       measurementId: "G-15WXNEPKS9"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const counterRef = db.collection("display").doc("main");
 
-    let currentRoom = 0;
-    let currentToken = 0;
+    document.getElementById("submitBtn").onclick = () => {
+      const room = document.getElementById("roomNumberInput").value.trim();
+      const token = parseInt(document.getElementById("tokenInput").value);
 
-    // Load current value from Firebase
-    displayRef.get().then(doc => {
-      if (doc.exists) {
-        currentRoom = data.room || 0;
-        currentToken = data.token || 0;
-        document.getElementById("roomDisplay").innerText = currentRoom;
-        document.getElementById("counter").innerText = currentToken;
+      if (!room || isNaN(token)) {
+        alert("Please enter room number and token");
+        return;
       }
-    });
 
-    function updateDisplay(room, token) {
-      currentRoom = room;
-      currentToken = token;
-      document.getElementById("roomDisplay").innerText = currentRoom;
-      document.getElementById("Counter").innerText = currentToken;
-      counterRef.set({ value: currentValue })
+      db.collection("rooms").doc(room).set({ token })
         .then(() => {
-          document.getElementById("status").innerText = "Updated!";
-          setTimeout(() => { document.getElementById("status").innerText = ""; }, 1500);
+          document.getElementById("status").innerText = `Token ${token} submitted for Room ${room}`;
         })
         .catch(err => console.error(err));
-    }
-
-    document.getElementById("increaseBtn").onclick = () => {
-  const setNumInput = document.getElementById("setNumberInput");
-  const setNum = parseInt(setNumInput.value);
-
-  if (!isNaN(setNum)) {
-    updateCounter(setNum + 1);
-    setNumInput.value = ""; // clear so next clicks keep incrementing normally
-  } else {
-    updateCounter(currentValue + 1);
-  }
-};
-    document.getElementById("resetBtn").onclick = () => updateCounter(0);
-    document.getElementById("setBtn").onclick = () => {
-      const num = parseInt(document.getElementById("setNumberInput").value);
-      if (!isNaN(num)) updateCounter(num);
     };
   </script>
 </body>
 </html>
-
