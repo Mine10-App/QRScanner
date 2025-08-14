@@ -1,37 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Staff Token Control</title>
-  <style>
-    body { font-family: Arial; margin: 50px; }
-    input[type=number] { width: 60px; margin-left: 5px; }
-    button { margin-left: 10px; }
-  </style>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <meta charset="UTF-8" />
+  <title>Token Controller</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
 <body>
-  <h1>Room Token Control</h1>
+  <h1>Token Controller</h1>
+
+  <label>Room/Service:</label>
+  <input id="service" placeholder="e.g. room1" value="room1" />
+  <br><br>
 
   <div>
-    <label>Enter Room Number: </label>
-    <input type="number" id="roomInput" min="1" max="20" />
-    <button onclick="setRoom()">Confirm Room</button>
+    <button id="prev">◀ Prev</button>
+    <button id="next">Next ▶</button>
+    <input id="setTo" type="number" placeholder="Set token" />
+    <button id="set">Set</button>
+    <button id="reset">Reset</button>
   </div>
 
-  <div id="controlPanel" style="display:none; margin-top:30px;">
-    <h2 id="roomLabel"></h2>
-    <button onclick="nextToken()">Next Token</button>
-    <button onclick="resetToken()">Reset Token</button>
-    <input type="number" id="manualToken" placeholder="Enter token"/>
-    <button onclick="setToken()">Set Token</button>
-    <p id="currentToken">Current Token: 0</p>
-  </div>
+  <p>Current token: <span id="current">—</span></p>
 
-  <script>
-    // -------------------------------
-    // 1️⃣ Firebase Config
-    // -------------------------------
+  <script type="module">
     const firebaseConfig = {
       apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
       authDomain: "qr-scanner-4458e.firebaseapp.com",
@@ -42,50 +34,52 @@
       appId: "1:1099262112748:web:a18f206bcf893c894546c9",
       measurementId: "G-15WXNEPKS9"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let roomNumber = null;
-    let tokenRef = null;
 
-    // -------------------------------
-    // 2️⃣ Confirm Room
-    // -------------------------------
-    function setRoom() {
-      const roomInput = parseInt(document.getElementById('roomInput').value);
-      if (isNaN(roomInput) || roomInput < 1) {
-        alert("Please enter a valid room number.");
-        return;
-      }
-      roomNumber = roomInput;
-      tokenRef = db.ref('tokens/' + roomNumber);
-      document.getElementById('roomLabel').textContent = `Room ${roomNumber}`;
-      document.getElementById('controlPanel').style.display = 'block';
-      document.getElementById('roomInput').disabled = true;
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-      // Listen for token changes for this room
-      tokenRef.on('value', snapshot => {
-        const val = snapshot.val() || 0;
-        document.getElementById('currentToken').textContent = 'Current Token: ' + val;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const serviceInput = document.getElementById("service");
+    const currentEl = document.getElementById("current");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const setTo = document.getElementById("setTo");
+    const setBtn = document.getElementById("set");
+    const resetBtn = document.getElementById("reset");
+
+    let unsub = null;
+    async function attachListener() {
+      if (unsub) unsub();
+      const svc = serviceInput.value.trim().toLowerCase();
+      const ref = doc(db, "tokens", svc);
+      unsub = onSnapshot(ref, (snap) => {
+        const data = snap.data();
+        currentEl.textContent = data?.value ?? 0;
       });
     }
+    attachListener();
+    serviceInput.addEventListener("input", attachListener);
 
-    // -------------------------------
-    // 3️⃣ Token Controls
-    // -------------------------------
-    function nextToken() {
-      tokenRef.transaction(current => (current || 0) + 1);
+    async function updateToken(mutator) {
+      const svc = serviceInput.value.trim().toLowerCase();
+      const ref = doc(db, "tokens", svc);
+      const snap = await getDoc(ref);
+      const cur = snap.exists() ? snap.data().value : 0;
+      await setDoc(ref, { value: mutator(cur), updatedAt: Date.now() });
     }
 
-    function resetToken() {
-      tokenRef.set(0);
-    }
-
-    function setToken() {
-      const val = parseInt(document.getElementById('manualToken').value);
-      if (!isNaN(val)) {
-        tokenRef.set(val);
-      }
-    }
+    prevBtn.onclick = () => updateToken((n) => Math.max(0, n - 1));
+    nextBtn.onclick = () => updateToken((n) => n + 1);
+    setBtn.onclick = () => {
+      const v = Number(setTo.value);
+      if (!Number.isFinite(v)) return alert("Enter a number");
+      updateToken(() => v);
+    };
+    resetBtn.onclick = () => {
+      if (confirm("Reset token to 0?")) updateToken(() => 0);
+    };
   </script>
 </body>
 </html>
