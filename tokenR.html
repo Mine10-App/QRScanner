@@ -43,21 +43,26 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const counterRef = db.collection("counters").doc("main");
+    const counterRef = db.collection("display").doc("main");
 
-    let currentValue = 0;
+    let currentRoom = 0;
+    let currentToken = 0;
 
     // Load current value from Firebase
-    counterRef.get().then(doc => {
+    displayRef.get().then(doc => {
       if (doc.exists) {
-        currentValue = doc.data().value;
-        document.getElementById("counter").innerText = currentValue;
+        currentRoom = data.room || 0;
+        currentToken = data.token || 0;
+        document.getElementById("roomDisplay").innerText = currentRoom;
+        document.getElementById("counter").innerText = currentToken;
       }
     });
 
-    function updateCounter(newVal) {
-      currentValue = newVal;
-      document.getElementById("counter").innerText = currentValue;
+    function updateDisplay(room, token) {
+      currentRoom = room;
+      currentToken = token;
+      document.getElementById("roomDisplay").innerText = currentRoom;
+      document.getElementById("Counter").innerText = currentToken;
       counterRef.set({ value: currentValue })
         .then(() => {
           document.getElementById("status").innerText = "Updated!";
@@ -85,3 +90,4 @@
   </script>
 </body>
 </html>
+
