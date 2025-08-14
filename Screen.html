@@ -16,15 +16,15 @@
 
   <script>
     const firebaseConfig = {
-            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-            authDomain: "qr-scanner-4458e.firebaseapp.com",
-            projectId: "qr-scanner-4458e",
-            databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
-            storageBucket: "qr-scanner-4458e.firebasestorage.app",
-            messagingSenderId: "1099262112748",
-            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-            measurementId: "G-15WXNEPKS9"
-        };
+      apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+      authDomain: "qr-scanner-4458e.firebaseapp.com",
+      databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
+      projectId: "qr-scanner-4458e",
+      storageBucket: "qr-scanner-4458e.firebasestorage.app",
+      messagingSenderId: "1099262112748",
+      appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+      measurementId: "G-15WXNEPKS9"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const tokensRef = db.ref('tokens');
@@ -50,5 +50,3 @@
   </script>
 </body>
 </html>
-
-
