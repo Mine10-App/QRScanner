@@ -65,9 +65,11 @@
     async function updateToken(mutator) {
       const svc = serviceInput.value.trim().toLowerCase();
       const ref = doc(db, "tokens", svc);
+
       const snap = await getDoc(ref);
       const cur = snap.exists() ? snap.data().value : 0;
-      await setDoc(ref, { value: mutator(cur), updatedAt: Date.now() });
+
+      await setDoc(ref, { value: mutator(cur), updatedAt: Date.now() }, { merge: true });
     }
 
     prevBtn.onclick = () => updateToken((n) => Math.max(0, n - 1));
