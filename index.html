@@ -1,20 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Staff Token Control</title>
+  <title>Room Token Control</title>
   <style>
-    body { font-family: Arial; margin: 20px; }
-    .room { margin-bottom: 20px; }
-    input[type=number] { width: 60px; }
-    button { margin-left: 5px; }
+    body { font-family: Arial; margin: 50px; }
+    input[type=number] { width: 60px; margin-left: 5px; }
+    button { margin-left: 10px; }
   </style>
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>Staff Token Control</h1>
-  <div id="roomsContainer"></div>
+  <h1>Room Token Control</h1>
+
+  <div>
+    <label>Enter Room Number: </label>
+    <input type="number" id="roomInput" min="1" max="20" />
+    <button onclick="setRoom()">Confirm Room</button>
+  </div>
+
+  <div id="controlPanel" style="display:none; margin-top:30px;">
+    <h2 id="roomLabel"></h2>
+    <button onclick="nextToken()">Next Token</button>
+    <button onclick="resetToken()">Reset Token</button>
+    <input type="number" id="manualToken" placeholder="Enter token"/>
+    <button onclick="setToken()">Set Token</button>
+    <p id="currentToken">Current Token: 0</p>
+  </div>
 
   <script>
     // -------------------------------
@@ -29,59 +42,50 @@
             appId: "1:1099262112748:web:a18f206bcf893c894546c9",
             measurementId: "G-15WXNEPKS9"
         };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const tokensRef = db.ref('tokens');
+    let roomNumber = null;
+    let tokenRef = null;
 
     // -------------------------------
-    // 2️⃣ Setup Rooms
+    // 2️⃣ Confirm Room
     // -------------------------------
-    const rooms = [1,2,3,4,5,6,7,8,9,10];
-    const container = document.getElementById('roomsContainer');
+    function setRoom() {
+      const roomInput = parseInt(document.getElementById('roomInput').value);
+      if (isNaN(roomInput) || roomInput < 1) {
+        alert("Please enter a valid room number.");
+        return;
+      }
+      roomNumber = roomInput;
+      tokenRef = db.ref('tokens/' + roomNumber);
+      document.getElementById('roomLabel').textContent = `Room ${roomNumber}`;
+      document.getElementById('controlPanel').style.display = 'block';
+      document.getElementById('roomInput').disabled = true;
 
-    rooms.forEach(room => {
-      const div = document.createElement('div');
-      div.classList.add('room');
-      div.innerHTML = `
-        <strong>Room ${room}</strong>
-        <button onclick="nextToken(${room})">Next Token</button>
-        <button onclick="resetToken(${room})">Reset</button>
-        <input type="number" id="manual-${room}" placeholder="Enter token"/>
-        <button onclick="setToken(${room})">Set Token</button>
-        <span id="current-${room}">Token: 0</span>
-      `;
-      container.appendChild(div);
-    });
-
-    // -------------------------------
-    // 3️⃣ Functions
-    // -------------------------------
-    function nextToken(room) {
-      const ref = db.ref('tokens/' + room);
-      ref.transaction(current => (current || 0) + 1);
+      // Listen for token changes for this room
+      tokenRef.on('value', snapshot => {
+        const val = snapshot.val() || 0;
+        document.getElementById('currentToken').textContent = 'Current Token: ' + val;
+      });
     }
 
-    function resetToken(room) {
-      db.ref('tokens/' + room).set(0);
+    // -------------------------------
+    // 3️⃣ Token Controls
+    // -------------------------------
+    function nextToken() {
+      tokenRef.transaction(current => (current || 0) + 1);
     }
 
-    function setToken(room) {
-      const val = parseInt(document.getElementById('manual-' + room).value);
+    function resetToken() {
+      tokenRef.set(0);
+    }
+
+    function setToken() {
+      const val = parseInt(document.getElementById('manualToken').value);
       if (!isNaN(val)) {
-        db.ref('tokens/' + room).set(val);
+        tokenRef.set(val);
       }
     }
-
-    // -------------------------------
-    // 4️⃣ Live token updates on staff panel
-    // -------------------------------
-    tokensRef.on('value', snapshot => {
-      const data = snapshot.val() || {};
-      rooms.forEach(room => {
-        document.getElementById('current-' + room).textContent = 'Token: ' + (data[room] || 0);
-      });
-    });
   </script>
 </body>
 </html>
