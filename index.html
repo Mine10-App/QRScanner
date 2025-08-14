@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Room Token Control</title>
+  <title>Staff Token Control</title>
   <style>
     body { font-family: Arial; margin: 50px; }
     input[type=number] { width: 60px; margin-left: 5px; }
     button { margin-left: 10px; }
   </style>
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
@@ -33,16 +32,16 @@
     // -------------------------------
     // 1️⃣ Firebase Config
     // -------------------------------
-   const firebaseConfig = {
-            apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-            authDomain: "qr-scanner-4458e.firebaseapp.com",
-            projectId: "qr-scanner-4458e",
-            databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
-            storageBucket: "qr-scanner-4458e.firebasestorage.app",
-            messagingSenderId: "1099262112748",
-            appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-            measurementId: "G-15WXNEPKS9"
-        };
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+      authDomain: "qr-scanner-4458e.firebaseapp.com",
+      databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
+      projectId: "qr-scanner-4458e",
+      storageBucket: "qr-scanner-4458e.firebasestorage.app",
+      messagingSenderId: "1099262112748",
+      appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+      measurementId: "G-15WXNEPKS9"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let roomNumber = null;
@@ -90,5 +89,3 @@
   </script>
 </body>
 </html>
-
-
