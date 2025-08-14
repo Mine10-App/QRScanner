@@ -2,11 +2,28 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Display Screen</title>
+  <title>Room Tokens</title>
+  <style>
+    body { text-align:center; font-family:sans-serif; background:black; color:white; }
+    h1 { margin-top:50px; }
+    table { margin:50px auto; border-collapse: collapse; width:50%; font-size:48px; }
+    th, td { border: 2px solid white; padding: 20px; }
+    th { font-size:36px; }
+  </style>
 </head>
-<body style="text-align:center; font-family:sans-serif; background:black; color:white;">
+<body>
   <h1>Live Room Tokens</h1>
-  <div id="roomList" style="font-size:48px; margin-top:50px;"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Room</th>
+        <th>Token</th>
+      </tr>
+    </thead>
+    <tbody id="roomList">
+      <tr><td colspan="2">Waiting for tokens...</td></tr>
+    </tbody>
+  </table>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
@@ -29,13 +46,29 @@
 
     onSnapshot(roomsCol, (snapshot) => {
       const roomListDiv = document.getElementById("roomList");
-      roomListDiv.innerHTML = "";
+      roomListDiv.innerHTML = ""; // clear previous
+
+      let hasToken = false;
+
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         const roomNumber = doc.id;
-        const token = data.token || 0;
-        roomListDiv.innerHTML += `<div>Room ${roomNumber} → Token ${token}</div>`;
+        const token = data.token;
+
+        if(token && token > 0){ // only show if token > 0
+          roomListDiv.innerHTML += `
+            <tr>
+              <td>${roomNumber}</td>
+              <td>${token}</td>
+            </tr>
+          `;
+          hasToken = true;
+        }
       });
+
+      if(!hasToken){
+        roomListDiv.innerHTML = `<tr><td colspan="2">No active tokens</td></tr>`;
+      }
     });
   </script>
 </body>
