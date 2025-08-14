@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multi-Room Token System</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .room { margin-bottom: 15px; }
+    button { margin-left: 10px; }
+    #tokenDisplay { margin-top: 30px; }
+    #tokenDisplay li { font-size: 1.2em; margin: 5px 0; }
+  </style>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+  <h1>Multi-Room Token System</h1>
+
+  <!-- Room Controls -->
+  <div id="roomControls"></div>
+
+  <!-- Live Display -->
+  <h2>Current Tokens:</h2>
+  <ul id="tokenDisplay"></ul>
+
+  <script>
+    // -------------------------------
+    // 1️⃣ Firebase Configuration
+    // -------------------------------
+   const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const tokensRef = db.ref('tokens');
+
+    // -------------------------------
+    // 2️⃣ Rooms Setup
+    // -------------------------------
+    const rooms = [1,2,3,4,5,6,7]; // Room numbers
+    const roomControls = document.getElementById('roomControls');
+
+    rooms.forEach(room => {
+      const div = document.createElement('div');
+      div.classList.add('room');
+      div.innerHTML = `
+        <strong>Room ${room}</strong>
+        <button onclick="takeToken(${room})">Take Token</button>
+        <button onclick="resetToken(${room})">Reset</button>
+      `;
+      roomControls.appendChild(div);
+    });
+
+    // -------------------------------
+    // 3️⃣ Take Token Function
+    // -------------------------------
+    function takeToken(room) {
+      const tokenRef = db.ref('tokens/' + room);
+
+      tokenRef.transaction(current => {
+        return (current || 0) + 1;
+      });
+    }
+
+    // -------------------------------
+    // 4️⃣ Reset Token Function
+    // -------------------------------
+    function resetToken(room) {
+      const tokenRef = db.ref('tokens/' + room);
+      tokenRef.set(0);
+    }
+
+    // -------------------------------
+    // 5️⃣ Live Display
+    // -------------------------------
+    const tokenDisplay = document.getElementById('tokenDisplay');
+
+    tokensRef.on('value', snapshot => {
+      tokenDisplay.innerHTML = '';
+      const data = snapshot.val() || {};
+      rooms.forEach(room => {
+        const li = document.createElement('li');
+        li.textContent = `Room ${room}: Token ${data[room] || 0}`;
+        tokenDisplay.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
