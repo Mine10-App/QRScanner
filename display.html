@@ -3,11 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Live Display</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
 <body style="text-align:center; background:black; color:white; font-family:sans-serif;">
   <h1>Token</h1>
+
+  <!-- Counter Display -->
+  <div id="displayCounter" style="font-size:100px; font-weight:bold; margin-top:20px;">
+    0
+  </div>
+
+  <!-- Message Display -->
   <div id="displayMessage" style="font-size:48px; font-weight:bold; margin-top:50px;">
     Waiting for message...
   </div>
@@ -16,7 +21,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
       authDomain: "qr-scanner-4458e.firebaseapp.com",
@@ -29,32 +33,22 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const messageRef = doc(db, "messages", "main");
 
+    // Live message listener
+    const messageRef = doc(db, "messages", "main");
     onSnapshot(messageRef, (docSnap) => {
       if (docSnap.exists()) {
         document.getElementById("displayMessage").innerText = docSnap.data().text;
       }
     });
 
-    // 🔹 Listen to counter changes
-  const counterRef = doc(db, "counters", "main");
-  onSnapshot(counterRef, (docSnap) => {
-    if (docSnap.exists()) {
-      document.getElementById("displayCounter").innerText = docSnap.data().value;
-    }
-  });
-
-    // 🔹 Listen to counter changes
-  const counterRef = doc(db, "counters", "main");
-  onSnapshot(counterRef, (docSnap) => {
-    if (docSnap.exists()) {
-      document.getElementById("displayCounter").innerText = docSnap.data().value;
-    }
-  });
+    // Live counter listener
+    const counterRef = doc(db, "counters", "main");
+    onSnapshot(counterRef, (docSnap) => {
+      if (docSnap.exists()) {
+        document.getElementById("displayCounter").innerText = docSnap.data().value;
+      }
+    });
   </script>
 </body>
 </html>
-
-
-
