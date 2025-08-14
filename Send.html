@@ -3,19 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <title>Send Message</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <!-- Firebase App & Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <h1>Send Message</h1>
-  <input type="text" id="messageInput" placeholder="Type a message..." style="width:300px;">
+  <input type="text" id="messageInput" placeholder="Type message..." style="width:300px;">
   <button id="sendBtn">Send</button>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-    // Your Firebase config
+  <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
       authDomain: "qr-scanner-4458e.firebaseapp.com",
@@ -26,18 +24,22 @@
       measurementId: "G-15WXNEPKS9"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const messageRef = doc(db, "messages", "main");
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const messageRef = db.collection("messages").doc("main");
 
-    document.getElementById("sendBtn").addEventListener("click", async () => {
+    document.getElementById("sendBtn").onclick = function() {
       const msg = document.getElementById("messageInput").value.trim();
       if (msg) {
-        await setDoc(messageRef, { text: msg });
-        document.getElementById("messageInput").value = "";
-        alert("Message sent!");
+        messageRef.set({ text: msg })
+          .then(() => {
+            document.getElementById("messageInput").value = "";
+            alert("Message sent!");
+          })
+          .catch(err => alert("Error: " + err));
       }
-    });
+    };
   </script>
 </body>
 </html>
