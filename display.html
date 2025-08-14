@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Live Display</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+</head>
+<body style="text-align:center; background:black; color:white; font-family:sans-serif;">
+  <h1>Live Message</h1>
+  <div id="displayMessage" style="font-size:48px; font-weight:bold; margin-top:50px;">
+    Waiting for message...
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+      authDomain: "qr-scanner-4458e.firebaseapp.com",
+      projectId: "qr-scanner-4458e",
+      storageBucket: "qr-scanner-4458e.firebasestorage.app",
+      messagingSenderId: "1099262112748",
+      appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+      measurementId: "G-15WXNEPKS9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const messageRef = doc(db, "messages", "main");
+
+    onSnapshot(messageRef, (docSnap) => {
+      if (docSnap.exists()) {
+        document.getElementById("displayMessage").innerText = docSnap.data().text;
+      }
+    });
+  </script>
+</body>
+</html>

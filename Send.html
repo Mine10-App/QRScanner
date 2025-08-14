@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Send Message</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+</head>
+<body>
+  <h1>Send Message</h1>
+  <input type="text" id="messageInput" placeholder="Type a message..." style="width:300px;">
+  <button id="sendBtn">Send</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+      authDomain: "qr-scanner-4458e.firebaseapp.com",
+      projectId: "qr-scanner-4458e",
+      storageBucket: "qr-scanner-4458e.firebasestorage.app",
+      messagingSenderId: "1099262112748",
+      appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+      measurementId: "G-15WXNEPKS9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const messageRef = doc(db, "messages", "main");
+
+    document.getElementById("sendBtn").addEventListener("click", async () => {
+      const msg = document.getElementById("messageInput").value.trim();
+      if (msg) {
+        await setDoc(messageRef, { text: msg });
+        document.getElementById("messageInput").value = "";
+        alert("Message sent!");
+      }
+    });
+  </script>
+</body>
+</html>
