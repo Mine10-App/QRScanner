@@ -3,22 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <title>Room Token Entry</title>
+  <style>
+    body { font-family:sans-serif; text-align:center; margin-top:50px; }
+    input[type=number] { font-size:20px; width:100px; text-align:center; }
+    button { font-size:20px; padding:10px 20px; margin:5px; cursor:pointer; }
+    #status { color:green; margin-top:20px; font-weight:bold; }
+    #currentToken { font-size:48px; margin-top:20px; }
+  </style>
 </head>
-<body style="text-align:center; font-family:sans-serif; margin-top:50px;">
+<body>
   <h1>Room Token Entry</h1>
+
   <div>
     <label>Room Number:</label>
-    <input type="number" id="roomNumberInput" placeholder="Enter room number">
+    <input type="number" id="roomNumberInput" placeholder="Enter Room Number">
   </div>
-  <div style="margin-top:20px;">
-    <label>Token:</label>
-    <input type="number" id="tokenInput" placeholder="Enter token">
-    <button id="submitBtn">Submit</button>
-  </div>
-  <div id="status" style="margin-top:20px; color:green;"></div>
 
+  <div id="currentToken">0</div>
+
+  <div style="margin-top:20px;">
+    <button id="nextBtn">Next</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <div style="margin-top:20px;">
+    <input type="number" id="setNumberInput" placeholder="Set Token">
+    <button id="setBtn">Set Token</button>
+  </div>
+
+  <div id="status"></div>
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
@@ -30,23 +48,74 @@
       measurementId: "G-15WXNEPKS9"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    document.getElementById("submitBtn").onclick = () => {
-      const room = document.getElementById("roomNumberInput").value.trim();
-      const token = parseInt(document.getElementById("tokenInput").value);
+    let currentRoom = "";
+    let currentToken = 0;
 
-      if (!room || isNaN(token)) {
-        alert("Please enter room number and token");
-        return;
-      }
+    const roomInput = document.getElementById("roomNumberInput");
+    const currentTokenDiv = document.getElementById("currentToken");
 
-      db.collection("rooms").doc(room).set({ token })
-        .then(() => {
-          document.getElementById("status").innerText = `Token ${token} submitted for Room ${room}`;
-        })
+    function updateStatus(msg) {
+      document.getElementById("status").innerText = msg;
+      setTimeout(() => { document.getElementById("status").innerText = ""; }, 1500);
+    }
+
+    // Load current token for room
+    function loadRoomToken(room) {
+      if (!room) return;
+      const docRef = db.collection("rooms").doc(room);
+      docRef.get().then(doc => {
+        if(doc.exists){
+          currentToken = doc.data().token || 0;
+        } else {
+          currentToken = 0;
+        }
+        currentTokenDiv.innerText = currentToken;
+      });
+    }
+
+    // Set token in Firestore
+    function saveToken() {
+      if (!currentRoom) return;
+      db.collection("rooms").doc(currentRoom).set({ token: currentToken })
+        .then(() => updateStatus("Token updated!"))
         .catch(err => console.error(err));
+    }
+
+    // Room input change
+    roomInput.onchange = () => {
+      currentRoom = roomInput.value.trim();
+      loadRoomToken(currentRoom);
+    };
+
+    // Next button
+    document.getElementById("nextBtn").onclick = () => {
+      if(!currentRoom){ alert("Enter room number first"); return; }
+      currentToken++;
+      currentTokenDiv.innerText = currentToken;
+      saveToken();
+    };
+
+    // Reset button
+    document.getElementById("resetBtn").onclick = () => {
+      if(!currentRoom){ alert("Enter room number first"); return; }
+      currentToken = 0;
+      currentTokenDiv.innerText = currentToken;
+      saveToken();
+    };
+
+    // Set Token button
+    document.getElementById("setBtn").onclick = () => {
+      if(!currentRoom){ alert("Enter room number first"); return; }
+      const num = parseInt(document.getElementById("setNumberInput").value);
+      if(isNaN(num)){ alert("Enter a valid token number"); return; }
+      currentToken = num;
+      currentTokenDiv.innerText = currentToken;
+      saveToken();
+      document.getElementById("setNumberInput").value = "";
     };
   </script>
 </body>
