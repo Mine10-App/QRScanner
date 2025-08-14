@@ -1,87 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Token Controller</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+<meta charset="UTF-8">
+<title>Token Controller</title>
+<style>
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    button { padding: 15px 25px; margin: 5px; font-size: 18px; }
+    input { font-size: 18px; padding: 10px; width: 100px; text-align: center; }
+</style>
 </head>
 <body>
-  <h1>Token Controller</h1>
 
-  <label>Room/Service:</label>
-  <input id="service" placeholder="e.g. room1" value="room1" />
-  <br><br>
+<h1>Token Controller</h1>
+<p>Current Token: <span id="token">0</span></p>
 
-  <div>
-    <button id="prev">◀ Prev</button>
-    <button id="next">Next ▶</button>
-    <input id="setTo" type="number" placeholder="Set token" />
-    <button id="set">Set</button>
-    <button id="reset">Reset</button>
-  </div>
+<button onclick="changeToken(-1)">Prev</button>
+<button onclick="changeToken(1)">Next</button>
+<br>
+<input type="number" id="setValue" placeholder="Token #">
+<button onclick="setToken()">Set</button>
+<button onclick="resetToken()">Reset</button>
 
-  <p>Current token: <span id="current">—</span></p>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-  <script type="module">
-    const firebaseConfig = {
-      apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-      authDomain: "qr-scanner-4458e.firebaseapp.com",
-      databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
-      projectId: "qr-scanner-4458e",
-      storageBucket: "qr-scanner-4458e.firebasestorage.app",
-      messagingSenderId: "1099262112748",
-      appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-      measurementId: "G-15WXNEPKS9"
-    };
+// Your Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
+  authDomain: "qr-scanner-4458e.firebaseapp.com",
+  databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
+  projectId: "qr-scanner-4458e",
+  storageBucket: "qr-scanner-4458e.firebasestorage.app",
+  messagingSenderId: "1099262112748",
+  appId: "1:1099262112748:web:a18f206bcf893c894546c9",
+  measurementId: "G-15WXNEPKS9"
+};
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const tokenRef = ref(db, "tokenNumber");
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+onValue(tokenRef, (snapshot) => {
+  document.getElementById("token").textContent = snapshot.val();
+});
 
-    const serviceInput = document.getElementById("service");
-    const currentEl = document.getElementById("current");
-    const prevBtn = document.getElementById("prev");
-    const nextBtn = document.getElementById("next");
-    const setTo = document.getElementById("setTo");
-    const setBtn = document.getElementById("set");
-    const resetBtn = document.getElementById("reset");
+function changeToken(amount) {
+  get(tokenRef).then((snapshot) => {
+    let current = snapshot.exists() ? snapshot.val() : 0;
+    set(tokenRef, current + amount);
+  });
+}
 
-    let unsub = null;
-    async function attachListener() {
-      if (unsub) unsub();
-      const svc = serviceInput.value.trim().toLowerCase();
-      const ref = doc(db, "tokens", svc);
-      unsub = onSnapshot(ref, (snap) => {
-        const data = snap.data();
-        currentEl.textContent = data?.value ?? 0;
-      });
-    }
-    attachListener();
-    serviceInput.addEventListener("input", attachListener);
+function setToken() {
+  let value = parseInt(document.getElementById("setValue").value);
+  if (!isNaN(value)) {
+    set(tokenRef, value);
+  }
+}
 
-    async function updateToken(mutator) {
-      const svc = serviceInput.value.trim().toLowerCase();
-      const ref = doc(db, "tokens", svc);
+function resetToken() {
+  set(tokenRef, 0);
+}
 
-      const snap = await getDoc(ref);
-      const cur = snap.exists() ? snap.data().value : 0;
-
-      await setDoc(ref, { value: mutator(cur), updatedAt: Date.now() }, { merge: true });
-    }
-
-    prevBtn.onclick = () => updateToken((n) => Math.max(0, n - 1));
-    nextBtn.onclick = () => updateToken((n) => n + 1);
-    setBtn.onclick = () => {
-      const v = Number(setTo.value);
-      if (!Number.isFinite(v)) return alert("Enter a number");
-      updateToken(() => v);
-    };
-    resetBtn.onclick = () => {
-      if (confirm("Reset token to 0?")) updateToken(() => 0);
-    };
-  </script>
+window.changeToken = changeToken;
+window.setToken = setToken;
+window.resetToken = resetToken;
+</script>
 </body>
 </html>
