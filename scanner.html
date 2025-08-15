@@ -2,55 +2,81 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scan QR/Barcode via Photo</title>
+  <title>Live QR & Barcode Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body style="text-align:center; font-family:sans-serif;">
 
-<h2>Scan QR / Barcode</h2>
+<h2>Live QR / Barcode Scanner</h2>
 
-<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
-<button onclick="document.getElementById('cameraInput').click()" 
-        style="padding:15px 25px; font-size:18px;">
-  Open Camera
-</button>
+<button id="startScan" style="padding:12px 20px; font-size:16px;">Start Camera</button>
+<button id="stopScan" style="padding:12px 20px; font-size:16px;">Stop Camera</button>
+<br><br>
 
-<canvas id="canvas" style="display:none;"></canvas>
+<video id="video" width="320" height="240" style="border:1px solid #ccc;"></video>
 <p id="result" style="font-size:18px; color:green;"></p>
 
 <script>
-const input = document.getElementById('cameraInput');
-const canvas = document.getElementById('canvas');
+const codeReader = new ZXing.BrowserMultiFormatReader();
+const videoElement = document.getElementById('video');
 const resultElement = document.getElementById('result');
+let currentStream = null;
 
-const codeReader = new ZXing.BrowserBarcodeReader();
+async function startScanner() {
+  try {
+    const devices = await codeReader.listVideoInputDevices();
+    const backCamera = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[0];
 
-input.addEventListener('change', async (event) => {
-  if (event.target.files.length === 0) return;
+    // Open live camera stream
+    const constraints = {
+      video: {
+        deviceId: { exact: backCamera.deviceId },
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
 
-  const file = event.target.files[0];
-  const img = new Image();
-  img.src = URL.createObjectURL(file);
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    currentStream = stream;
+    videoElement.srcObject = stream;
+    videoElement.play();
 
-  img.onload = async () => {
-    // Resize image to max width/height 800px
-    let maxDim = 800;
-    let scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-    canvas.width = img.width * scale;
-    canvas.height = img.height * scale;
-
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    try {
-      const result = await codeReader.decodeFromCanvas(canvas);
-      resultElement.textContent = "Scanned: " + result.text;
-    } catch (err) {
-      console.log(err);
-      resultElement.textContent = "No QR or Barcode found. Try again!";
+    // Try normal zoom and autofocus if supported
+    const track = stream.getVideoTracks()[0];
+    const capabilities = track.getCapabilities();
+    const settings = {};
+    if (capabilities.zoom) settings.zoom = 1.0;
+    if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+      settings.focusMode = "continuous";
     }
-  };
-});
+    if (Object.keys(settings).length) track.applyConstraints(settings).catch(e => console.warn(e));
+
+    // Start live scanning
+    codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+      if (result) {
+        resultElement.textContent = "Scanned: " + result.text;
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) console.error(err);
+    });
+
+  } catch (err) {
+    console.error(err);
+    resultElement.textContent = "Error: " + err.message;
+  }
+}
+
+function stopScanner() {
+  codeReader.reset();
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+    videoElement.srcObject = null;
+  }
+  resultElement.textContent = "Camera stopped.";
+}
+
+document.getElementById('startScan').addEventListener('click', startScanner);
+document.getElementById('stopScan').addEventListener('click', stopScanner);
 </script>
 
 </body>
