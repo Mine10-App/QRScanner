@@ -2,41 +2,92 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR & Barcode Scanner</title>
+  <title>QR & Barcode Scanner (Normal Camera)</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body style="text-align:center; font-family:sans-serif;">
 
-<h2>Scan QR / Barcode</h2>
-<button id="startScan" style="padding:15px 25px; font-size:18px;">Open Camera to Scan</button>
+<h2>QR / Barcode Scanner</h2>
+
+<button id="startScan" style="padding:12px 20px; font-size:16px;">Start Camera</button>
+<button id="stopScan" style="padding:12px 20px; font-size:16px;">Stop Camera</button>
 <br><br>
-<video id="video" width="300" height="200" style="border:1px solid #ccc;"></video>
+
+<video id="video" width="320" height="240" style="border:1px solid #ccc;"></video>
 <p id="result" style="font-size:18px; color:green;"></p>
 
 <script>
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-  const videoElement = document.getElementById('video');
-  const resultElement = document.getElementById('result');
-  const startButton = document.getElementById('startScan');
+const codeReader = new ZXing.BrowserMultiFormatReader();
+const videoElement = document.getElementById('video');
+const resultElement = document.getElementById('result');
+let currentStream = null;
 
-  startButton.addEventListener('click', () => {
-    codeReader
-      .listVideoInputDevices()
-      .then(videoInputDevices => {
-        const backCamera = videoInputDevices.find(device => /back|rear|environment/gi.test(device.label)) 
-                           || videoInputDevices[0];
+// Function to apply zoom/focus if supported
+function applyCameraSettings(track) {
+  const capabilities = track.getCapabilities();
+  const settings = {};
 
-        codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
-          if (result) {
-            resultElement.textContent = "Scanned: " + result.text;
-          }
-          if (err && !(err instanceof ZXing.NotFoundException)) {
-            console.error(err);
-          }
-        });
-      })
-      .catch(err => console.error(err));
-  });
+  if (capabilities.zoom) settings.zoom = 1.0; // normal zoom
+  if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+    settings.focusMode = "continuous";
+  }
+
+  if (Object.keys(settings).length) {
+    track.applyConstraints(settings).catch(e => console.warn("Cannot apply constraints:", e));
+  }
+}
+
+// Start scanning
+document.getElementById('startScan').addEventListener('click', async () => {
+  resultElement.textContent = "Starting camera...";
+  try {
+    const devices = await codeReader.listVideoInputDevices();
+    const backCamera = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[0];
+
+    // Custom constraints for normal camera
+    const constraints = {
+      video: {
+        deviceId: { exact: backCamera.deviceId },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: { ideal: "environment" }
+      }
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    currentStream = stream;
+    videoElement.srcObject = stream;
+    videoElement.play();
+
+    // Apply zoom/focus if possible
+    const track = stream.getVideoTracks()[0];
+    applyCameraSettings(track);
+
+    // Start ZXing scanning
+    codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+      if (result) {
+        resultElement.textContent = "Scanned: " + result.text;
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error(err);
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    resultElement.textContent = "Error: " + err.message;
+  }
+});
+
+// Stop scanning
+document.getElementById('stopScan').addEventListener('click', () => {
+  codeReader.reset(); // stop ZXing
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+    videoElement.srcObject = null;
+  }
+  resultElement.textContent = "Camera stopped.";
+});
 </script>
 
 </body>
