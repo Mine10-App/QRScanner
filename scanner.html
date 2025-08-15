@@ -9,10 +9,7 @@
 
 <h2>Scan QR / Barcode</h2>
 
-<!-- Hidden file input to open camera -->
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
-
-<!-- Button to trigger camera -->
 <button onclick="document.getElementById('cameraInput').click()" 
         style="padding:15px 25px; font-size:18px;">
   Open Camera
@@ -26,7 +23,7 @@ const input = document.getElementById('cameraInput');
 const canvas = document.getElementById('canvas');
 const resultElement = document.getElementById('result');
 
-const codeReader = new ZXing.BrowserBarcodeReader(); // ZXing can read QR + barcodes
+const codeReader = new ZXing.BrowserBarcodeReader();
 
 input.addEventListener('change', async (event) => {
   if (event.target.files.length === 0) return;
@@ -36,15 +33,17 @@ input.addEventListener('change', async (event) => {
   img.src = URL.createObjectURL(file);
 
   img.onload = async () => {
-    // Draw image to canvas
-    canvas.width = img.width;
-    canvas.height = img.height;
+    // Resize image to max width/height 800px
+    let maxDim = 800;
+    let scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+    canvas.width = img.width * scale;
+    canvas.height = img.height * scale;
+
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     try {
-      // ZXing can decode from canvas
-      const result = await codeReader.decodeFromImage(canvas);
+      const result = await codeReader.decodeFromCanvas(canvas);
       resultElement.textContent = "Scanned: " + result.text;
     } catch (err) {
       console.log(err);
