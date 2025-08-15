@@ -1,97 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Close-Range QR & Barcode Scanner</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-<style>
-body { font-family: Arial; text-align: center; padding: 20px; }
-video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
-#status { font-weight: bold; margin-top: 10px; }
-#scannedList { margin-top: 20px; list-style: none; padding: 0; }
-#scannedList li { padding: 5px; border-bottom: 1px solid #ccc; }
-</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Camera</title>
 </head>
-<body>
+<body style="text-align:center; font-family:sans-serif;">
 
-<h2>Close-Range QR & Barcode Scanner</h2>
-<video id="video" autoplay playsinline></video>
-<p id="status">Waiting for scan...</p>
-<h3>Scanned Data</h3>
-<ul id="scannedList"></ul>
+<h2>Open Phone Camera</h2>
+
+<!-- Hidden file input -->
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+
+<!-- Button to trigger camera -->
+<button onclick="document.getElementById('cameraInput').click()" 
+        style="padding:15px 25px; font-size:18px;">
+  Open Camera
+</button>
 
 <script>
-// 🔹 Firebase setup
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// 🔹 Video element
-const video = document.getElementById("video");
-
-// 🔹 Check BarcodeDetector support
-if (!('BarcodeDetector' in window)) {
-    alert("Your browser does not support BarcodeDetector API. Use Chrome or Edge on mobile.");
-}
-
-// 🔹 Start camera (rear)
-navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
-.then(stream => {
-    video.srcObject = stream;
-
-    const track = stream.getVideoTracks()[0];
-    const capabilities = track.getCapabilities();
-
-    // Optional: reset digital zoom to normal
-    if (capabilities.zoom) {
-        track.applyConstraints({ advanced: [{ zoom: 1 }] });
+  document.getElementById('cameraInput').addEventListener('change', function(event) {
+    if (event.target.files.length > 0) {
+      const file = event.target.files[0];
+      alert("You captured: " + file.name);
+      // You can also display the image:
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.maxWidth = "100%";
+      document.body.appendChild(img);
     }
-
-    const barcodeDetector = new BarcodeDetector({
-        formats: ['qr_code','code_128','ean_13','ean_8','upc_a','upc_e']
-    });
-
-    const scanLoop = () => {
-        barcodeDetector.detect(video).then(barcodes => {
-            barcodes.forEach(barcode => {
-                const text = barcode.rawValue;
-                if (text && !document.getElementById(text)) {
-                    document.getElementById("status").innerText = `Scanned: ${text}`;
-
-                    // Save to Firebase
-                    db.collection("scanned_codes").add({
-                        code: text,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-
-                    // Add to local list
-                    const li = document.createElement("li");
-                    li.id = text;
-                    li.textContent = text;
-                    document.getElementById("scannedList").appendChild(li);
-                }
-            });
-            requestAnimationFrame(scanLoop);
-        }).catch(err => console.error("Detection error:", err));
-    };
-
-    requestAnimationFrame(scanLoop);
-
-})
-.catch(err => {
-    console.error("Camera access error:", err);
-    alert("Cannot access camera. Allow permissions and use HTTPS.");
-});
+  });
 </script>
 
 </body>
