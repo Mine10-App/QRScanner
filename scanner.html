@@ -2,8 +2,8 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scan QR / Barcode via Photo</title>
-  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
+  <title>Scan QR/Barcode via Photo</title>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body style="text-align:center; font-family:sans-serif;">
 
@@ -26,6 +26,8 @@ const input = document.getElementById('cameraInput');
 const canvas = document.getElementById('canvas');
 const resultElement = document.getElementById('result');
 
+const codeReader = new ZXing.BrowserBarcodeReader(); // ZXing can read QR + barcodes
+
 input.addEventListener('change', async (event) => {
   if (event.target.files.length === 0) return;
 
@@ -33,22 +35,20 @@ input.addEventListener('change', async (event) => {
   const img = new Image();
   img.src = URL.createObjectURL(file);
 
-  img.onload = () => {
-    // Draw the image to a canvas
+  img.onload = async () => {
+    // Draw image to canvas
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
 
-    // Get image data for QR code reading
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    // Scan QR code
-    const code = jsQR(imageData.data, imageData.width, imageData.height);
-    if (code) {
-      resultElement.textContent = "Scanned: " + code.data;
-    } else {
-      resultElement.textContent = "No QR/Barcode found. Try again!";
+    try {
+      // ZXing can decode from canvas
+      const result = await codeReader.decodeFromImage(canvas);
+      resultElement.textContent = "Scanned: " + result.text;
+    } catch (err) {
+      console.log(err);
+      resultElement.textContent = "No QR or Barcode found. Try again!";
     }
   };
 });
