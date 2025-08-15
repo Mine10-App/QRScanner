@@ -2,32 +2,40 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Open Camera</title>
+  <title>QR & Barcode Scanner</title>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body style="text-align:center; font-family:sans-serif;">
 
-<h2>Open Phone Camera</h2>
-
-<!-- Hidden file input -->
-<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
-
-<!-- Button to trigger camera -->
-<button onclick="document.getElementById('cameraInput').click()" 
-        style="padding:15px 25px; font-size:18px;">
-  Open Camera
-</button>
+<h2>Scan QR / Barcode</h2>
+<button id="startScan" style="padding:15px 25px; font-size:18px;">Open Camera to Scan</button>
+<br><br>
+<video id="video" width="300" height="200" style="border:1px solid #ccc;"></video>
+<p id="result" style="font-size:18px; color:green;"></p>
 
 <script>
-  document.getElementById('cameraInput').addEventListener('change', function(event) {
-    if (event.target.files.length > 0) {
-      const file = event.target.files[0];
-      alert("You captured: " + file.name);
-      // You can also display the image:
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      img.style.maxWidth = "100%";
-      document.body.appendChild(img);
-    }
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+  const videoElement = document.getElementById('video');
+  const resultElement = document.getElementById('result');
+  const startButton = document.getElementById('startScan');
+
+  startButton.addEventListener('click', () => {
+    codeReader
+      .listVideoInputDevices()
+      .then(videoInputDevices => {
+        const backCamera = videoInputDevices.find(device => /back|rear|environment/gi.test(device.label)) 
+                           || videoInputDevices[0];
+
+        codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+          if (result) {
+            resultElement.textContent = "Scanned: " + result.text;
+          }
+          if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error(err);
+          }
+        });
+      })
+      .catch(err => console.error(err));
   });
 </script>
 
