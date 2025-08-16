@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR & Barcode Scanner</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+    h1 { margin-bottom: 20px; }
+    #reader { width: 100%; max-width: 400px; margin: auto; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; padding: 5px; background: #eee; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>QR & Barcode Scanner</h1>
+  <div id="reader"></div>
+  <ul id="scannedData"></ul>
+
+  <script>
+    // ======= FIREBASE CONFIG =======
+    const firebaseConfig = {
+  apiKey: "AIzaSyAAiy2DWGmlzikRKc5BQlMtJ9NIIFPC9NI",
+  authDomain: "scann-1cb70.firebaseapp.com",
+  projectId: "scann-1cb70",
+  storageBucket: "scann-1cb70.firebasestorage.app",
+  messagingSenderId: "7131275797",
+  appId: "1:7131275797:web:f549210725e6257276241c",
+  measurementId: "G-BKGR6VVSNJ"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ======= SCANNER =======
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log("Scanned: " + decodedText);
+
+      // Save to Firebase
+      db.collection("scans").add({
+        value: decodedText,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => console.log("Saved to Firebase"));
+
+      // Show on page
+      const ul = document.getElementById("scannedData");
+      const li = document.createElement("li");
+      li.textContent = decodedText;
+      ul.prepend(li); // newest on top
+    }
+
+    function onScanFailure(error) {
+      // optional: console.warn(`Scan error: ${error}`);
+    }
+
+    let html5QrcodeScanner = new Html5Qrcode("reader");
+    html5QrcodeScanner.start(
+      { facingMode: "environment" }, 
+      { fps: 10, qrbox: 250 }, 
+      onScanSuccess, 
+      onScanFailure
+    );
+
+    // ======= SERVICE WORKER =======
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log("Service Worker Registered"));
+    }
+  </script>
+</body>
+</html>
