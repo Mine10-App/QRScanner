@@ -1,70 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Token Controller</title>
-<style>
-    body { font-family: Arial; text-align: center; padding: 20px; }
-    button { padding: 15px 25px; margin: 5px; font-size: 18px; }
-    input { font-size: 18px; padding: 10px; width: 100px; text-align: center; }
-</style>
+  <meta charset="UTF-8">
+  <title>QR & Barcode Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    button { padding: 12px; margin: 10px; font-size: 16px; border-radius: 8px; }
+    #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+    .deleteBtn { background: red; color: white; border: none; padding: 5px 10px; border-radius: 5px; }
+  </style>
 </head>
 <body>
+  <h2>📷 QR & Barcode Scanner</h2>
+  <button onclick="scanCode()">Scan Now</button>
+  <button onclick="loadData()">Refresh List</button>
+  
+  <div id="result">Scan a code to begin...</div>
+  <h3>Scanned Data</h3>
+  <ul id="dataList"></ul>
 
-<h1>Token Controller</h1>
-<p>Current Token: <span id="token">0</span></p>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-<button onclick="changeToken(-1)">Prev</button>
-<button onclick="changeToken(1)">Next</button>
-<br>
-<input type="number" id="setValue" placeholder="Token #">
-<button onclick="setToken()">Set</button>
-<button onclick="resetToken()">Reset</button>
+  <script>
+    // 🔹 Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-const firebaseConfig = {
-  apiKey: "AIzaSyC9FuNjWn8Up4JyjYbABEF2aNjO2bSXdfM",
-  authDomain: "qr-scanner-4458e.firebaseapp.com",
-  databaseURL: "https://qr-scanner-4458e-default-rtdb.firebaseio.com/",
-  projectId: "qr-scanner-4458e",
-  storageBucket: "qr-scanner-4458e.firebasestorage.app",
-  messagingSenderId: "1099262112748",
-  appId: "1:1099262112748:web:a18f206bcf893c894546c9",
-  measurementId: "G-15WXNEPKS9"
-};
+    // 🔹 Scan QR / Barcode
+    function scanCode() {
+      cordova.plugins.barcodeScanner.scan(
+        async function (result) {
+          if (!result.cancelled) {
+            document.getElementById("result").innerText = "Scanned: " + result.text;
+            
+            // Save to Firebase
+            await db.collection("scans").add({
+              text: result.text,
+              format: result.format,
+              time: new Date().toISOString()
+            });
+            loadData();
+          }
+        },
+        function (error) {
+          alert("Scanning failed: " + error);
+        },
+        {
+          preferFrontCamera: false,
+          showFlipCameraButton: true,
+          showTorchButton: true,
+          prompt: "Place a QR/Barcode inside the scan area",
+          formats: "QR_CODE,PDF_417,CODE_39,CODE_128,EAN_13,EAN_8,UPC_A,UPC_E",
+          orientation: "portrait"
+        }
+      );
+    }
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const tokenRef = ref(db, "tokenNumber");
+    // 🔹 Load Data from Firebase
+    async function loadData() {
+      const snapshot = await db.collection("scans").orderBy("time", "desc").get();
+      const list = document.getElementById("dataList");
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span>${data.text} <small>(${data.format})</small></span>
+          <button class="deleteBtn" onclick="deleteData('${doc.id}')">Delete</button>
+        `;
+        list.appendChild(li);
+      });
+    }
 
-// Show token live
-onValue(tokenRef, (snapshot) => {
-  document.getElementById("token").textContent = snapshot.val();
-});
+    // 🔹 Delete a record
+    async function deleteData(id) {
+      await db.collection("scans").doc(id).delete();
+      loadData();
+    }
 
-// Functions
-function changeToken(amount) {
-  get(tokenRef).then((snapshot) => {
-    let current = snapshot.exists() ? snapshot.val() : 0;
-    set(tokenRef, current + amount);
-  });
-}
-
-function setToken() {
-  let value = parseInt(document.getElementById("setValue").value);
-  if (!isNaN(value)) set(tokenRef, value);
-}
-
-function resetToken() {
-  set(tokenRef, 0);
-}
-
-window.changeToken = changeToken;
-window.setToken = setToken;
-window.resetToken = resetToken;
-</script>
+    // Load on start
+    document.addEventListener("deviceready", loadData, false);
+  </script>
 </body>
 </html>
