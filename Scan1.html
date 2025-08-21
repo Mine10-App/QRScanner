@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Scanner Live</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<style>
+  body { font-family: Arial; text-align: center; padding: 20px; }
+  #reader { width: 300px; margin: 20px auto; }
+  button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+  ul { list-style: none; padding: 0; max-width: 400px; margin: 20px auto; text-align: left; }
+  li { background: #f0f0f0; margin: 5px 0; padding: 10px; border-radius: 5px; }
+</style>
+</head>
+<body>
+
+<h2>QR Scanner</h2>
+<div id="reader"></div>
+<button id="start-btn">Start Scanning</button>
+
+<h3>Live Scans</h3>
+<ul id="scan-list"></ul>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
+    authDomain: "qr-scanner-live-5b385.firebaseapp.com",
+    projectId: "qr-scanner-live-5b385",
+    storageBucket: "qr-scanner-live-5b385.firebasestorage.app",
+    messagingSenderId: "260207453177",
+    appId: "1:260207453177:web:ea438ade7b1b56270e1328",
+    measurementId: "G-WQEEHEPWG3"
+  };
+
+  // Initialize Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const scanList = document.getElementById("scan-list");
+  const html5QrCode = new Html5Qrcode("reader");
+
+  document.getElementById("start-btn").addEventListener("click", () => {
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      qrCodeMessage => {
+        console.log("QR Code detected:", qrCodeMessage);
+
+        // Save to Firebase
+        db.collection("scans").add({
+          code: qrCodeMessage,
+          date: new Date().toISOString()
+        }).then(() => {
+          console.log("Saved to Firebase:", qrCodeMessage);
+        }).catch(err => console.error("Error saving:", err));
+      },
+      errorMessage => {
+        // ignore scan errors
+      }
+    ).catch(err => console.error(err));
+  });
+
+  // Real-time listener
+  db.collection("scans").orderBy("date", "desc")
+    .onSnapshot(snapshot => {
+      scanList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.textContent = `${data.code} — ${new Date(data.date).toLocaleString()}`;
+        scanList.appendChild(li);
+      });
+    });
+</script>
+
+</body>
+</html>
