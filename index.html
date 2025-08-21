@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QR & Barcode Scanner</title>
-  <link rel="manifest" href="manifest.json">
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -24,13 +23,13 @@
   <script>
     // ======= FIREBASE CONFIG =======
     const firebaseConfig = {
-      apiKey: "AIzaSyAAiy2DWGmlzikRKc5BQlMtJ9NIIFPC9NI",
-      authDomain: "scann-1cb70.firebaseapp.com",
-      projectId: "scann-1cb70",
-      storageBucket: "scann-1cb70.firebasestorage.app",
-      messagingSenderId: "7131275797",
-      appId: "1:7131275797:web:f549210725e6257276241c",
-      measurementId: "G-BKGR6VVSNJ"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -40,40 +39,31 @@
     function onScanSuccess(decodedText, decodedResult) {
       console.log("Scanned: " + decodedText);
 
-      // Get current date & time in readable format
-      const currentDateTime = new Date().toLocaleString(); 
+      const currentDateTime = new Date().toLocaleString();
 
-      // Save to Firebase
       db.collection("scans").add({
         value: decodedText,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Firestore timestamp
-        date: currentDateTime // human-readable date & time
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        date: currentDateTime
       }).then(() => console.log("Saved to Firebase"));
 
-      // Show on page
       const ul = document.getElementById("scannedData");
       const li = document.createElement("li");
       li.textContent = decodedText + " (" + currentDateTime + ")";
-      ul.prepend(li); // newest on top
+      ul.prepend(li);
     }
 
     function onScanFailure(error) {
-      // optional: console.warn(`Scan error: ${error}`);
+      // optional: handle scan error
     }
 
     let html5QrcodeScanner = new Html5Qrcode("reader");
     html5QrcodeScanner.start(
-      { facingMode: "environment" }, 
-      { fps: 10, qrbox: 250 }, 
-      onScanSuccess, 
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess,
       onScanFailure
     );
-
-    // ======= SERVICE WORKER =======
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log("Service Worker Registered"));
-    }
   </script>
 </body>
 </html>
