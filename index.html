@@ -24,14 +24,14 @@
   <script>
     // ======= FIREBASE CONFIG =======
     const firebaseConfig = {
-  apiKey: "AIzaSyAAiy2DWGmlzikRKc5BQlMtJ9NIIFPC9NI",
-  authDomain: "scann-1cb70.firebaseapp.com",
-  projectId: "scann-1cb70",
-  storageBucket: "scann-1cb70.firebasestorage.app",
-  messagingSenderId: "7131275797",
-  appId: "1:7131275797:web:f549210725e6257276241c",
-  measurementId: "G-BKGR6VVSNJ"
-};
+      apiKey: "AIzaSyAAiy2DWGmlzikRKc5BQlMtJ9NIIFPC9NI",
+      authDomain: "scann-1cb70.firebaseapp.com",
+      projectId: "scann-1cb70",
+      storageBucket: "scann-1cb70.firebasestorage.app",
+      messagingSenderId: "7131275797",
+      appId: "1:7131275797:web:f549210725e6257276241c",
+      measurementId: "G-BKGR6VVSNJ"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -40,16 +40,20 @@
     function onScanSuccess(decodedText, decodedResult) {
       console.log("Scanned: " + decodedText);
 
+      // Get current date & time in readable format
+      const currentDateTime = new Date().toLocaleString(); 
+
       // Save to Firebase
       db.collection("scans").add({
         value: decodedText,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Firestore timestamp
+        date: currentDateTime // human-readable date & time
       }).then(() => console.log("Saved to Firebase"));
 
       // Show on page
       const ul = document.getElementById("scannedData");
       const li = document.createElement("li");
-      li.textContent = decodedText;
+      li.textContent = decodedText + " (" + currentDateTime + ")";
       ul.prepend(li); // newest on top
     }
 
