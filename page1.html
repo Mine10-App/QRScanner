@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Scans</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+    h1 { margin-bottom: 20px; }
+    ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
+    li { margin: 5px 0; padding: 10px; background: #f1f1f1; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>📡 Live QR & Barcode Scans</h1>
+  <ul id="scanList"></ul>
+
+  <script>
+    // ======= FIREBASE CONFIG (same as scanner page) =======
+    const firebaseConfig = {
+      apiKey: "AIzaSyAAiy2DWGmlzikRKc5BQlMtJ9NIIFPC9NI",
+      authDomain: "scann-1cb70.firebaseapp.com",
+      projectId: "scann-1cb70",
+      storageBucket: "scann-1cb70.firebasestorage.app",
+      messagingSenderId: "7131275797",
+      appId: "1:7131275797:web:f549210725e6257276241c",
+      measurementId: "G-BKGR6VVSNJ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ======= LISTEN TO FIRESTORE CHANGES =======
+    const scanList = document.getElementById("scanList");
+
+    db.collection("scans")
+      .orderBy("timestamp", "desc")  // newest first
+      .onSnapshot(snapshot => {
+        scanList.innerHTML = ""; // clear list
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const li = document.createElement("li");
+          li.textContent = `${data.value} — ${data.date}`;
+          scanList.appendChild(li);
+        });
+      });
+  </script>
+</body>
+</html>
