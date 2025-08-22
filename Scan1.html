@@ -42,7 +42,8 @@
       // ✅ Save consistently to Firestore
       db.collection("scans").add({
         code: decodedText,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        copied: false
       }).then(() => console.log("Saved to Firebase"));
 
       // Show locally on page
@@ -66,3 +67,4 @@
   </script>
 </body>
 </html>
+
