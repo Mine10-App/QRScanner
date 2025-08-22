@@ -8,32 +8,45 @@
   <style>
     body { font-family: Arial; padding: 20px; }
     h2 { text-align: center; }
-    ul { list-style: none; padding: 0; max-width: 600px; margin: auto; }
-    li {
-      display: flex;
-      justify-content: space-between;
+    #scan-list { 
+      display: grid;
+      grid-template-columns: 2fr 2fr 1fr 1fr; /* code | timestamp | copy | delete */
+      gap: 10px;
       align-items: center;
-      background: #f0f0f0;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 5px;
+      max-width: 800px;
+      margin: auto;
     }
-    .btn {
+    .scan-item {
+      display: contents; /* make grid cells span the parent grid */
+    }
+    .cell {
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      overflow-wrap: break-word;
+    }
+    button {
       padding: 5px 10px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      margin-left: 5px;
     }
-    .copy-btn { background: #007bff; color: white; }
+    .copy-btn { background: #007bff; color: white; width: 100%; }
     .copy-btn.copied { background: #28a745; }
-    .delete-btn { background: #dc3545; color: white; }
+    .delete-btn { background: #dc3545; color: white; width: 100%; }
+    /* Header row styling */
+    .header { font-weight: bold; background: #ccc; }
   </style>
 </head>
 <body>
 
-<h2>Live Scans</h2>
-<ul id="scan-list"></ul>
+<h2>Live Scan</h2>
+<div id="scan-list">
+  <div class="cell header">Code</div>
+  <div class="cell header">Timestamp</div>
+  <div class="cell header">Copy</div>
+  <div class="cell header">Delete</div>
+</div>
 
 <script>
   const firebaseConfig = {
@@ -52,59 +65,71 @@
 
   db.collection("scans").orderBy("timestamp", "desc")
     .onSnapshot(snapshot => {
-      scanList.innerHTML = "";
+      // Remove old scan rows (keep header)
+      scanList.querySelectorAll(".scan-item").forEach(el => el.remove());
+
       snapshot.forEach(doc => {
         const data = doc.data();
         if (!data || !data.code) return;
 
-        const li = document.createElement("li");
-
-        const textSpan = document.createElement("span");
-        textSpan.textContent = data.code;
-
+        const code = data.code;
         const ts = data.timestamp?.toDate().toLocaleString() || "";
 
-        // Copy Button
+        // Create row cells
+        const row = document.createElement("div");
+        row.classList.add("scan-item");
+
+        // Code cell
+        const codeCell = document.createElement("div");
+        codeCell.classList.add("cell");
+        codeCell.textContent = code;
+
+        // Timestamp cell
+        const tsCell = document.createElement("div");
+        tsCell.classList.add("cell");
+        tsCell.textContent = ts;
+
+        // Copy button
+        const copyCell = document.createElement("div");
+        copyCell.classList.add("cell");
         const copyBtn = document.createElement("button");
-        copyBtn.classList.add("btn", "copy-btn");
-        if (data.copied) {
-          copyBtn.textContent = "Copied!";
-          copyBtn.classList.add("copied");
-        } else {
-          copyBtn.textContent = "Copy";
-        }
+        copyBtn.classList.add("copy-btn");
+        copyBtn.textContent = data.copied ? "Copied!" : "Copy";
+        if (data.copied) copyBtn.classList.add("copied");
 
         copyBtn.addEventListener("click", async () => {
           try {
-            await navigator.clipboard.writeText(data.code);
+            await navigator.clipboard.writeText(code);
             await db.collection("scans").doc(doc.id).update({ copied: true });
             copyBtn.textContent = "Copied!";
             copyBtn.classList.add("copied");
           } catch (err) {
-            console.error("Copy failed:", err);
+            console.error(err);
           }
         });
+        copyCell.appendChild(copyBtn);
 
-        // Delete Button
+        // Delete button
+        const deleteCell = document.createElement("div");
+        deleteCell.classList.add("cell");
         const deleteBtn = document.createElement("button");
+        deleteBtn.classList.add("delete-btn");
         deleteBtn.textContent = "Delete";
-        deleteBtn.classList.add("btn", "delete-btn");
 
         deleteBtn.addEventListener("click", async () => {
-          if (confirm(`Delete scan "${data.code}"?`)) {
-            try {
-              await db.collection("scans").doc(doc.id).delete();
-            } catch (err) {
-              console.error("Delete failed:", err);
-            }
+          if (confirm(`Delete scan "${code}"?`)) {
+            await db.collection("scans").doc(doc.id).delete();
           }
         });
+        deleteCell.appendChild(deleteBtn);
 
-        li.appendChild(textSpan);
-        li.append(" — " + ts);
-        li.appendChild(copyBtn);
-        li.appendChild(deleteBtn);
-        scanList.appendChild(li);
+        // Append all cells to the grid
+        row.appendChild(codeCell);
+        row.appendChild(tsCell);
+        row.appendChild(copyCell);
+        row.appendChild(deleteCell);
+
+        scanList.appendChild(row);
       });
     });
 </script>
