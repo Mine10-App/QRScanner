@@ -33,7 +33,7 @@
 </head>
 <body>
 
-<h2>Live Scan</h2>
+<h2>Live Scans</h2>
 <ul id="scan-list"></ul>
 
 <script>
@@ -51,34 +51,43 @@
   const db = firebase.firestore();
   const scanList = document.getElementById("scan-list");
 
-  // ✅ Real-time listener (ordered by serverTimestamp)
+  // Listen live to scans
   db.collection("scans").orderBy("timestamp", "desc")
     .onSnapshot(snapshot => {
       scanList.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
-        if (!data || !data.code) return; // skip bad docs
+        if (!data || !data.code) return;
 
         const li = document.createElement("li");
 
         const textSpan = document.createElement("span");
-        textSpan.textContent = data.code; // ✅ only code shown
+        textSpan.textContent = data.code;
 
         const ts = data.timestamp?.toDate().toLocaleString() || "";
 
+        // Copy button
         const copyBtn = document.createElement("button");
-        copyBtn.textContent = "Copy";
         copyBtn.classList.add("copy-btn");
+
+        // ✅ Set initial copied state from Firebase
+        if (data.copied) {
+          copyBtn.textContent = "Copied!";
+          copyBtn.classList.add("copied");
+        } else {
+          copyBtn.textContent = "Copy";
+        }
 
         copyBtn.addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(data.code);
+
+            // Update Firebase copied status
+            await db.collection("scans").doc(doc.id).update({ copied: true });
+
+            // Update button immediately
             copyBtn.textContent = "Copied!";
             copyBtn.classList.add("copied");
-            setTimeout(() => {
-              copyBtn.textContent = "Copy";
-              copyBtn.classList.remove("copied");
-            }, 2000);
           } catch (err) {
             console.error("Copy failed:", err);
           }
@@ -94,4 +103,3 @@
 
 </body>
 </html>
-
