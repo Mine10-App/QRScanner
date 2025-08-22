@@ -1,37 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live QR Codes</title>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<style>
-  body { font-family: Arial; padding: 20px; text-align: center; }
-  h2 { margin-bottom: 20px; }
-  ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
-  li { display: flex; justify-content: space-between; align-items: center;
-       background: #f0f0f0; margin: 5px 0; padding: 10px; border-radius: 5px; }
-  button.copy-btn {
-    padding: 5px 10px;
-    border: none;
-    background: #007bff;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  button.copy-btn.copied {
-    background: #28a745; /* green when copied */
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Live QR Code Display</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    h2 { text-align: center; }
+    ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f0f0f0;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    button.copy-btn {
+      padding: 5px 10px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button.copy-btn.copied {
+      background: #28a745; /* green when copied */
+    }
+  </style>
 </head>
 <body>
 
-<h2>Live QR Code Scans</h2>
+<h2>Live Scans</h2>
 <ul id="scan-list"></ul>
 
 <script>
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
     authDomain: "qr-scanner-live-5b385.firebaseapp.com",
@@ -46,13 +51,12 @@
   const db = firebase.firestore();
   const scanList = document.getElementById("scan-list");
 
-  // Get today's date (YYYY-MM-DD)
+  // helper: today's date (YYYY-MM-DD)
   function getTodayDateStr() {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
+    return new Date().toISOString().split("T")[0];
   }
 
-  // Auto-delete old scans not from today
+  // delete scans not from today
   async function cleanOldScans() {
     const snapshot = await db.collection("scans").get();
     const today = getTodayDateStr();
@@ -64,22 +68,23 @@
       }
     });
   }
-
-  // Run cleaner once at load
   cleanOldScans();
 
-  // Live listener
+  // Real-time listener
   db.collection("scans").orderBy("date", "desc")
     .onSnapshot(snapshot => {
       scanList.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
+        if (!data || !data.code) return;
+
         const scanDate = new Date(data.date).toISOString().split("T")[0];
-        if (scanDate !== getTodayDateStr()) return; // skip old data
+        if (scanDate !== getTodayDateStr()) return; // skip old entries
 
         const li = document.createElement("li");
+
         const textSpan = document.createElement("span");
-        textSpan.textContent = data.code; // show only the code
+        textSpan.textContent = data.code; // only code shown
 
         const copyBtn = document.createElement("button");
         copyBtn.textContent = "Copy";
