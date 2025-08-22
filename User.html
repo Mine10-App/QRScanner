@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Leave Form - Full Fields</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f6fa;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .container {
+    display: flex;
+    gap: 40px;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  form {
+    background: #fff;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    width: 45%;
+  }
+
+  .form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .form-row label {
+    width: 120px;
+    font-weight: bold;
+    margin-right: 10px;
+  }
+
+  .form-row input[type="text"],
+  .form-row input[type="date"],
+  .form-row input[type="time"],
+  .form-row select {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+  }
+
+  .form-row input:focus,
+  .form-row select:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+
+  input[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  input[type="submit"]:hover {
+    background: #0056b3;
+  }
+
+  .entry-list {
+    width: 55%;
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .entry-list h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .entry-header, .entry-row {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+  }
+
+  .entry-header div {
+    font-weight: bold;
+    flex: 1;
+    text-align: center;
+    border-bottom: 2px solid #007bff;
+  }
+
+  .entry-row div {
+    flex: 1;
+    text-align: center;
+    background: #f1f1f1;
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <form id="leaveForm" action="send.php" method="post">
+    <div class="form-row">
+      <label for="myDate">Date:</label>
+      <input type="date" id="myDate" name="date">
+    </div>
+
+    <div class="form-row">
+      <label for="StaffName">Staff Name:</label>
+      <select id="StaffName" name="staffname" onchange="showCode()">
+        <option value="">--Choose--</option>
+        <option value="979">Abdulla Irufan</option>
+        <option value="623">Mohamed Ibrahim</option>
+        <option value="1081">Fiyaza Abdulla</option>
+        <option value="4">Maldives</option>
+        <option value="5">India</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="RcNo">RCNo:</label>
+      <input type="text" id="RcNo" name="rcno" readonly>
+    </div>
+
+    <div class="form-row">
+      <label for="LType">Leave Type:</label>
+      <select id="LType" name="leavetype">
+        <option value="">--Choose--</option>
+        <option value="Sick Leave">Sick Leave</option>
+        <option value="FRL">FRL</option>
+        <option value="Absent">Absent</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="Reason">Reason:</label>
+      <select id="Reason" name="reason">
+        <option value="">--Choose--</option>
+        <option value="Fever">Fever</option>
+        <option value="Body Pain">Body Pain</option>
+        <option value="Headache">Headache</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="DutyTime">Duty Time:</label>
+      <input type="time" id="DutyTime" name="dutytime">
+    </div>
+
+    <input type="submit" value="Send & Add Entry">
+  </form>
+
+  <div class="entry-list">
+    <h2>Submitted Entries</h2>
+    <div class="entry-header">
+      <div>Date</div>
+      <div>Name</div>
+      <div>Leave Type</div>
+      <div>Duty Time</div>
+    </div>
+    <div id="entries"></div>
+  </div>
+</div>
+
+<script>
+  function showCode(){
+    const selectBox = document.getElementById("StaffName");
+    const rcInput = document.getElementById("RcNo");
+    if(selectBox.value){
+      rcInput.value = selectBox.value;
+    } else {
+      rcInput.value = "";
+    }
+  }
+
+  const form = document.getElementById("leaveForm");
+const entriesDiv = document.getElementById("entries");
+
+form.addEventListener("submit", function(e){
+    const date = document.getElementById("myDate").value;
+    const staffSelect = document.getElementById("StaffName");
+    const staff = staffSelect.value ? staffSelect.selectedOptions[0].text : "";
+    const rcNo = document.getElementById("RcNo").value;
+    const leave = document.getElementById("LType").value;
+    const reason = document.getElementById("Reason").value;
+    const duty = document.getElementById("DutyTime").value;
+
+    // Validation
+    if(!date || !staff || !rcNo || !leave || !reason || !duty){
+        alert("Please fill all fields");
+        e.preventDefault(); // stop submission only if fields are empty
+        return;
+    }
+
+    // Add entry to list
+    const row = document.createElement("div");
+    row.className = "entry-row";
+    row.innerHTML = `
+        <div>${date}</div>
+        <div>${staff}</div>
+        <div>${leave}</div>
+        <div>${duty}</div>
+    `;
+    entriesDiv.prepend(row);
+
+    // Let the form submit normally to send.php
+});
+</script>
+
+</body>
+</html>
