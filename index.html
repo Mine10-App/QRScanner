@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Continuous QR Scanner with Save Button</title>
+  <title>Continuous QR Scanner with Firebase Match</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -41,8 +41,17 @@
   const messageDiv = document.getElementById("message");
   const saveBtn = document.getElementById("saveBtn");
 
-  const scannedCodes = new Set(); // for match detection
   let currentCode = ""; // currently detected barcode
+  const existingCodes = new Set(); // all codes saved in Firebase
+
+  // Load all previously saved codes from Firebase
+  db.collection("scans").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.code) existingCodes.add(data.code);
+    });
+    console.log("Loaded existing codes:", existingCodes.size);
+  });
 
   function showMessage(text) {
     messageDiv.textContent = text;
@@ -51,8 +60,8 @@
 
   function saveCurrentCode() {
     if (!currentCode) return;
-    if (!scannedCodes.has(currentCode)) {
-      scannedCodes.add(currentCode);
+    if (!existingCodes.has(currentCode)) {
+      existingCodes.add(currentCode);
       db.collection("scans").add({
         code: currentCode,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -64,13 +73,13 @@
       saveBtn.disabled = true;
       currentCode = "";
     } else {
-      showMessage("Cannot save. Code already saved.");
+      showMessage("Cannot save. Code already exists in Firebase.");
     }
   }
 
   saveBtn.addEventListener("click", saveCurrentCode);
 
-  // ===== Live camera scanning =====
+  // ===== Continuous camera scanning =====
   async function startScanner() {
     const cameras = await Html5Qrcode.getCameras();
     if (!cameras || !cameras.length) {
@@ -78,7 +87,7 @@
       return;
     }
 
-    // Choose rear wide camera
+    // Pick rear wide camera
     let cameraId = cameras[0].id;
     for (const cam of cameras) {
       const label = cam.label.toLowerCase();
@@ -95,8 +104,7 @@
       { fps: 10, qrbox: 250 },
       decodedText => {
         currentCode = decodedText;
-        // Show match if code already scanned
-        if (scannedCodes.has(decodedText)) {
+        if (existingCodes.has(decodedText)) {
           showMessage("Match: " + decodedText);
           saveBtn.disabled = true;
         } else {
