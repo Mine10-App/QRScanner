@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Universal QR Scanner</title>
+  <title>QR & Barcode Scanner</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -12,11 +12,13 @@
     #reader { width: 100%; max-width: 400px; margin: auto; }
     ul { list-style: none; padding: 0; max-width: 500px; margin: 20px auto 0; }
     li { margin: 5px 0; padding: 8px; background: #eee; border-radius: 5px; word-break: break-word; }
+    #message { margin-top: 15px; font-weight: bold; color: red; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h1>QR & Barcode Scanner1</h1>
+  <h1>QR & Barcode Scanner</h1>
   <div id="reader"></div>
+  <div id="message"></div>
   <ul id="scannedData"></ul>
 
 <script>
@@ -34,10 +36,19 @@
   const db = firebase.firestore();
 
   const scannedDataList = document.getElementById("scannedData");
+  const messageDiv = document.getElementById("message");
   const scannedCodes = new Set();
 
+  function showMessage(text) {
+    messageDiv.textContent = text;
+    setTimeout(() => { messageDiv.textContent = ""; }, 2000); // clear after 2s
+  }
+
   function saveScan(code) {
-    if (scannedCodes.has(code)) return;
+    if (scannedCodes.has(code)) {
+      showMessage("Match: " + code);
+      return;
+    }
     scannedCodes.add(code);
 
     db.collection("scans").add({
@@ -52,39 +63,35 @@
   }
 
   // ===== Live camera scanning =====
- Html5Qrcode.getCameras().then(cameras => {
-  if (cameras && cameras.length) {
-    // Try to find rear camera
-    let cameraId = cameras[0].id; // default fallback
-    for (const cam of cameras) {
-      const label = cam.label.toLowerCase();
-      if (label.includes("back") || label.includes("rear") || label.includes("environment")) {
-        cameraId = cam.id;
-        break;
+  Html5Qrcode.getCameras().then(cameras => {
+    if (cameras && cameras.length) {
+      // Try to select rear camera
+      let cameraId = cameras[0].id;
+      for (const cam of cameras) {
+        const label = cam.label.toLowerCase();
+        if (label.includes("back") || label.includes("rear") || label.includes("environment")) {
+          cameraId = cam.id;
+          break;
+        }
       }
+
+      const html5QrcodeScanner = new Html5Qrcode("reader");
+      html5QrcodeScanner.start(
+        cameraId,
+        { fps: 10, qrbox: 250 },
+        decodedText => saveScan(decodedText),
+        errorMessage => {}
+      ).catch(err => {
+        console.error("Camera start failed:", err);
+        alert("Camera not accessible. Please check permissions.");
+      });
+    } else {
+      alert("No camera found on this device.");
     }
-
-    const html5QrcodeScanner = new Html5Qrcode("reader");
-    html5QrcodeScanner.start(
-      cameraId,
-      { fps: 10, qrbox: 250 },
-      decodedText => saveScan(decodedText),
-      errorMessage => {}
-    ).catch(err => {
-      console.error("Camera start failed:", err);
-      alert("Camera not accessible. Please check permissions.");
-    });
-
-  } else {
-    alert("No camera found on this device.");
-  }
-}).catch(err => {
-  console.error("Camera check failed:", err);
-  alert("Cannot access camera.");
-});
-
+  }).catch(err => {
+    console.error("Camera check failed:", err);
+    alert("Cannot access camera.");
+  });
 </script>
 </body>
 </html>
-
-
