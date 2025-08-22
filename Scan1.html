@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hybrid QR Scanner</title>
+  <title>Hybrid QR & Barcode Scanner</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
     #reader { width: 100%; max-width: 400px; margin: auto; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; padding: 5px; background: #eee; border-radius: 4px; }
+    ul { list-style: none; padding: 0; max-width: 500px; margin: 20px auto 0; }
+    li { margin: 5px 0; padding: 5px; background: #eee; border-radius: 4px; word-break: break-all; }
     input[type="file"] { display: none; }
-    button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    button { margin: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -24,7 +24,7 @@
   <ul id="scannedData"></ul>
 
 <script>
-  // ======= FIREBASE CONFIG =======
+  // ===== FIREBASE CONFIG =====
   const firebaseConfig = {
     apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
     authDomain: "qr-scanner-live-5b385.firebaseapp.com",
@@ -39,6 +39,7 @@
 
   const scannedDataList = document.getElementById("scannedData");
 
+  // ===== Save Scan to Firebase + Show on Page =====
   function saveScan(code) {
     db.collection("scans").add({
       code,
@@ -50,43 +51,58 @@
     scannedDataList.prepend(li);
   }
 
-  // ======= Use BarcodeDetector API if supported =======
+  // ===== Open Huawei native scanner via Intent =====
+  function openHuaweiScanner() {
+    // Replace package with correct Huawei scanner package if different
+    window.location.href = "intent://scan#Intent;package=com.huawei.scanner;end";
+  }
+
+  // ===== Hybrid Scan Logic =====
   if ('BarcodeDetector' in window) {
+    // BarcodeDetector API supported → Web camera scan
     console.log("Using BarcodeDetector API");
 
     let html5QrcodeScanner = new Html5Qrcode("reader");
+
     html5QrcodeScanner.start(
-      { facingMode: { exact: "environment" } },
+      { facingMode: "environment" }, // try back camera
       { 
         fps: 10, 
         qrbox: 300,
         experimentalFeatures: { useBarCodeDetectorIfSupported: true },
         videoConstraints: { width: { ideal: 1280 }, height: { ideal: 720 }, focusMode: "continuous" }
       },
-      decodedText => { saveScan(decodedText); },
+      decodedText => saveScan(decodedText),
       error => {}
     );
-  } else {
-    // Fallback: native camera via file input
-    console.log("BarcodeDetector API not supported, using native camera fallback");
 
-    document.getElementById("fallbackBtn").style.display = "inline-block";
+  } else {
+    // BarcodeDetector not supported → fallback to native scanner or file input
+    console.log("BarcodeDetector API not supported, using fallback");
+
     const fileInput = document.getElementById("fileInput");
     const fallbackBtn = document.getElementById("fallbackBtn");
+    fallbackBtn.style.display = "inline-block";
 
-    fallbackBtn.addEventListener("click", () => fileInput.click());
+    fallbackBtn.addEventListener("click", () => {
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes("huawei")) {
+        // Huawei device → try native scanner
+        openHuaweiScanner();
+      } else {
+        // Other devices → open camera via file input
+        fileInput.click();
+      }
+    });
 
     fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      const bitmap = await createImageBitmap(file);
-      // Use Html5Qrcode's scanFile function to decode the QR code from image
-      Html5Qrcode.getCameras().then(() => {
-        Html5Qrcode.scanFile(file, true).then(decodedText => {
-          saveScan(decodedText);
-        }).catch(err => console.error("QR decode failed:", err));
-      });
+      // Decode QR from image using Html5Qrcode
+      Html5Qrcode.scanFile(file, true)
+        .then(decodedText => saveScan(decodedText))
+        .catch(err => console.error("QR decode failed:", err));
     });
   }
 </script>
