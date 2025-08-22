@@ -52,29 +52,38 @@
   }
 
   // ===== Live camera scanning =====
-  Html5Qrcode.getCameras().then(cameras => {
-    if (cameras && cameras.length) {
-      const cameraId = cameras[0].id; // default to first camera (usually back camera)
-      const html5QrcodeScanner = new Html5Qrcode("reader");
-
-      html5QrcodeScanner.start(
-        cameraId,
-        { fps: 10, qrbox: 250 },
-        decodedText => saveScan(decodedText),
-        errorMessage => {
-          // Optional: console.log("Scan error:", errorMessage);
-        }
-      ).catch(err => {
-        console.error("Camera start failed:", err);
-        alert("Camera not accessible. Please check permissions.");
-      });
-    } else {
-      alert("No camera found on this device.");
+ Html5Qrcode.getCameras().then(cameras => {
+  if (cameras && cameras.length) {
+    // Try to find rear camera
+    let cameraId = cameras[0].id; // default fallback
+    for (const cam of cameras) {
+      const label = cam.label.toLowerCase();
+      if (label.includes("back") || label.includes("rear") || label.includes("environment")) {
+        cameraId = cam.id;
+        break;
+      }
     }
-  }).catch(err => {
-    console.error("Camera check failed:", err);
-    alert("Cannot access camera.");
-  });
+
+    const html5QrcodeScanner = new Html5Qrcode("reader");
+    html5QrcodeScanner.start(
+      cameraId,
+      { fps: 10, qrbox: 250 },
+      decodedText => saveScan(decodedText),
+      errorMessage => {}
+    ).catch(err => {
+      console.error("Camera start failed:", err);
+      alert("Camera not accessible. Please check permissions.");
+    });
+
+  } else {
+    alert("No camera found on this device.");
+  }
+}).catch(err => {
+  console.error("Camera check failed:", err);
+  alert("Cannot access camera.");
+});
+
 </script>
 </body>
 </html>
+
