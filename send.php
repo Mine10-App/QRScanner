@@ -1,38 +1,39 @@
 <?php
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// ==== CONFIGURATION ====
+// Change these to your details
+$to = "air1345@gmail.com.com";   // 📧 receiver
+$subject = "New Leave Request";  // email subject
 
-// Make sure you have PHPMailer installed via Composer or downloaded from GitHub
-require 'PHPMailer/src/Exception.php';
-require 'PHPMailer/src/PHPMailer.php';
-require 'PHPMailer/src/SMTP.php';
+// ==== GET FORM DATA ====
+$date      = $_POST['date'] ?? '';
+$staffname = $_POST['staffname'] ?? '';
+$rcno      = $_POST['rcno'] ?? '';
+$leavetype = $_POST['leavetype'] ?? '';
+$reason    = $_POST['reason'] ?? '';
+$dutytime  = $_POST['dutytime'] ?? '';
 
-$mail = new PHPMailer(true);
+// ==== SAVE TO FILE (simple storage) ====
+$file = "leave_records.csv";
+$entry = "$date,$staffname,$rcno,$leavetype,$reason,$dutytime\n";
+file_put_contents($file, $entry, FILE_APPEND);
 
-try {
-    // SMTP Settings (Equivalent to your VBA CDO config)
-    $mail->isSMTP();
-    $mail->Host       = 'smtp.gmail.com';           // Gmail SMTP
-    $mail->SMTPAuth   = true;                       // Enable authentication
-    $mail->Username   = 'leelidutychange@gmail.com'; // Your Gmail address
-    $mail->Password   = 'ftxq gygk gdlr cgmr';   // 16-character App Password
-    $mail->SMTPSecure = 'ssl';                      // Use SSL (like CDO /smtpusessl)
-    $mail->Port       = 465;                        // Gmail SMTP port
+// ==== EMAIL BODY ====
+$message = "
+A new leave request has been submitted:
 
-    // Sender & Recipient
-    $mail->setFrom('leelidutychange@gmail.com', 'Duty Change');
-    $mail->addAddress('air1345@gmail.com');     // Recipient email
+📅 Date: $date
+👤 Staff Name: $staffname
+🔢 RCNo: $rcno
+🏷 Leave Type: $leavetype
+💬 Reason: $reason
+⏰ Duty Time: $dutytime
+";
 
-    // Email Content
-    $mail->isHTML(true);
-    $mail->Subject = 'Form Submission';
-    $mail->Body    = 'Name: John Doe<br>'
-                   . 'Date of Birth: 2000-01-01<br>'
-                   . 'Country: Maldives';
-
-    $mail->send();
-    echo 'Email sent successfully!';
-} catch (Exception $e) {
-    echo "Email could not be sent. Error: {$mail->ErrorInfo}";
+// ==== SEND MAIL ====
+$headers = "From: iirufan@gmail.com\r\n";
+if(mail($to, $subject, $message, $headers)){
+    echo "Leave request submitted & email sent!";
+} else {
+    echo "Error: Could not send email.";
 }
 ?>
