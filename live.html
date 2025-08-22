@@ -7,40 +7,41 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; }
-    h2 { text-align: center; }
+    h2 { text-align: center; margin-bottom: 20px; }
     #scan-list { 
       display: grid;
-      grid-template-columns: 2fr 2fr 1fr 1fr; /* code | timestamp | copy | delete */
+      grid-template-columns: 3fr 1.5fr 1fr 1fr; /* code | timestamp | copy | delete */
       gap: 10px;
       align-items: center;
-      max-width: 800px;
+      max-width: 1000px;
       margin: auto;
     }
     .scan-item {
-      display: contents; /* make grid cells span the parent grid */
+      display: contents; /* allow grid layout for cells */
     }
     .cell {
-      padding: 10px;
+      padding: 8px;
       background: #f0f0f0;
       border-radius: 5px;
-      overflow-wrap: break-word;
+      word-break: break-all;
+      font-size: 14px; /* smaller font for long codes */
     }
     button {
       padding: 5px 10px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      width: 100%;
     }
-    .copy-btn { background: #007bff; color: white; width: 100%; }
+    .copy-btn { background: #007bff; color: white; }
     .copy-btn.copied { background: #28a745; }
-    .delete-btn { background: #dc3545; color: white; width: 100%; }
-    /* Header row styling */
+    .delete-btn { background: #dc3545; color: white; }
     .header { font-weight: bold; background: #ccc; }
   </style>
 </head>
 <body>
 
-<h2>Live Scan</h2>
+<h2>Live Scans</h2>
 <div id="scan-list">
   <div class="cell header">Code</div>
   <div class="cell header">Timestamp</div>
@@ -75,7 +76,6 @@
         const code = data.code;
         const ts = data.timestamp?.toDate().toLocaleString() || "";
 
-        // Create row cells
         const row = document.createElement("div");
         row.classList.add("scan-item");
 
