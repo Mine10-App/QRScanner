@@ -8,7 +8,7 @@
   <style>
     body { font-family: Arial; padding: 20px; }
     h2 { text-align: center; }
-    ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
+    ul { list-style: none; padding: 0; max-width: 600px; margin: auto; }
     li {
       display: flex;
       justify-content: space-between;
@@ -18,22 +18,21 @@
       padding: 10px;
       border-radius: 5px;
     }
-    button.copy-btn {
+    .btn {
       padding: 5px 10px;
       border: none;
-      background: #007bff;
-      color: white;
       border-radius: 5px;
       cursor: pointer;
+      margin-left: 5px;
     }
-    button.copy-btn.copied {
-      background: #28a745; /* green when copied */
-    }
+    .copy-btn { background: #007bff; color: white; }
+    .copy-btn.copied { background: #28a745; }
+    .delete-btn { background: #dc3545; color: white; }
   </style>
 </head>
 <body>
 
-<h2>Live Scan</h2>
+<h2>Live Scans</h2>
 <ul id="scan-list"></ul>
 
 <script>
@@ -51,7 +50,6 @@
   const db = firebase.firestore();
   const scanList = document.getElementById("scan-list");
 
-  // Listen live to scans
   db.collection("scans").orderBy("timestamp", "desc")
     .onSnapshot(snapshot => {
       scanList.innerHTML = "";
@@ -66,11 +64,9 @@
 
         const ts = data.timestamp?.toDate().toLocaleString() || "";
 
-        // Copy button
+        // Copy Button
         const copyBtn = document.createElement("button");
-        copyBtn.classList.add("copy-btn");
-
-        // ✅ Set initial copied state from Firebase
+        copyBtn.classList.add("btn", "copy-btn");
         if (data.copied) {
           copyBtn.textContent = "Copied!";
           copyBtn.classList.add("copied");
@@ -81,11 +77,7 @@
         copyBtn.addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(data.code);
-
-            // Update Firebase copied status
             await db.collection("scans").doc(doc.id).update({ copied: true });
-
-            // Update button immediately
             copyBtn.textContent = "Copied!";
             copyBtn.classList.add("copied");
           } catch (err) {
@@ -93,9 +85,25 @@
           }
         });
 
+        // Delete Button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.classList.add("btn", "delete-btn");
+
+        deleteBtn.addEventListener("click", async () => {
+          if (confirm(`Delete scan "${data.code}"?`)) {
+            try {
+              await db.collection("scans").doc(doc.id).delete();
+            } catch (err) {
+              console.error("Delete failed:", err);
+            }
+          }
+        });
+
         li.appendChild(textSpan);
         li.append(" — " + ts);
         li.appendChild(copyBtn);
+        li.appendChild(deleteBtn);
         scanList.appendChild(li);
       });
     });
@@ -103,4 +111,3 @@
 
 </body>
 </html>
-
