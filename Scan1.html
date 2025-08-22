@@ -3,69 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR & Barcode Scanner</title>
+  <title>Hybrid QR Scanner</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-    h1 { margin-bottom: 20px; }
     #reader { width: 100%; max-width: 400px; margin: auto; }
     ul { list-style: none; padding: 0; }
     li { margin: 5px 0; padding: 5px; background: #eee; border-radius: 4px; }
+    input[type="file"] { display: none; }
+    button { margin: 10px; padding: 10px 20px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h1>Scanner</h1>
+  <h1>Hybrid QR & Barcode Scanner</h1>
   <div id="reader"></div>
+  <button id="fallbackBtn" style="display:none;">Open Camera</button>
+  <input type="file" id="fileInput" accept="image/*" capture="environment">
   <ul id="scannedData"></ul>
 
-  <script>
-    // ======= FIREBASE CONFIG =======
-    const firebaseConfig = {
-      apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
-      authDomain: "qr-scanner-live-5b385.firebaseapp.com",
-      projectId: "qr-scanner-live-5b385",
-      storageBucket: "qr-scanner-live-5b385.firebasestorage.app",
-      messagingSenderId: "260207453177",
-      appId: "1:260207453177:web:ea438ade7b1b56270e1328",
-      measurementId: "G-WQEEHEPWG3"
-    };
+<script>
+  // ======= FIREBASE CONFIG =======
+  const firebaseConfig = {
+    apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
+    authDomain: "qr-scanner-live-5b385.firebaseapp.com",
+    projectId: "qr-scanner-live-5b385",
+    storageBucket: "qr-scanner-live-5b385.firebasestorage.app",
+    messagingSenderId: "260207453177",
+    appId: "1:260207453177:web:ea438ade7b1b56270e1328",
+    measurementId: "G-WQEEHEPWG3"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  const scannedDataList = document.getElementById("scannedData");
 
-    // ======= SCANNER =======
-    function onScanSuccess(decodedText, decodedResult) {
-      console.log("Scanned: " + decodedText);
+  function saveScan(code) {
+    db.collection("scans").add({
+      code,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      copied: false
+    });
+    const li = document.createElement("li");
+    li.textContent = code + " (" + new Date().toLocaleString() + ")";
+    scannedDataList.prepend(li);
+  }
 
-      // ✅ Save consistently to Firestore
-      db.collection("scans").add({
-        code: decodedText,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        copied: false
-      }).then(() => console.log("Saved to Firebase"));
-
-      // Show locally on page
-      const ul = document.getElementById("scannedData");
-      const li = document.createElement("li");
-      li.textContent = decodedText + " (" + new Date().toLocaleString() + ")";
-      ul.prepend(li);
-    }
-
-    function onScanFailure(error) {
-      // optional: handle scan error
-    }
+  // ======= Use BarcodeDetector API if supported =======
+  if ('BarcodeDetector' in window) {
+    console.log("Using BarcodeDetector API");
 
     let html5QrcodeScanner = new Html5Qrcode("reader");
     html5QrcodeScanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      onScanSuccess,
-      onScanFailure
+      { facingMode: { exact: "environment" } },
+      { 
+        fps: 10, 
+        qrbox: 300,
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        videoConstraints: { width: { ideal: 1280 }, height: { ideal: 720 }, focusMode: "continuous" }
+      },
+      decodedText => { saveScan(decodedText); },
+      error => {}
     );
-  </script>
+  } else {
+    // Fallback: native camera via file input
+    console.log("BarcodeDetector API not supported, using native camera fallback");
+
+    document.getElementById("fallbackBtn").style.display = "inline-block";
+    const fileInput = document.getElementById("fileInput");
+    const fallbackBtn = document.getElementById("fallbackBtn");
+
+    fallbackBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const bitmap = await createImageBitmap(file);
+      // Use Html5Qrcode's scanFile function to decode the QR code from image
+      Html5Qrcode.getCameras().then(() => {
+        Html5Qrcode.scanFile(file, true).then(decodedText => {
+          saveScan(decodedText);
+        }).catch(err => console.error("QR decode failed:", err));
+      });
+    });
+  }
+</script>
 </body>
 </html>
-
-
