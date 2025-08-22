@@ -3,22 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Universal QR & Barcode Scanner</title>
+  <title>Universal QR Scanner</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-    button { padding: 15px 25px; font-size: 16px; cursor: pointer; margin: 20px; }
-    ul { list-style: none; padding: 0; max-width: 500px; margin: 0 auto; }
+    #reader { width: 100%; max-width: 400px; margin: auto; }
+    ul { list-style: none; padding: 0; max-width: 500px; margin: 20px auto 0; }
     li { margin: 5px 0; padding: 8px; background: #eee; border-radius: 5px; word-break: break-word; }
-    input[type="file"] { display: none; }
   </style>
 </head>
 <body>
   <h1>QR & Barcode Scanner</h1>
-  <button id="scanBtn">Open Camera to Scan</button>
-  <input type="file" id="fileInput" accept="image/*" capture="environment">
+  <div id="reader"></div>
   <ul id="scannedData"></ul>
 
 <script>
@@ -36,14 +34,10 @@
   const db = firebase.firestore();
 
   const scannedDataList = document.getElementById("scannedData");
-  const fileInput = document.getElementById("fileInput");
-  const scanBtn = document.getElementById("scanBtn");
-
-  // Store already scanned codes in memory to avoid duplicates
   const scannedCodes = new Set();
 
   function saveScan(code) {
-    if (scannedCodes.has(code)) return; // ignore duplicate scans
+    if (scannedCodes.has(code)) return;
     scannedCodes.add(code);
 
     db.collection("scans").add({
@@ -57,24 +51,29 @@
     scannedDataList.prepend(li);
   }
 
-  // Open camera on mobile
-  scanBtn.addEventListener("click", () => fileInput.click());
+  // ===== Live camera scanning =====
+  Html5Qrcode.getCameras().then(cameras => {
+    if (cameras && cameras.length) {
+      const cameraId = cameras[0].id; // default to first camera (usually back camera)
+      const html5QrcodeScanner = new Html5Qrcode("reader");
 
-  // Decode QR from image
-  fileInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-      const decodedText = await Html5Qrcode.scanFile(file, true);
-      saveScan(decodedText);
-    } catch (err) {
-      console.error("QR decode failed:", err);
-      alert("Failed to decode QR/Barcode. Try again.");
+      html5QrcodeScanner.start(
+        cameraId,
+        { fps: 10, qrbox: 250 },
+        decodedText => saveScan(decodedText),
+        errorMessage => {
+          // Optional: console.log("Scan error:", errorMessage);
+        }
+      ).catch(err => {
+        console.error("Camera start failed:", err);
+        alert("Camera not accessible. Please check permissions.");
+      });
+    } else {
+      alert("No camera found on this device.");
     }
-
-    // Reset file input for next scan
-    fileInput.value = "";
+  }).catch(err => {
+    console.error("Camera check failed:", err);
+    alert("Cannot access camera.");
   });
 </script>
 </body>
