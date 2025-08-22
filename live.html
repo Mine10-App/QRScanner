@@ -47,26 +47,23 @@
     measurementId: "G-WQEEHEPWG3"
   };
 
-  const app = firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
   const scanList = document.getElementById("scan-list");
 
-  // ✅ CHANGED: use serverTimestamp field for ordering instead of string "date"
+  // ✅ Real-time listener (ordered by serverTimestamp)
   db.collection("scans").orderBy("timestamp", "desc")
     .onSnapshot(snapshot => {
       scanList.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
-
-        // ✅ CHANGED: use data.code (new field) instead of data.value
-        if (!data || !data.code) return;
+        if (!data || !data.code) return; // skip bad docs
 
         const li = document.createElement("li");
 
         const textSpan = document.createElement("span");
-        textSpan.textContent = data.code; // ✅ CHANGED
+        textSpan.textContent = data.code; // ✅ only code shown
 
-        // ✅ CHANGED: format timestamp correctly (serverTimestamp)
         const ts = data.timestamp?.toDate().toLocaleString() || "";
 
         const copyBtn = document.createElement("button");
@@ -75,7 +72,7 @@
 
         copyBtn.addEventListener("click", async () => {
           try {
-            await navigator.clipboard.writeText(data.code); // ✅ CHANGED
+            await navigator.clipboard.writeText(data.code);
             copyBtn.textContent = "Copied!";
             copyBtn.classList.add("copied");
             setTimeout(() => {
@@ -88,7 +85,7 @@
         });
 
         li.appendChild(textSpan);
-        li.append(" — " + ts); // ✅ show date after code
+        li.append(" — " + ts);
         li.appendChild(copyBtn);
         scanList.appendChild(li);
       });
