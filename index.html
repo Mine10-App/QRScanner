@@ -17,7 +17,7 @@
   </style>
 </head>
 <body>
-  <h1>Continuous QR Scanner</h1>
+  <h1></h1>
   <div id="reader"></div>
   <div id="message"></div>
   <button id="saveBtn" disabled>Save Barcode</button>
@@ -105,7 +105,7 @@
       decodedText => {
         currentCode = decodedText;
         if (existingCodes.has(decodedText)) {
-          showMessage("Match: " + decodedText);
+          showMessage("Match:Code is in the System");
           saveBtn.disabled = true;
         } else {
           saveBtn.disabled = false;
@@ -122,3 +122,4 @@
 </script>
 </body>
 </html>
+
