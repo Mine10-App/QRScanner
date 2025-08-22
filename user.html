@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+</head>
+
+<body>
+ <h2>Enter Your Name:</h2>
+  <input type="text" id="nameInput" placeholder="Type here...">
+
+
+  <h2>Select Your Country:</h2>
+  
+  <!-- Combo Box -->
+  <select id="country" onchange="showCode()">
+    <option value="">--Choose--</option>
+    <option value="1">United States</option>
+    <option value="2">United Kingdom</option>
+    <option value="3">Canada</option>
+    <option value="4">Maldives</option>
+    <option value="5">India</option>
+  </select>
+
+ <h3>Selected Code:</h3>
+  <!-- Another field to show the number -->
+  <input type="text" id="countryCode" readonly>
+    <script>
+    function showCode(){
+    let selectBox = document.getelementById("country");
+    let code = selectBox.value;
+    documeny.getElementById("countrycode").value = code;
+    }
+    </script>
+</body>
+</html>
