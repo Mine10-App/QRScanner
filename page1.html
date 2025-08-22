@@ -1,23 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Live QR Code Display1</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    h2 { text-align: center; }
-    ul { list-style: none; padding: 0; }
-    li { background: #f0f0f0; margin: 5px 0; padding: 10px; border-radius: 5px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live QR Codes</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<style>
+  body { font-family: Arial; padding: 20px; text-align: center; }
+  h2 { margin-bottom: 20px; }
+  ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
+  li { display: flex; justify-content: space-between; align-items: center;
+       background: #f0f0f0; margin: 5px 0; padding: 10px; border-radius: 5px; }
+  button.copy-btn {
+    padding: 5px 10px;
+    border: none;
+    background: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  button.copy-btn.copied {
+    background: #28a745; /* green when copied */
+  }
+</style>
 </head>
 <body>
 
-<h2>Live Scans</h2>
+<h2>Live QR Code Scans</h2>
 <ul id="scan-list"></ul>
 
 <script>
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
     authDomain: "qr-scanner-live-5b385.firebaseapp.com",
@@ -30,17 +44,63 @@
 
   const app = firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-
   const scanList = document.getElementById("scan-list");
 
-  // Real-time listener
+  // Get today's date (YYYY-MM-DD)
+  function getTodayDateStr() {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  }
+
+  // Auto-delete old scans not from today
+  async function cleanOldScans() {
+    const snapshot = await db.collection("scans").get();
+    const today = getTodayDateStr();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const scanDate = new Date(data.date).toISOString().split("T")[0];
+      if (scanDate !== today) {
+        db.collection("scans").doc(doc.id).delete().catch(err => console.error("Delete error:", err));
+      }
+    });
+  }
+
+  // Run cleaner once at load
+  cleanOldScans();
+
+  // Live listener
   db.collection("scans").orderBy("date", "desc")
     .onSnapshot(snapshot => {
       scanList.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
+        const scanDate = new Date(data.date).toISOString().split("T")[0];
+        if (scanDate !== getTodayDateStr()) return; // skip old data
+
         const li = document.createElement("li");
-        li.textContent = `${data.code} — ${new Date(data.date).toLocaleString()}`;
+        const textSpan = document.createElement("span");
+        textSpan.textContent = data.code; // show only the code
+
+        const copyBtn = document.createElement("button");
+        copyBtn.textContent = "Copy";
+        copyBtn.classList.add("copy-btn");
+
+        copyBtn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(data.code);
+            copyBtn.textContent = "Copied!";
+            copyBtn.classList.add("copied");
+            setTimeout(() => {
+              copyBtn.textContent = "Copy";
+              copyBtn.classList.remove("copied");
+            }, 2000);
+          } catch (err) {
+            console.error("Copy failed:", err);
+          }
+        });
+
+        li.appendChild(textSpan);
+        li.appendChild(copyBtn);
         scanList.appendChild(li);
       });
     });
