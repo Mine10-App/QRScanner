@@ -3,69 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR & Barcode Scanner</title>
+  <title>Continuous QR Scanner with Save Button</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-    h1 { margin-bottom: 20px; }
     #reader { width: 100%; max-width: 400px; margin: auto; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; padding: 5px; background: #eee; border-radius: 4px; }
+    ul { list-style: none; padding: 0; max-width: 500px; margin: 20px auto; }
+    li { margin: 5px 0; padding: 8px; background: #eee; border-radius: 5px; word-break: break-word; }
+    #message { margin-top: 15px; font-weight: bold; color: red; font-size: 16px; }
+    button { padding: 10px 20px; font-size: 16px; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>QR & Barcode Scanner1</h1>
+  <h1>Continuous QR Scanner</h1>
   <div id="reader"></div>
+  <div id="message"></div>
+  <button id="saveBtn" disabled>Save Barcode</button>
   <ul id="scannedData"></ul>
 
-  <script>
-    // ======= FIREBASE CONFIG =======
-   const firebaseConfig = {
-  apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
-  authDomain: "qr-scanner-live-5b385.firebaseapp.com",
-  projectId: "qr-scanner-live-5b385",
-  storageBucket: "qr-scanner-live-5b385.firebasestorage.app",
-  messagingSenderId: "260207453177",
-  appId: "1:260207453177:web:ea438ade7b1b56270e1328",
-  measurementId: "G-WQEEHEPWG3"
-};
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+<script>
+  // ===== FIREBASE CONFIG =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
+    authDomain: "qr-scanner-live-5b385.firebaseapp.com",
+    projectId: "qr-scanner-live-5b385",
+    storageBucket: "qr-scanner-live-5b385.firebasestorage.app",
+    messagingSenderId: "260207453177",
+    appId: "1:260207453177:web:ea438ade7b1b56270e1328",
+    measurementId: "G-WQEEHEPWG3"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    // ======= SCANNER =======
-    function onScanSuccess(decodedText, decodedResult) {
-      console.log("Scanned: " + decodedText);
+  const scannedDataList = document.getElementById("scannedData");
+  const messageDiv = document.getElementById("message");
+  const saveBtn = document.getElementById("saveBtn");
 
-      const currentDateTime = new Date().toLocaleString();
+  const scannedCodes = new Set(); // for match detection
+  let currentCode = ""; // currently detected barcode
 
+  function showMessage(text) {
+    messageDiv.textContent = text;
+    setTimeout(() => { messageDiv.textContent = ""; }, 2000);
+  }
+
+  function saveCurrentCode() {
+    if (!currentCode) return;
+    if (!scannedCodes.has(currentCode)) {
+      scannedCodes.add(currentCode);
       db.collection("scans").add({
-        value: decodedText,
+        code: currentCode,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        date: currentDateTime
-      }).then(() => console.log("Saved to Firebase"));
-
-      const ul = document.getElementById("scannedData");
+        copied: false
+      });
       const li = document.createElement("li");
-      li.textContent = decodedText + " (" + currentDateTime + ")";
-      ul.prepend(li);
+      li.textContent = currentCode + " (" + new Date().toLocaleString() + ")";
+      scannedDataList.prepend(li);
+      saveBtn.disabled = true;
+      currentCode = "";
+    } else {
+      showMessage("Cannot save. Code already saved.");
+    }
+  }
+
+  saveBtn.addEventListener("click", saveCurrentCode);
+
+  // ===== Live camera scanning =====
+  async function startScanner() {
+    const cameras = await Html5Qrcode.getCameras();
+    if (!cameras || !cameras.length) {
+      alert("No cameras found");
+      return;
     }
 
-    function onScanFailure(error) {
-      // optional: handle scan error
+    // Choose rear wide camera
+    let cameraId = cameras[0].id;
+    for (const cam of cameras) {
+      const label = cam.label.toLowerCase();
+      if ((label.includes("back") || label.includes("rear") || label.includes("environment")) &&
+          !label.includes("ultra")) {
+        cameraId = cam.id;
+        break;
+      }
     }
 
-    let html5QrcodeScanner = new Html5Qrcode("reader");
+    const html5QrcodeScanner = new Html5Qrcode("reader");
     html5QrcodeScanner.start(
-      { facingMode: "environment" },
+      cameraId,
       { fps: 10, qrbox: 250 },
-      onScanSuccess,
-      onScanFailure
-    );
-  </script>
+      decodedText => {
+        currentCode = decodedText;
+        // Show match if code already scanned
+        if (scannedCodes.has(decodedText)) {
+          showMessage("Match: " + decodedText);
+          saveBtn.disabled = true;
+        } else {
+          saveBtn.disabled = false;
+        }
+      },
+      errorMessage => {}
+    ).catch(err => {
+      console.error("Camera start failed:", err);
+      alert("Cannot access camera.");
+    });
+  }
+
+  startScanner();
+</script>
 </body>
 </html>
-
-
-
