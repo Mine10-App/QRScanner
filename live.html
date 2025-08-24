@@ -10,7 +10,7 @@
     h2 { text-align: center; margin-bottom: 20px; }
     #scan-list { 
       display: grid;
-      grid-template-columns: 3fr 1.5fr 1fr 1fr; /* code | timestamp | copy | delete */
+      grid-template-columns: 3fr 1.5fr 1fr 1fr;
       gap: 10px;
       align-items: center;
       max-width: 1000px;
@@ -22,7 +22,7 @@
       background: #f0f0f0;
       border-radius: 5px;
       word-break: break-all;
-      font-size: 12px; /* smaller font for long codes */
+      font-size: 12px;
     }
     button {
       padding: 4px 8px;
@@ -30,7 +30,7 @@
       border-radius: 5px;
       cursor: pointer;
       width: 100%;
-      font-size: 12px; /* smaller font on buttons */
+      font-size: 12px;
     }
     .copy-btn { background: #007bff; color: white; }
     .copy-btn.copied { background: #28a745; }
@@ -40,7 +40,7 @@
 </head>
 <body>
 
-<h2>Live Scans</h2>
+<h2>Live Scans (Today Only)</h2>
 <div id="scan-list">
   <div class="cell header">Code</div>
   <div class="cell header">Timestamp</div>
@@ -63,7 +63,31 @@
   const db = firebase.firestore();
   const scanList = document.getElementById("scan-list");
 
-  db.collection("scans").orderBy("timestamp", "desc")
+  // Get today's start and end
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  // 🔹 Auto-delete all old scans (before today)
+  async function deleteOldScans() {
+    const oldDocs = await db.collection("scans")
+      .where("timestamp", "<", startOfDay)
+      .get();
+
+    oldDocs.forEach(doc => {
+      db.collection("scans").doc(doc.id).delete()
+        .then(() => console.log("Deleted old scan:", doc.id))
+        .catch(err => console.error("Delete failed", err));
+    });
+  }
+
+  deleteOldScans(); // Run once on page load
+
+  // 🔹 Live listener for only today's scans
+  db.collection("scans")
+    .where("timestamp", ">=", startOfDay)
+    .where("timestamp", "<", endOfDay)
+    .orderBy("timestamp", "desc")
     .onSnapshot(snapshot => {
       scanList.querySelectorAll(".scan-item").forEach(el => el.remove());
 
