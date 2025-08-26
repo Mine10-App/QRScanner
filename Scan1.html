@@ -8,16 +8,23 @@
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 20px; }
-    video { width: 100%; max-width: 500px; border: 2px solid #333; border-radius: 8px; }
+    video { width: 100%; max-width: 500px; border: 2px solid #333; border-radius: 8px; margin-top: 10px; }
     ul { list-style: none; padding: 0; margin-top: 20px; }
     li { padding: 8px; background: #eee; margin: 5px 0; border-radius: 5px; }
     #message { margin-top: 15px; font-weight: bold; color: red; }
-    button { padding: 10px 20px; margin-top: 10px; }
+    button, select { padding: 10px 20px; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h2>ZXing Barcode Scanner</h2>
+
+  <!-- Camera selector -->
+  <select id="cameraSelect"></select>
+  <button onclick="switchCamera()">Switch Camera</button>
+
+  <!-- Video feed -->
   <video id="video" autoplay></video>
+
   <div id="message"></div>
   <button id="saveBtn" disabled>Save Barcode</button>
   <ul id="scannedData"></ul>
@@ -40,11 +47,15 @@
   const messageDiv = document.getElementById("message");
   const saveBtn = document.getElementById("saveBtn");
   const scannedDataList = document.getElementById("scannedData");
+  const cameraSelect = document.getElementById("cameraSelect");
 
   let currentCode = "";
   const existingCodes = new Set();
 
-  // Load existing codes from Firebase
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+  let currentStream = null;
+
+  // Load previously saved codes from Firebase
   db.collection("scans").get().then(snapshot => {
     snapshot.forEach(doc => {
       const data = doc.data();
@@ -77,34 +88,52 @@
   }
   saveBtn.addEventListener("click", saveCurrentCode);
 
-  // ===== ZXING SCANNER =====
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-
-  codeReader
-    .listVideoInputDevices()
-    .then(videoInputDevices => {
-      // pick back camera if available
-      let selectedDeviceId = videoInputDevices[0].deviceId;
-      for (const cam of videoInputDevices) {
-        if (cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")) {
-          selectedDeviceId = cam.deviceId;
-          break;
+  // ===== CAMERA SETUP =====
+  function startScanner(deviceId) {
+    if (currentStream) {
+      codeReader.reset(); // stop previous camera
+    }
+    codeReader.decodeFromVideoDevice(deviceId, video, result => {
+      if (result) {
+        currentCode = result.text;
+        if (existingCodes.has(currentCode)) {
+          showMessage("Match: Code is in the system");
+          saveBtn.disabled = true;
+        } else {
+          saveBtn.disabled = false;
         }
       }
+    });
+  }
 
-      codeReader.decodeFromVideoDevice(selectedDeviceId, video, result => {
-        if (result) {
-          currentCode = result.text;
-          if (existingCodes.has(currentCode)) {
-            showMessage("Match: Code is in the system");
-            saveBtn.disabled = true;
-          } else {
-            saveBtn.disabled = false;
-          }
-        }
-      });
-    })
-    .catch(err => console.error(err));
+  // Switch camera when dropdown changes
+  function switchCamera() {
+    const selectedId = cameraSelect.value;
+    startScanner(selectedId);
+  }
+  window.switchCamera = switchCamera; // make available to button
+
+  // ===== Populate camera list =====
+  codeReader.listVideoInputDevices().then(videoInputDevices => {
+    videoInputDevices.forEach(device => {
+      const option = document.createElement("option");
+      option.value = device.deviceId;
+      option.text = device.label || `Camera ${cameraSelect.length + 1}`;
+      cameraSelect.appendChild(option);
+    });
+
+    // Start with the first back-facing camera if available
+    let defaultDeviceId = videoInputDevices[0].deviceId;
+    for (const cam of videoInputDevices) {
+      if (cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")) {
+        defaultDeviceId = cam.deviceId;
+        cameraSelect.value = defaultDeviceId;
+        break;
+      }
+    }
+
+    startScanner(defaultDeviceId);
+  }).catch(err => console.error(err));
 </script>
 </body>
 </html>
