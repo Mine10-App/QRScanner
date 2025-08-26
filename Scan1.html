@@ -2,23 +2,24 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR & Barcode Scanner</title>
+  <title>ZXing Barcode Scanner with Firebase</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-    #reader { width: 100%; max-width: 400px; margin: auto; }
-    ul { list-style: none; padding: 0; max-width: 500px; margin: 20px auto 0; }
-    li { margin: 5px 0; padding: 8px; background: #eee; border-radius: 5px; word-break: break-word; }
-    #message { margin-top: 15px; font-weight: bold; color: red; font-size: 16px; }
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    video { width: 100%; max-width: 500px; border: 2px solid #333; border-radius: 8px; }
+    ul { list-style: none; padding: 0; margin-top: 20px; }
+    li { padding: 8px; background: #eee; margin: 5px 0; border-radius: 5px; }
+    #message { margin-top: 15px; font-weight: bold; color: red; }
+    button { padding: 10px 20px; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>QR & Barcode Scanner</h1>
-  <div id="reader"></div>
+  <h2>ZXing Barcode Scanner</h2>
+  <video id="video" autoplay></video>
   <div id="message"></div>
+  <button id="saveBtn" disabled>Save Barcode</button>
   <ul id="scannedData"></ul>
 
 <script>
@@ -35,63 +36,75 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const scannedDataList = document.getElementById("scannedData");
+  const video = document.getElementById("video");
   const messageDiv = document.getElementById("message");
-  const scannedCodes = new Set();
+  const saveBtn = document.getElementById("saveBtn");
+  const scannedDataList = document.getElementById("scannedData");
+
+  let currentCode = "";
+  const existingCodes = new Set();
+
+  // Load existing codes from Firebase
+  db.collection("scans").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.code) existingCodes.add(data.code);
+    });
+  });
 
   function showMessage(text) {
     messageDiv.textContent = text;
-    setTimeout(() => { messageDiv.textContent = ""; }, 2000); // clear after 2s
+    setTimeout(() => { messageDiv.textContent = ""; }, 2000);
   }
 
-  function saveScan(code) {
-    if (scannedCodes.has(code)) {
-      showMessage("Match: " + code);
-      return;
+  function saveCurrentCode() {
+    if (!currentCode) return;
+    if (!existingCodes.has(currentCode)) {
+      existingCodes.add(currentCode);
+      db.collection("scans").add({
+        code: currentCode,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        copied: false
+      });
+      const li = document.createElement("li");
+      li.textContent = currentCode + " (" + new Date().toLocaleString() + ")";
+      scannedDataList.prepend(li);
+      saveBtn.disabled = true;
+      currentCode = "";
+    } else {
+      showMessage("Code already exists in Firebase.");
     }
-    scannedCodes.add(code);
-
-    db.collection("scans").add({
-      code,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      copied: false
-    });
-
-    const li = document.createElement("li");
-    li.textContent = code + " (" + new Date().toLocaleString() + ")";
-    scannedDataList.prepend(li);
   }
+  saveBtn.addEventListener("click", saveCurrentCode);
 
-  // ===== Live camera scanning =====
-  Html5Qrcode.getCameras().then(cameras => {
-    if (cameras && cameras.length) {
-      // Try to select rear camera
-      let cameraId = cameras[0].id;
-      for (const cam of cameras) {
-        const label = cam.label.toLowerCase();
-        if (label.includes("back") || label.includes("rear") || label.includes("environment")) {
-          cameraId = cam.id;
+  // ===== ZXING SCANNER =====
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+
+  codeReader
+    .listVideoInputDevices()
+    .then(videoInputDevices => {
+      // pick back camera if available
+      let selectedDeviceId = videoInputDevices[0].deviceId;
+      for (const cam of videoInputDevices) {
+        if (cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")) {
+          selectedDeviceId = cam.deviceId;
           break;
         }
       }
 
-      const html5QrcodeScanner = new Html5Qrcode("reader");
-      html5QrcodeScanner.start(
-        cameraId,
-        { fps: 10, qrbox: 250 },
-        decodedText => saveScan(decodedText),
-        errorMessage => {}
-      ).catch(err => {
-        console.error("Camera start failed:", err);
-        alert("Camera not accessible. Please check permissions.");
+      codeReader.decodeFromVideoDevice(selectedDeviceId, video, result => {
+        if (result) {
+          currentCode = result.text;
+          if (existingCodes.has(currentCode)) {
+            showMessage("Match: Code is in the system");
+            saveBtn.disabled = true;
+          } else {
+            saveBtn.disabled = false;
+          }
+        }
       });
-    } else {
-      alert("No camera found on this device.");
-    }
-  }).catch(err => {
-    console.error("Camera check failed:", err);
-    alert("Cannot access camera.");
-  });
+    })
+    .catch(err => console.error(err));
 </script>
 </body>
 </html>
