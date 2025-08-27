@@ -18,7 +18,7 @@
 </head>
 <body>
 
-<h2>QuaggaJS Auto-Scan Barcode Scanner1</h2>
+<h2>QuaggaJS Auto-Scan Barcode Scanner</h2>
 
 <select id="cameraSelect"></select>
 <button onclick="switchCamera()">Switch Camera</button>
@@ -32,7 +32,6 @@
 <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <script>
-  // ===== Firebase Config =====
   const firebaseConfig = {
     apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
     authDomain: "qr-scanner-live-5b385.firebaseapp.com",
@@ -75,19 +74,17 @@
     setTimeout(()=>{document.body.style.background="white";},100);
   }
 
-  // ===== Camera Setup and Scanning =====
   function startScanner(cameraId){
     if(Quagga.running) Quagga.stop();
     currentCameraId = cameraId;
+
     Quagga.init({
       inputStream: {
         type: "LiveStream",
         target: video,
         constraints: {
-          deviceId: cameraId,
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          deviceId: cameraId ? { exact: cameraId } : undefined,
+          facingMode: "environment"
         }
       },
       decoder: {
@@ -108,7 +105,11 @@
       locate: true,
       numOfWorkers: navigator.hardwareConcurrency || 4
     }, function(err){
-      if(err){ console.error(err); showMessage("Camera init failed"); return; }
+      if(err){
+        console.error(err);
+        showMessage("Camera init failed. Try another browser or check permissions.");
+        return;
+      }
       Quagga.start();
       showMessage("Scanning...");
     });
@@ -125,14 +126,14 @@
   }
   window.switchCamera = switchCamera;
 
-  // ===== Request Permission & Populate Camera Dropdown =====
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      stream.getTracks().forEach(track => track.stop());
+  // Request permission first
+  navigator.mediaDevices.getUserMedia({ video:true })
+    .then(stream=>{
+      stream.getTracks().forEach(track=>track.stop());
       return navigator.mediaDevices.enumerateDevices();
     })
-    .then(devices => {
-      const videoDevices = devices.filter(d => d.kind === "videoinput");
+    .then(devices=>{
+      const videoDevices = devices.filter(d=>d.kind==='videoinput');
       if(videoDevices.length === 0){
         showMessage("No camera found!");
         return;
@@ -143,16 +144,13 @@
         option.text = device.label || `Camera ${i+1}`;
         cameraSelect.appendChild(option);
       });
-
       startScanner(cameraSelect.options[0].value);
     })
-    .catch(err => {
+    .catch(err=>{
       console.error(err);
       showMessage("Camera permission denied or no camera found!");
     });
 
 </script>
-
 </body>
 </html>
-
