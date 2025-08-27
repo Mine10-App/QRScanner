@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Web Barcode Scanner with Firebase</title>
+<title>Barcode Scanner with Firebase</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
 <style>
   body {
     background: white;
@@ -14,14 +14,17 @@
     margin: 0;
     padding: 20px;
   }
-  #reader {
+  #video-container {
+    position: relative;
+    display: inline-block;
     width: 100%;
     max-width: 400px;
-    position: relative;
-    margin: 0 auto;
+    margin: 20px auto;
+  }
+  video {
+    width: 100%;
     border: 2px solid black;
   }
-  /* Red scanning line */
   #scan-line {
     position: absolute;
     top: 0;
@@ -36,6 +39,11 @@
     50% { top: 95%; }
     100% { top: 0; }
   }
+  select, button {
+    margin: 10px;
+    padding: 8px 16px;
+    font-size: 16px;
+  }
   #result {
     margin-top: 10px;
     font-weight: bold;
@@ -47,9 +55,14 @@
 
 <h2>Web Barcode Scanner with Firebase</h2>
 
-<div id="reader">
+<select id="cameraSelect"></select>
+<button id="startBtn">Start Scanning</button>
+
+<div id="video-container">
+  <video id="video" autoplay playsinline></video>
   <div id="scan-line"></div>
 </div>
+
 <div id="result">No result yet</div>
 
 <script>
@@ -66,7 +79,12 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const existingCodes = new Set();
+  const video = document.getElementById('video');
+  const cameraSelect = document.getElementById('cameraSelect');
+  const startBtn = document.getElementById('startBtn');
+  const resultDiv = document.getElementById('result');
+
+  const existingCodes = new Set(); // prevent duplicates
 
   // Load existing codes from Firebase
   db.collection("scans").get().then(snapshot => {
@@ -75,40 +93,46 @@
     });
   });
 
-  // ===== HTML5-QRCODE SETUP =====
-  const html5QrCode = new Html5Qrcode("reader");
+  let codeReader = new ZXing.BrowserMultiFormatReader();
 
-  const config = {
-    fps: 10,
-    qrbox: { width: 300, height: 300 },
-    experimentalFeatures: { useBarCodeDetectorIfSupported: true } // sharper scanning
-  };
-
-  html5QrCode.start(
-    { facingMode: "environment" }, // rear camera
-    config,
-    decodedText => {
-      if(!existingCodes.has(decodedText)){
-        existingCodes.add(decodedText);
-
-        // Save to Firebase
-        db.collection("scans").add({
-          code: decodedText,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          copied: false
-        });
-
-        document.getElementById("result").textContent = "✅ Saved: " + decodedText;
-      } else {
-        document.getElementById("result").textContent = "⚠ Already exists: " + decodedText;
-      }
-    },
-    errorMessage => {
-      // You can ignore decode errors, no need to spam console
+  // Populate camera list
+  codeReader.listVideoInputDevices().then(videoInputDevices => {
+    if(videoInputDevices.length === 0){
+      alert("No camera found!");
+      return;
     }
-  ).catch(err => {
-    console.error("Camera initialization error:", err);
-    document.getElementById("result").textContent = "Camera access denied or unavailable.";
+    videoInputDevices.forEach((device, i) => {
+      const option = new Option(device.label || `Camera ${i+1}`, device.deviceId);
+      cameraSelect.appendChild(option);
+    });
+  }).catch(err => console.error(err));
+
+  // Start scanning
+  startBtn.addEventListener('click', () => {
+    const selectedDeviceId = cameraSelect.value;
+    resultDiv.textContent = "Scanning...";
+    codeReader.reset(); // stop any previous scanning
+
+    codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err) => {
+      if(result){
+        const code = result.getText();
+        if(!existingCodes.has(code)){
+          existingCodes.add(code);
+          // Save to Firebase
+          db.collection("scans").add({
+            code: code,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            copied: false
+          });
+          resultDiv.textContent = "✅ Saved: " + code;
+        } else {
+          resultDiv.textContent = "⚠ Already exists: " + code;
+        }
+      }
+    }).catch(err => {
+      console.error(err);
+      resultDiv.textContent = "Error accessing camera.";
+    });
   });
 </script>
 
