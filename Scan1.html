@@ -1,36 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>ZXing Barcode Scanner with Firebase</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    video { width: 100%; max-width: 500px; border: 2px solid #333; border-radius: 8px; margin-top: 10px; }
-    ul { list-style: none; padding: 0; margin-top: 20px; }
-    li { padding: 8px; background: #eee; margin: 5px 0; border-radius: 5px; }
-    #message { margin-top: 15px; font-weight: bold; color: red; }
-    button, select { padding: 10px 20px; margin-top: 10px; }
-  </style>
+<meta charset="UTF-8">
+<title>ZXing Auto-Scan Barcode Scanner with Firebase</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<style>
+  body { font-family: sans-serif; text-align:center; padding:20px; background:white; }
+  #video-container { position:relative; display:inline-block; width:100%; max-width:400px; margin-top:20px; }
+  video { width:100%; border:2px solid black; border-radius:8px; }
+  #scan-line { position:absolute; top:0; left:0; width:100%; height:2px; background:red; animation:scan 2s linear infinite; }
+  @keyframes scan {0%{top:0;}50%{top:95%;}100%{top:0;}}
+  select, button { padding:8px 16px; margin:10px; font-size:16px; }
+  #message { margin-top:15px; font-weight:bold; color:green; }
+  ul { list-style:none; padding:0; margin-top:20px; max-width:400px; margin:auto; }
+  li { padding:8px; background:#eee; margin:5px 0; border-radius:5px; }
+</style>
 </head>
 <body>
-  <h2>ZXing Barcode Scanner (Web)</h2>
 
-  <!-- Camera selector -->
-  <select id="cameraSelect"></select>
-  <button onclick="switchCamera()">Switch Camera</button>
+<h2>ZXing Auto-Scan Barcode Scanner (Web)</h2>
 
-  <!-- Video feed -->
-  <video id="video" autoplay></video>
+<select id="cameraSelect"></select>
+<button onclick="switchCamera()">Switch Camera</button>
 
-  <div id="message"></div>
-  <button id="saveBtn" disabled>Save Barcode</button>
-  <ul id="scannedData"></ul>
+<div id="video-container">
+  <video id="video" autoplay muted playsinline></video>
+  <div id="scan-line"></div>
+</div>
+
+<div id="message">Initializing...</div>
+<ul id="scannedData"></ul>
+<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <script>
-  // ===== FIREBASE CONFIG =====
+  // ===== Firebase Config =====
   const firebaseConfig = {
     apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
     authDomain: "qr-scanner-live-5b385.firebaseapp.com",
@@ -44,27 +49,51 @@
   const db = firebase.firestore();
 
   const video = document.getElementById("video");
-  const messageDiv = document.getElementById("message");
-  const saveBtn = document.getElementById("saveBtn");
-  const scannedDataList = document.getElementById("scannedData");
   const cameraSelect = document.getElementById("cameraSelect");
-
-  let currentCode = "";
-  const existingCodes = new Set();
+  const messageDiv = document.getElementById("message");
+  const scannedDataList = document.getElementById("scannedData");
+  const beep = document.getElementById("beep");
 
   const codeReader = new ZXing.BrowserMultiFormatReader();
+  const existingCodes = new Set();
+  let scanning = true;
   let currentStream = null;
 
-  // ===== REAL-TIME FIRESTORE LISTENER =====
-  db.collection("scans").orderBy("timestamp", "desc").onSnapshot(snapshot => {
-    scannedDataList.innerHTML = ""; // clear list
-    existingCodes.clear();
+  function showMessage(text){
+    messageDiv.textContent = text;
+    setTimeout(()=>{ messageDiv.textContent = ""; },2000);
+  }
 
-    snapshot.forEach(doc => {
+  function handleBarcode(code){
+    if(!existingCodes.has(code)){
+      existingCodes.add(code);
+      beep.play();
+      flashScreen();
+      db.collection("scans").add({
+        code: code,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        copied:false
+      });
+      showMessage("✅ Saved: "+code);
+    } else {
+      showMessage("⚠ Already exists: "+code);
+    }
+  }
+
+  function flashScreen(){
+    document.body.style.background="#ffff99";
+    setTimeout(()=>{document.body.style.background="white";},100);
+  }
+
+  // ===== Real-time Firebase Listener =====
+  db.collection("scans").orderBy("timestamp","desc").onSnapshot(snapshot=>{
+    scannedDataList.innerHTML="";
+    existingCodes.clear();
+    snapshot.forEach(doc=>{
       const data = doc.data();
-      if (data.code) {
+      if(data.code){
         existingCodes.add(data.code);
-        const li = document.createElement("li");
+        const li=document.createElement("li");
         const time = data.timestamp?.toDate().toLocaleString() || "No time";
         li.textContent = data.code + " (" + time + ")";
         scannedDataList.appendChild(li);
@@ -72,71 +101,58 @@
     });
   });
 
-  function showMessage(text) {
-    messageDiv.textContent = text;
-    setTimeout(() => { messageDiv.textContent = ""; }, 2000);
-  }
-
-  function saveCurrentCode() {
-    if (!currentCode) return;
-    if (!existingCodes.has(currentCode)) {
-      db.collection("scans").add({
-        code: currentCode,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        copied: false
-      });
-      saveBtn.disabled = true;
-      currentCode = "";
-    } else {
-      showMessage("Match: Code already exists in Firebase.");
-    }
-  }
-  saveBtn.addEventListener("click", saveCurrentCode);
-
-  // ===== CAMERA SETUP =====
-  function startScanner(deviceId) {
-    if (currentStream) {
-      codeReader.reset(); // stop previous camera
-    }
-    codeReader.decodeFromVideoDevice(deviceId, video, result => {
-      if (result) {
-        currentCode = result.text;
-        if (existingCodes.has(currentCode)) {
-          showMessage("Match: Code is in the system");
-          saveBtn.disabled = true;
-        } else {
-          saveBtn.disabled = false;
-        }
+  // ===== Camera Scanning =====
+  function startScanner(deviceId){
+    if(currentStream) codeReader.reset();
+    codeReader.decodeFromVideoDevice(deviceId, video, (result, err)=>{
+      if(result){
+        handleBarcode(result.text);
       }
     });
   }
 
-  function switchCamera() {
-    const selectedId = cameraSelect.value;
-    startScanner(selectedId);
+  function switchCamera(){
+    startScanner(cameraSelect.value);
   }
   window.switchCamera = switchCamera;
 
-  // ===== Populate camera list =====
-  codeReader.listVideoInputDevices().then(videoInputDevices => {
-    videoInputDevices.forEach(device => {
-      const option = document.createElement("option");
-      option.value = device.deviceId;
-      option.text = device.label || `Camera ${cameraSelect.length + 1}`;
+  // Populate camera dropdown
+  codeReader.listVideoInputDevices().then(videoInputDevices=>{
+    videoInputDevices.forEach((device,i)=>{
+      const option=new Option(device.label || `Camera ${i+1}`, device.deviceId);
       cameraSelect.appendChild(option);
     });
-
-    // Start with first back-facing camera if available
     let defaultDeviceId = videoInputDevices[0].deviceId;
-    for (const cam of videoInputDevices) {
-      if (cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")) {
-        defaultDeviceId = cam.deviceId;
-        cameraSelect.value = defaultDeviceId;
+    for(const cam of videoInputDevices){
+      if(cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")){
+        defaultDeviceId=cam.deviceId;
+        cameraSelect.value=defaultDeviceId;
         break;
       }
     }
     startScanner(defaultDeviceId);
-  }).catch(err => console.error(err));
+  }).catch(err=>console.error(err));
+
+  // ===== Optional: Capture high-res canvas in background for dense/compact barcodes =====
+  const canvas = document.createElement("canvas");
+  function scanHighResFrame(){
+    if(!scanning || !video.videoWidth) return requestAnimationFrame(scanHighResFrame);
+    canvas.width = video.videoWidth * 2;  // upscale for compact codes
+    canvas.height = video.videoHeight * 2;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    codeReader.decodeFromCanvas(canvas).then(result=>{
+      handleBarcode(result.text);
+    }).catch(err=>{
+      // ignore if no barcode in frame
+    });
+    requestAnimationFrame(scanHighResFrame);
+  }
+
+  video.onloadedmetadata = ()=>{
+    scanHighResFrame();
+  };
 </script>
+
 </body>
 </html>
