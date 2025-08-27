@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <h2>ZXing Barcode Scanner1</h2>
+  <h2>ZXing Barcode Scanner (Web)</h2>
 
   <!-- Camera selector -->
   <select id="cameraSelect"></select>
@@ -55,11 +55,20 @@
   const codeReader = new ZXing.BrowserMultiFormatReader();
   let currentStream = null;
 
-  // Load previously saved codes from Firebase
-  db.collection("scans").get().then(snapshot => {
+  // ===== REAL-TIME FIRESTORE LISTENER =====
+  db.collection("scans").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+    scannedDataList.innerHTML = ""; // clear list
+    existingCodes.clear();
+
     snapshot.forEach(doc => {
       const data = doc.data();
-      if (data.code) existingCodes.add(data.code);
+      if (data.code) {
+        existingCodes.add(data.code);
+        const li = document.createElement("li");
+        const time = data.timestamp?.toDate().toLocaleString() || "No time";
+        li.textContent = data.code + " (" + time + ")";
+        scannedDataList.appendChild(li);
+      }
     });
   });
 
@@ -71,19 +80,15 @@
   function saveCurrentCode() {
     if (!currentCode) return;
     if (!existingCodes.has(currentCode)) {
-      existingCodes.add(currentCode);
       db.collection("scans").add({
         code: currentCode,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         copied: false
       });
-      const li = document.createElement("li");
-      li.textContent = currentCode + " (" + new Date().toLocaleString() + ")";
-      scannedDataList.prepend(li);
       saveBtn.disabled = true;
       currentCode = "";
     } else {
-      showMessage("Code already exists in Firebase.");
+      showMessage("Match: Code already exists in Firebase.");
     }
   }
   saveBtn.addEventListener("click", saveCurrentCode);
@@ -106,12 +111,11 @@
     });
   }
 
-  // Switch camera when dropdown changes
   function switchCamera() {
     const selectedId = cameraSelect.value;
     startScanner(selectedId);
   }
-  window.switchCamera = switchCamera; // make available to button
+  window.switchCamera = switchCamera;
 
   // ===== Populate camera list =====
   codeReader.listVideoInputDevices().then(videoInputDevices => {
@@ -122,7 +126,7 @@
       cameraSelect.appendChild(option);
     });
 
-    // Start with the first back-facing camera if available
+    // Start with first back-facing camera if available
     let defaultDeviceId = videoInputDevices[0].deviceId;
     for (const cam of videoInputDevices) {
       if (cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")) {
@@ -131,10 +135,8 @@
         break;
       }
     }
-
     startScanner(defaultDeviceId);
   }).catch(err => console.error(err));
 </script>
 </body>
 </html>
-
