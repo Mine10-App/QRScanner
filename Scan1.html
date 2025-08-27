@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ZXing Auto-Scan Barcode Scanner with Firebase</title>
+<title>QuaggaJS Auto-Scan Barcode Scanner</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
 <style>
   body { font-family: sans-serif; text-align:center; padding:20px; background:white; }
   #video-container { position:relative; display:inline-block; width:100%; max-width:400px; margin-top:20px; }
@@ -20,7 +20,7 @@
 </head>
 <body>
 
-<h2>ZXing Auto-Scan Barcode Scanner (Web)</h2>
+<h2>QuaggaJS Auto-Scan Barcode Scanner</h2>
 
 <select id="cameraSelect"></select>
 <button onclick="switchCamera()">Switch Camera</button>
@@ -54,10 +54,8 @@
   const scannedDataList = document.getElementById("scannedData");
   const beep = document.getElementById("beep");
 
-  const codeReader = new ZXing.BrowserMultiFormatReader();
+  let currentCameraId = null;
   const existingCodes = new Set();
-  let scanning = true;
-  let currentStream = null;
 
   function showMessage(text){
     messageDiv.textContent = text;
@@ -71,8 +69,7 @@
       flashScreen();
       db.collection("scans").add({
         code: code,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        copied:false
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
       showMessage("✅ Saved: "+code);
     } else {
@@ -101,12 +98,47 @@
     });
   });
 
-  // ===== Camera Scanning =====
-  function startScanner(deviceId){
-    if(currentStream) codeReader.reset();
-    codeReader.decodeFromVideoDevice(deviceId, video, (result, err)=>{
-      if(result){
-        handleBarcode(result.text);
+  // ===== Camera Setup and Scanning =====
+  function startScanner(cameraId){
+    if(Quagga.running) Quagga.stop();
+    currentCameraId = cameraId;
+    Quagga.init({
+      inputStream: {
+        type: "LiveStream",
+        target: video,
+        constraints: {
+          deviceId: cameraId,
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      },
+      decoder: {
+        readers: [
+          "code_128_reader",
+          "ean_reader",
+          "ean_8_reader",
+          "upc_reader",
+          "upc_e_reader",
+          "i2of5_reader",
+          "2of5_reader",
+          "code_39_reader",
+          "code_93_reader",
+          "codabar_reader"
+        ],
+        multiple: false
+      },
+      locate: true,
+      numOfWorkers: navigator.hardwareConcurrency || 4
+    }, function(err){
+      if(err){ console.error(err); showMessage("Camera init failed"); return; }
+      Quagga.start();
+      showMessage("Scanning...");
+    });
+
+    Quagga.onDetected(result=>{
+      if(result && result.codeResult){
+        handleBarcode(result.codeResult.code);
       }
     });
   }
@@ -116,42 +148,20 @@
   }
   window.switchCamera = switchCamera;
 
-  // Populate camera dropdown
-  codeReader.listVideoInputDevices().then(videoInputDevices=>{
-    videoInputDevices.forEach((device,i)=>{
-      const option=new Option(device.label || `Camera ${i+1}`, device.deviceId);
+  // ===== Populate Camera Dropdown =====
+  navigator.mediaDevices.enumerateDevices()
+  .then(devices=>{
+    devices.filter(d => d.kind === "videoinput").forEach((device,i)=>{
+      const option = document.createElement("option");
+      option.value = device.deviceId;
+      option.text = device.label || `Camera ${i+1}`;
       cameraSelect.appendChild(option);
     });
-    let defaultDeviceId = videoInputDevices[0].deviceId;
-    for(const cam of videoInputDevices){
-      if(cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")){
-        defaultDeviceId=cam.deviceId;
-        cameraSelect.value=defaultDeviceId;
-        break;
-      }
+    if(cameraSelect.options.length>0){
+      startScanner(cameraSelect.options[0].value);
     }
-    startScanner(defaultDeviceId);
   }).catch(err=>console.error(err));
 
-  // ===== Optional: Capture high-res canvas in background for dense/compact barcodes =====
-  const canvas = document.createElement("canvas");
-  function scanHighResFrame(){
-    if(!scanning || !video.videoWidth) return requestAnimationFrame(scanHighResFrame);
-    canvas.width = video.videoWidth * 2;  // upscale for compact codes
-    canvas.height = video.videoHeight * 2;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    codeReader.decodeFromCanvas(canvas).then(result=>{
-      handleBarcode(result.text);
-    }).catch(err=>{
-      // ignore if no barcode in frame
-    });
-    requestAnimationFrame(scanHighResFrame);
-  }
-
-  video.onloadedmetadata = ()=>{
-    scanHighResFrame();
-  };
 </script>
 
 </body>
