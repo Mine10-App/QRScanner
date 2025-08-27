@@ -13,9 +13,7 @@
   #scan-line { position:absolute; top:0; left:0; width:100%; height:2px; background:red; animation:scan 2s linear infinite; }
   @keyframes scan {0%{top:0;}50%{top:95%;}100%{top:0;}}
   select, button { padding:8px 16px; margin:10px; font-size:16px; }
-  #message { margin-top:15px; font-weight:bold; color:green; }
-  ul { list-style:none; padding:0; margin-top:20px; max-width:400px; margin:auto; }
-  li { padding:8px; background:#eee; margin:5px 0; border-radius:5px; }
+  #message { margin-top:15px; font-weight:bold; color:green; font-size:18px; }
 </style>
 </head>
 <body>
@@ -31,7 +29,6 @@
 </div>
 
 <div id="message">Initializing...</div>
-<ul id="scannedData"></ul>
 <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <script>
@@ -51,29 +48,25 @@
   const video = document.getElementById("video");
   const cameraSelect = document.getElementById("cameraSelect");
   const messageDiv = document.getElementById("message");
-  const scannedDataList = document.getElementById("scannedData");
   const beep = document.getElementById("beep");
 
   let currentCameraId = null;
-  const existingCodes = new Set();
+  let lastScannedCode = "";
 
   function showMessage(text){
     messageDiv.textContent = text;
-    setTimeout(()=>{ messageDiv.textContent = ""; },2000);
   }
 
   function handleBarcode(code){
-    if(!existingCodes.has(code)){
-      existingCodes.add(code);
+    if(code !== lastScannedCode){
+      lastScannedCode = code;
       beep.play();
       flashScreen();
+      showMessage("Last Scanned: " + code);
       db.collection("scans").add({
         code: code,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
-      showMessage("✅ Saved: "+code);
-    } else {
-      showMessage("⚠ Already exists: "+code);
     }
   }
 
@@ -81,22 +74,6 @@
     document.body.style.background="#ffff99";
     setTimeout(()=>{document.body.style.background="white";},100);
   }
-
-  // ===== Real-time Firebase Listener =====
-  db.collection("scans").orderBy("timestamp","desc").onSnapshot(snapshot=>{
-    scannedDataList.innerHTML="";
-    existingCodes.clear();
-    snapshot.forEach(doc=>{
-      const data = doc.data();
-      if(data.code){
-        existingCodes.add(data.code);
-        const li=document.createElement("li");
-        const time = data.timestamp?.toDate().toLocaleString() || "No time";
-        li.textContent = data.code + " (" + time + ")";
-        scannedDataList.appendChild(li);
-      }
-    });
-  });
 
   // ===== Camera Setup and Scanning =====
   function startScanner(cameraId){
@@ -151,10 +128,7 @@
   // ===== Request Permission & Populate Camera Dropdown =====
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
-      // Stop this temporary stream; we only needed permission
       stream.getTracks().forEach(track => track.stop());
-
-      // Now enumerate devices
       return navigator.mediaDevices.enumerateDevices();
     })
     .then(devices => {
@@ -170,7 +144,6 @@
         cameraSelect.appendChild(option);
       });
 
-      // Start with first camera
       startScanner(cameraSelect.options[0].value);
     })
     .catch(err => {
