@@ -3,26 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <title>Barcode Scanner</title>
-  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
     body {
+      margin: 0;
+      padding: 0;
       background: white;
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0;
-      padding: 0;
+    }
+    #video-container {
+      position: relative;
+      display: inline-block;
+      margin-top: 20px;
     }
     video {
       width: 100%;
-      max-width: 500px;
-      border: 2px solid black;
-      position: relative;
+      max-width: 400px;
+      border: 2px solid #000;
     }
-    #scanner-container {
-      position: relative;
-      display: inline-block;
-    }
-    .scan-line {
+    /* Red scanning line */
+    #scan-line {
       position: absolute;
       top: 0;
       left: 0;
@@ -32,60 +33,60 @@
       animation: scan 2s linear infinite;
     }
     @keyframes scan {
-      0% { top: 0; }
-      50% { top: 90%; }
+      0%   { top: 0; }
+      50%  { top: 95%; }
       100% { top: 0; }
     }
     select, button {
-      margin-top: 10px;
+      margin: 10px;
       padding: 8px;
-      font-size: 14px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
+
   <h2>Barcode Scanner</h2>
-  <div id="scanner-container">
-    <video id="video" autoplay playsinline></video>
-    <div class="scan-line"></div>
-  </div>
-  <br>
+
+  <!-- Camera Selection -->
   <select id="cameraSelect"></select>
-  <p><strong>Result:</strong> <span id="result">No result yet</span></p>
+  <button id="startButton">Start Scanning</button>
+
+  <div id="video-container">
+    <video id="video" autoplay></video>
+    <div id="scan-line"></div>
+  </div>
+
+  <h3 id="result">No result yet</h3>
 
   <script>
     const codeReader = new ZXing.BrowserMultiFormatReader();
-    const videoElement = document.getElementById('video');
-    const resultElement = document.getElementById('result');
+    const video = document.getElementById('video');
     const cameraSelect = document.getElementById('cameraSelect');
+    const resultDiv = document.getElementById('result');
+    const startButton = document.getElementById('startButton');
 
-    // List available cameras
-    codeReader.listVideoInputDevices().then(videoInputDevices => {
-      videoInputDevices.forEach((device, i) => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.text = device.label || `Camera ${i+1}`;
-        cameraSelect.appendChild(option);
+    // Populate camera list
+    codeReader.listVideoInputDevices()
+      .then(videoInputDevices => {
+        if(videoInputDevices.length === 0){
+          resultDiv.textContent = "No camera found!";
+          return;
+        }
+        videoInputDevices.forEach(device =>
+          cameraSelect.appendChild(new Option(device.label || `Camera ${cameraSelect.length+1}`, device.deviceId))
+        );
       });
 
-      if (videoInputDevices.length > 0) {
-        startScanner(videoInputDevices[0].deviceId);
-      }
-    });
-
-    // Start scanning with chosen camera
-    function startScanner(deviceId) {
-      codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
+    // Start scanning
+    startButton.addEventListener('click', () => {
+      const selectedDeviceId = cameraSelect.value;
+      resultDiv.textContent = "Scanning...";
+      codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err) => {
         if (result) {
-          resultElement.textContent = result.getText();
+          resultDiv.textContent = `Result: ${result.text}`;
         }
       });
-    }
-
-    // Change camera on selection
-    cameraSelect.addEventListener('change', () => {
-      codeReader.reset();
-      startScanner(cameraSelect.value);
     });
   </script>
 </body>
