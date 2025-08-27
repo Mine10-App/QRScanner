@@ -1,142 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ZXing Barcode Scanner with Firebase</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <title>Web Barcode Scanner</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    video { width: 100%; max-width: 500px; border: 2px solid #333; border-radius: 8px; margin-top: 10px; }
-    ul { list-style: none; padding: 0; margin-top: 20px; }
-    li { padding: 8px; background: #eee; margin: 5px 0; border-radius: 5px; }
-    #message { margin-top: 15px; font-weight: bold; color: red; }
-    button, select { padding: 10px 20px; margin-top: 10px; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #000;
+      color: #fff;
+      text-align: center;
+    }
+
+    #scanner-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      margin: 20px auto;
+      border: 2px solid #0f0;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+    }
+
+    /* scanning line */
+    #scan-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: red;
+      animation: moveLine 2s linear infinite;
+      opacity: 0.7;
+    }
+
+    @keyframes moveLine {
+      0% { top: 0; }
+      50% { top: 95%; }
+      100% { top: 0; }
+    }
+
+    #result {
+      margin-top: 15px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #0f0;
+    }
   </style>
 </head>
 <body>
-  <h2>ZXing Barcode Scanner (Web)</h2>
+  <h2>Barcode Scanner</h2>
+  <div id="scanner-container">
+    <video id="video" playsinline autoplay></video>
+    <div id="scan-line"></div>
+  </div>
+  <div id="result">Scanning...</div>
 
-  <!-- Camera selector -->
-  <select id="cameraSelect"></select>
-  <button onclick="switchCamera()">Switch Camera</button>
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const resultElement = document.getElementById('result');
 
-  <!-- Video feed -->
-  <video id="video" autoplay></video>
+    async function startScanner() {
+      try {
+        const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+        const rearCamera = devices.find(device => /back|rear/i.test(device.label)) || devices[0];
 
-  <div id="message"></div>
-  <button id="saveBtn" disabled>Save Barcode</button>
-  <ul id="scannedData"></ul>
+        await codeReader.decodeFromVideoDevice(rearCamera.deviceId, videoElement, (result, err) => {
+          if (result) {
+            resultElement.textContent = "✅ Code: " + result.getText();
+          }
+        });
 
-<script>
-  // ===== FIREBASE CONFIG =====
-  const firebaseConfig = {
-    apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
-    authDomain: "qr-scanner-live-5b385.firebaseapp.com",
-    projectId: "qr-scanner-live-5b385",
-    storageBucket: "qr-scanner-live-5b385.firebasestorage.app",
-    messagingSenderId: "260207453177",
-    appId: "1:260207453177:web:ea438ade7b1b56270e1328",
-    measurementId: "G-WQEEHEPWG3"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  const video = document.getElementById("video");
-  const messageDiv = document.getElementById("message");
-  const saveBtn = document.getElementById("saveBtn");
-  const scannedDataList = document.getElementById("scannedData");
-  const cameraSelect = document.getElementById("cameraSelect");
-
-  let currentCode = "";
-  const existingCodes = new Set();
-
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-  let currentStream = null;
-
-  // ===== REAL-TIME FIRESTORE LISTENER =====
-  db.collection("scans").orderBy("timestamp", "desc").onSnapshot(snapshot => {
-    scannedDataList.innerHTML = ""; // clear list
-    existingCodes.clear();
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.code) {
-        existingCodes.add(data.code);
-        const li = document.createElement("li");
-        const time = data.timestamp?.toDate().toLocaleString() || "No time";
-        li.textContent = data.code + " (" + time + ")";
-        scannedDataList.appendChild(li);
-      }
-    });
-  });
-
-  function showMessage(text) {
-    messageDiv.textContent = text;
-    setTimeout(() => { messageDiv.textContent = ""; }, 2000);
-  }
-
-  function saveCurrentCode() {
-    if (!currentCode) return;
-    if (!existingCodes.has(currentCode)) {
-      db.collection("scans").add({
-        code: currentCode,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        copied: false
-      });
-      saveBtn.disabled = true;
-      currentCode = "";
-    } else {
-      showMessage("Match: Code already exists in Firebase.");
-    }
-  }
-  saveBtn.addEventListener("click", saveCurrentCode);
-
-  // ===== CAMERA SETUP =====
-  function startScanner(deviceId) {
-    if (currentStream) {
-      codeReader.reset(); // stop previous camera
-    }
-    codeReader.decodeFromVideoDevice(deviceId, video, result => {
-      if (result) {
-        currentCode = result.text;
-        if (existingCodes.has(currentCode)) {
-          showMessage("Match: Code is in the system");
-          saveBtn.disabled = true;
-        } else {
-          saveBtn.disabled = false;
+        // try to enable autofocus
+        const stream = videoElement.srcObject;
+        if (stream) {
+          const track = stream.getVideoTracks()[0];
+          const capabilities = track.getCapabilities();
+          if (capabilities.focusMode) {
+            track.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
+          }
         }
-      }
-    });
-  }
 
-  function switchCamera() {
-    const selectedId = cameraSelect.value;
-    startScanner(selectedId);
-  }
-  window.switchCamera = switchCamera;
-
-  // ===== Populate camera list =====
-  codeReader.listVideoInputDevices().then(videoInputDevices => {
-    videoInputDevices.forEach(device => {
-      const option = document.createElement("option");
-      option.value = device.deviceId;
-      option.text = device.label || `Camera ${cameraSelect.length + 1}`;
-      cameraSelect.appendChild(option);
-    });
-
-    // Start with first back-facing camera if available
-    let defaultDeviceId = videoInputDevices[0].deviceId;
-    for (const cam of videoInputDevices) {
-      if (cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")) {
-        defaultDeviceId = cam.deviceId;
-        cameraSelect.value = defaultDeviceId;
-        break;
+      } catch (err) {
+        resultElement.textContent = "Error: " + err;
       }
     }
-    startScanner(defaultDeviceId);
-  }).catch(err => console.error(err));
-</script>
+
+    startScanner();
+  </script>
 </body>
 </html>
