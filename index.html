@@ -1,40 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ZXing Barcode Scanner with Firebase</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; background: white; }
-    #video-container { position: relative; display:inline-block; width:100%; max-width:400px; margin-top:20px; }
-    video { width:100%; border:2px solid black; border-radius:8px; }
-    #scan-line { position:absolute; top:0; left:0; width:100%; height:2px; background:red; animation:scan 2s linear infinite; }
-    @keyframes scan {0%{top:0;}50%{top:95%;}100%{top:0;}}
-    select, button { padding: 8px 16px; margin:10px; font-size:16px; }
-    #message { margin-top:15px; font-weight:bold; color:green; }
-    ul { list-style:none; padding:0; margin-top:20px; }
-    li { padding:8px; background:#eee; margin:5px 0; border-radius:5px; }
-  </style>
+<meta charset="UTF-8">
+<title>ZXing Barcode Scanner with Autofocus</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<style>
+  body { font-family: sans-serif; text-align:center; padding:20px; background:white; }
+  #video-container { position:relative; display:inline-block; width:100%; max-width:400px; margin-top:20px; }
+  video { width:100%; border:2px solid black; border-radius:8px; }
+  #scan-line { position:absolute; top:0; left:0; width:100%; height:2px; background:red; animation:scan 2s linear infinite; }
+  @keyframes scan {0%{top:0;}50%{top:95%;}100%{top:0;}}
+  select, button { padding:8px 16px; margin:10px; font-size:16px; }
+  #message { margin-top:15px; font-weight:bold; color:green; font-size:18px; position:relative; }
+</style>
 </head>
 <body>
-  <h2>ZXing Barcode Scanner (Web)</h2>
 
-  <select id="cameraSelect"></select>
-  <button onclick="switchCamera()">Switch Camera</button>
+<h2>ZXing Barcode Scanner (Autofocus)</h2>
 
-  <div id="video-container">
-    <video id="video" autoplay></video>
-    <div id="scan-line"></div>
-  </div>
+<select id="cameraSelect"></select>
+<button onclick="switchCamera()">Switch Camera</button>
 
-  <div id="message">Initializing...</div>
-  <ul id="scannedData"></ul>
+<div id="video-container">
+  <video id="video" autoplay muted playsinline></video>
+  <div id="scan-line"></div>
+</div>
 
-  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<div id="message">Initializing...</div>
+<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <script>
+  // ===== Firebase config =====
   const firebaseConfig = {
     apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
     authDomain: "qr-scanner-live-5b385.firebaseapp.com",
@@ -48,88 +46,90 @@
   const db = firebase.firestore();
 
   const video = document.getElementById("video");
-  const messageDiv = document.getElementById("message");
-  const scannedDataList = document.getElementById("scannedData");
   const cameraSelect = document.getElementById("cameraSelect");
+  const messageDiv = document.getElementById("message");
   const beep = document.getElementById("beep");
 
-  const codeReader = new ZXing.BrowserMultiFormatReader();
   let currentCode = "";
-  const existingCodes = new Set();
-  let currentStream = null;
-
-  // ===== Real-time Firestore listener =====
-  db.collection("scans").orderBy("timestamp","desc").onSnapshot(snapshot => {
-    scannedDataList.innerHTML = "";
-    existingCodes.clear();
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if(data.code){
-        existingCodes.add(data.code);
-        const li = document.createElement("li");
-        const time = data.timestamp?.toDate().toLocaleString() || "No time";
-        li.textContent = data.code + " (" + time + ")";
-        scannedDataList.appendChild(li);
-      }
-    });
-  });
+  let codeReader = new ZXing.BrowserMultiFormatReader();
 
   function showMessage(text){
     messageDiv.textContent = text;
-    setTimeout(()=>{ messageDiv.textContent = ""; },2000);
   }
 
+  function handleBarcode(code){
+    if(code !== currentCode){
+      currentCode = code;
+      beep.play();
+      flashScreen();
+      showMessage("Last Scanned: " + code);
+      db.collection("scans").add({
+        code: code,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+  }
+
+  function flashScreen(){
+    document.body.style.background="#ffff99";
+    setTimeout(()=>{document.body.style.background="white";},100);
+  }
+
+  // ===== Start Scanner with Autofocus =====
   function startScanner(deviceId){
-    if(currentStream) codeReader.reset();
-    codeReader.decodeFromVideoDevice(deviceId, video, result=>{
-      if(result){
-        const code = result.text;
-        if(!existingCodes.has(code)){
-          currentCode = code;
-          beep.play();
-          flashScreen();
-          db.collection("scans").add({
-            code: code,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            copied:false
-          });
-          showMessage("✅ Saved: " + code);
-        } else {
-          showMessage("⚠ Already exists: " + code);
+    codeReader.reset();
+    codeReader.decodeFromVideoDevice(deviceId, video, (result, error, controls) => {
+      // Try to enable continuous autofocus
+      if(controls && controls.track){
+        const track = controls.track;
+        const capabilities = track.getCapabilities();
+        if(capabilities.focusMode && capabilities.focusMode.includes('continuous')){
+          track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(e=>console.warn(e));
         }
       }
+      if(result) handleBarcode(result.text);
     });
   }
 
   function switchCamera(){
-    const deviceId = cameraSelect.value;
-    startScanner(deviceId);
+    startScanner(cameraSelect.value);
   }
   window.switchCamera = switchCamera;
 
-  function flashScreen(){
-    document.body.style.background = "#ffff99";
-    setTimeout(()=>{ document.body.style.background = "white"; },100);
-  }
-
-  // ===== Populate camera list =====
-  codeReader.listVideoInputDevices().then(videoInputDevices=>{
-    videoInputDevices.forEach((device,i)=>{
-      const option = new Option(device.label || `Camera ${i+1}`, device.deviceId);
-      cameraSelect.appendChild(option);
-    });
-    // Prefer back camera
-    let defaultDeviceId = videoInputDevices[0].deviceId;
-    for(const cam of videoInputDevices){
-      if(cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")){
-        defaultDeviceId = cam.deviceId;
-        cameraSelect.value = defaultDeviceId;
-        break;
+  // ===== Camera permission and device list =====
+  navigator.mediaDevices.getUserMedia({ video:true })
+    .then(stream => {
+      stream.getTracks().forEach(track=>track.stop());
+      return codeReader.listVideoInputDevices();
+    })
+    .then(videoInputDevices=>{
+      if(videoInputDevices.length === 0){
+        showMessage("No camera found!");
+        return;
       }
-    }
-    startScanner(defaultDeviceId);
-  }).catch(err=>console.error(err));
+      videoInputDevices.forEach((device,i)=>{
+        const option = document.createElement("option");
+        option.value = device.deviceId;
+        option.text = device.label || `Camera ${i+1}`;
+        cameraSelect.appendChild(option);
+      });
+
+      // Prefer rear camera
+      let defaultDeviceId = videoInputDevices[0].deviceId;
+      for(const cam of videoInputDevices){
+        if(cam.label.toLowerCase().includes("back") || cam.label.toLowerCase().includes("rear")){
+          defaultDeviceId = cam.deviceId;
+          cameraSelect.value = defaultDeviceId;
+          break;
+        }
+      }
+      startScanner(defaultDeviceId);
+    })
+    .catch(err=>{
+      console.error(err);
+      showMessage("Camera permission denied or not found.");
+    });
+
 </script>
 </body>
 </html>
-
