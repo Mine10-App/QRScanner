@@ -2,58 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ZXing Barcode Scanner</title>
-  <script type="module">
-    import { BrowserMultiFormatReader } from "https://cdn.jsdelivr.net/npm/@zxing/browser@latest";
-
-    let codeReader;
-
-    window.addEventListener('load', async () => {
-      codeReader = new BrowserMultiFormatReader();
-      const videoElement = document.getElementById('video');
-      const resultElement = document.getElementById('result');
-      const camerasSelect = document.getElementById('cameras');
-
-      // Get list of cameras
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      devices.forEach((device, i) => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.text = device.label || `Camera ${i+1}`;
-        camerasSelect.appendChild(option);
-      });
-
-      // Start scanning on default camera
-      startScanner(devices[0].deviceId);
-
-      camerasSelect.addEventListener('change', () => {
-        codeReader.reset();
-        startScanner(camerasSelect.value);
-      });
-
-      function startScanner(deviceId) {
-        codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
-          if (result) {
-            resultElement.textContent = `Scanned: ${result.getText()}`;
-          }
-        });
-      }
-    });
-  </script>
-
+  <title>Barcode Scanner</title>
+  <script src="https://unpkg.com/@zxing/browser@latest"></script>
   <style>
     body {
+      background: white;
       font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
       text-align: center;
+      margin: 0;
+      padding: 0;
     }
-    #video {
-      width: 90%;
-      max-width: 600px;
-      border: 4px solid #0f0;
-      border-radius: 10px;
+    video {
+      width: 100%;
+      max-width: 500px;
+      border: 2px solid black;
       position: relative;
+    }
+    #scanner-container {
+      position: relative;
+      display: inline-block;
     }
     .scan-line {
       position: absolute;
@@ -61,32 +28,65 @@
       left: 0;
       width: 100%;
       height: 2px;
-      background: rgba(255, 0, 0, 0.7);
-      animation: move 2s linear infinite;
+      background: red;
+      animation: scan 2s linear infinite;
     }
-    @keyframes move {
+    @keyframes scan {
       0% { top: 0; }
-      50% { top: calc(100% - 2px); }
+      50% { top: 90%; }
       100% { top: 0; }
     }
-    #container {
-      position: relative;
-      display: inline-block;
-    }
-    #result {
-      margin-top: 15px;
-      font-size: 18px;
-      color: #0f0;
+    select, button {
+      margin-top: 10px;
+      padding: 8px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <h1>Barcode Scanner</h1>
-  <select id="cameras"></select>
-  <div id="container">
+  <h2>Barcode Scanner</h2>
+  <div id="scanner-container">
     <video id="video" autoplay playsinline></video>
     <div class="scan-line"></div>
   </div>
-  <div id="result">No result yet...</div>
+  <br>
+  <select id="cameraSelect"></select>
+  <p><strong>Result:</strong> <span id="result">No result yet</span></p>
+
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const resultElement = document.getElementById('result');
+    const cameraSelect = document.getElementById('cameraSelect');
+
+    // List available cameras
+    codeReader.listVideoInputDevices().then(videoInputDevices => {
+      videoInputDevices.forEach((device, i) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.text = device.label || `Camera ${i+1}`;
+        cameraSelect.appendChild(option);
+      });
+
+      if (videoInputDevices.length > 0) {
+        startScanner(videoInputDevices[0].deviceId);
+      }
+    });
+
+    // Start scanning with chosen camera
+    function startScanner(deviceId) {
+      codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
+        if (result) {
+          resultElement.textContent = result.getText();
+        }
+      });
+    }
+
+    // Change camera on selection
+    cameraSelect.addEventListener('change', () => {
+      codeReader.reset();
+      startScanner(cameraSelect.value);
+    });
+  </script>
 </body>
 </html>
