@@ -5,7 +5,7 @@
 <title>Web Barcode Scanner with Firebase</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 <style>
   body {
     background: white;
@@ -14,16 +14,14 @@
     margin: 0;
     padding: 20px;
   }
-  #video-container {
-    position: relative;
-    display: inline-block;
-    margin-top: 20px;
-  }
-  video {
+  #reader {
     width: 100%;
     max-width: 400px;
+    position: relative;
+    margin: 0 auto;
     border: 2px solid black;
   }
+  /* Red scanning line */
   #scan-line {
     position: absolute;
     top: 0;
@@ -32,17 +30,11 @@
     height: 2px;
     background: red;
     animation: scan 2s linear infinite;
-    opacity: 0.7;
   }
   @keyframes scan {
     0% { top: 0; }
     50% { top: 95%; }
     100% { top: 0; }
-  }
-  select, button {
-    margin: 10px;
-    padding: 8px 16px;
-    font-size: 16px;
   }
   #result {
     margin-top: 10px;
@@ -55,14 +47,9 @@
 
 <h2>Web Barcode Scanner with Firebase</h2>
 
-<select id="cameraSelect"></select>
-<button id="startBtn">Start Scanning</button>
-
-<div id="video-container">
-  <video id="video" autoplay playsinline></video>
+<div id="reader">
   <div id="scan-line"></div>
 </div>
-
 <div id="result">No result yet</div>
 
 <script>
@@ -79,57 +66,49 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const video = document.getElementById('video');
-  const cameraSelect = document.getElementById('cameraSelect');
-  const resultDiv = document.getElementById('result');
-  const startBtn = document.getElementById('startBtn');
+  const existingCodes = new Set();
 
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-  const existingCodes = new Set(); // prevent duplicates
-
-  // ===== Load existing codes from Firebase =====
+  // Load existing codes from Firebase
   db.collection("scans").get().then(snapshot => {
     snapshot.forEach(doc => {
       if(doc.data().code) existingCodes.add(doc.data().code);
     });
   });
 
-  // ===== Populate camera list =====
-  codeReader.listVideoInputDevices().then(videoInputDevices => {
-    if(videoInputDevices.length === 0) {
-      alert("No camera found!");
-      return;
-    }
-    videoInputDevices.forEach((device, i) => {
-      const option = new Option(device.label || `Camera ${i+1}`, device.deviceId);
-      cameraSelect.appendChild(option);
-    });
-  }).catch(err => console.error(err));
+  // ===== HTML5-QRCODE SETUP =====
+  const html5QrCode = new Html5Qrcode("reader");
 
-  // ===== Start scanning =====
-  startBtn.addEventListener('click', () => {
-    const deviceId = cameraSelect.value;
-    resultDiv.textContent = "Scanning...";
+  const config = {
+    fps: 10,
+    qrbox: { width: 300, height: 300 },
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true } // sharper scanning
+  };
 
-    codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
-      if(result) {
-        const code = result.getText();
-        if(!existingCodes.has(code)) {
-          existingCodes.add(code);
+  html5QrCode.start(
+    { facingMode: "environment" }, // rear camera
+    config,
+    decodedText => {
+      if(!existingCodes.has(decodedText)){
+        existingCodes.add(decodedText);
 
-          // Save to Firebase
-          db.collection("scans").add({
-            code: code,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            copied: false
-          });
+        // Save to Firebase
+        db.collection("scans").add({
+          code: decodedText,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          copied: false
+        });
 
-          resultDiv.textContent = `✅ Scanned & saved: ${code}`;
-        } else {
-          resultDiv.textContent = `⚠ Code already exists: ${code}`;
-        }
+        document.getElementById("result").textContent = "✅ Saved: " + decodedText;
+      } else {
+        document.getElementById("result").textContent = "⚠ Already exists: " + decodedText;
       }
-    });
+    },
+    errorMessage => {
+      // You can ignore decode errors, no need to spam console
+    }
+  ).catch(err => {
+    console.error("Camera initialization error:", err);
+    document.getElementById("result").textContent = "Camera access denied or unavailable.";
   });
 </script>
 
