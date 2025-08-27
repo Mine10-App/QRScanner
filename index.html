@@ -2,53 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Barcode Scanner with Firebase</title>
+<title>Web Barcode Scanner with Firebase</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <style>
-  body {
-    background: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 0;
-    padding: 20px;
-  }
-  #video-container {
-    position: relative;
-    display: inline-block;
-    width: 100%;
-    max-width: 400px;
-    margin: 20px auto;
-  }
-  video {
-    width: 100%;
-    border: 2px solid black;
-  }
-  #scan-line {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: red;
-    animation: scan 2s linear infinite;
-  }
-  @keyframes scan {
-    0% { top: 0; }
-    50% { top: 95%; }
-    100% { top: 0; }
-  }
-  select, button {
-    margin: 10px;
-    padding: 8px 16px;
-    font-size: 16px;
-  }
-  #result {
-    margin-top: 10px;
-    font-weight: bold;
-    color: green;
-  }
+  body { background: white; font-family: Arial; text-align: center; margin:0; padding:20px;}
+  #video-container { position: relative; display: inline-block; width:100%; max-width:400px; margin:20px auto; }
+  video { width:100%; border:2px solid black;}
+  #scan-line { position:absolute; top:0; left:0; width:100%; height:2px; background:red; animation:scan 2s linear infinite;}
+  @keyframes scan {0%{top:0;}50%{top:95%;}100%{top:0;}}
+  select, button { margin:10px; padding:8px 16px; font-size:16px;}
+  #result { margin-top:10px; font-weight:bold; color:green;}
 </style>
 </head>
 <body>
@@ -66,7 +31,7 @@
 <div id="result">No result yet</div>
 
 <script>
-  // ===== FIREBASE CONFIG =====
+  // Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
     authDomain: "qr-scanner-live-5b385.firebaseapp.com",
@@ -83,8 +48,7 @@
   const cameraSelect = document.getElementById('cameraSelect');
   const startBtn = document.getElementById('startBtn');
   const resultDiv = document.getElementById('result');
-
-  const existingCodes = new Set(); // prevent duplicates
+  const existingCodes = new Set();
 
   // Load existing codes from Firebase
   db.collection("scans").get().then(snapshot => {
@@ -93,32 +57,47 @@
     });
   });
 
-  let codeReader = new ZXing.BrowserMultiFormatReader();
+  const codeReader = new ZXing.BrowserMultiFormatReader();
 
-  // Populate camera list
-  codeReader.listVideoInputDevices().then(videoInputDevices => {
-    if(videoInputDevices.length === 0){
-      alert("No camera found!");
-      return;
+  async function populateCameras() {
+    try {
+      // Request camera access first (required on some browsers for labels)
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop()); // stop after permission
+
+      const videoInputDevices = await codeReader.listVideoInputDevices();
+      if(videoInputDevices.length === 0) {
+        alert("No camera found!");
+        return;
+      }
+
+      cameraSelect.innerHTML = ""; // clear old options
+      videoInputDevices.forEach((device, i) => {
+        const option = new Option(device.label || `Camera ${i+1}`, device.deviceId);
+        cameraSelect.appendChild(option);
+      });
+    } catch(err) {
+      console.error(err);
+      alert("Camera permission denied or no camera available.");
     }
-    videoInputDevices.forEach((device, i) => {
-      const option = new Option(device.label || `Camera ${i+1}`, device.deviceId);
-      cameraSelect.appendChild(option);
-    });
-  }).catch(err => console.error(err));
+  }
+
+  // Call populate on load
+  populateCameras();
 
   // Start scanning
   startBtn.addEventListener('click', () => {
     const selectedDeviceId = cameraSelect.value;
+    if(!selectedDeviceId) { alert("Select a camera first."); return; }
+
     resultDiv.textContent = "Scanning...";
-    codeReader.reset(); // stop any previous scanning
+    codeReader.reset();
 
     codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err) => {
       if(result){
         const code = result.getText();
         if(!existingCodes.has(code)){
           existingCodes.add(code);
-          // Save to Firebase
           db.collection("scans").add({
             code: code,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
