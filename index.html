@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Web Barcode Scanner with Firebase</title>
+<title>Auto Barcode Scanner with Firebase</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
@@ -12,24 +12,24 @@
   video { width:100%; border:2px solid black; }
   #scan-line { position:absolute; top:0; left:0; width:100%; height:2px; background:red; animation:scan 2s linear infinite; }
   @keyframes scan {0%{top:0;}50%{top:95%;}100%{top:0;}}
-  select, button { margin:10px; padding:8px 16px; font-size:16px; }
+  select { margin:10px; padding:8px 16px; font-size:16px; }
   #result { margin-top:10px; font-weight:bold; color:green; }
 </style>
 </head>
 <body>
 
-<h2>Web Barcode Scanner with Firebase</h2>
+<h2>Auto Barcode Scanner with Firebase</h2>
 
 <select id="cameraSelect"></select>
-<button id="startBtn">Start Scanning</button>
-<button id="saveBtn" disabled>Save Barcode</button>
 
 <div id="video-container">
   <video id="video" autoplay playsinline></video>
   <div id="scan-line"></div>
 </div>
 
-<div id="result">No result yet</div>
+<div id="result">Initializing...</div>
+
+<audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
 <script>
   // ===== Firebase Config =====
@@ -47,12 +47,11 @@
 
   const video = document.getElementById('video');
   const cameraSelect = document.getElementById('cameraSelect');
-  const startBtn = document.getElementById('startBtn');
-  const saveBtn = document.getElementById('saveBtn');
   const resultDiv = document.getElementById('result');
+  const beep = document.getElementById('beep');
+
   const existingCodes = new Set();
   let currentCode = "";
-
   const codeReader = new ZXing.BrowserMultiFormatReader();
 
   // Load existing codes from Firebase
@@ -62,66 +61,74 @@
     });
   });
 
-  // Populate camera options (request permission first)
-  async function populateCameras() {
+  async function initCameras() {
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
+      // Request permission
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop());
+
       const devices = await codeReader.listVideoInputDevices();
-      devices.forEach((device,i)=>{
-        const option = new Option(device.label || `Camera ${i+1}`, device.deviceId);
+      if(devices.length === 0){ alert("No camera found!"); return; }
+
+      cameraSelect.innerHTML = "";
+      devices.forEach((dev,i)=>{
+        const option = new Option(dev.label || `Camera ${i+1}`, dev.deviceId);
         cameraSelect.appendChild(option);
       });
-      // Prefer rear/back camera if available
-      for(const dev of devices){
-        if(dev.label.toLowerCase().includes("back") || dev.label.toLowerCase().includes("rear")){
-          cameraSelect.value = dev.deviceId;
-          break;
-        }
-      }
+
+      // Prefer rear camera
+      let rearDevice = devices.find(d => d.label.toLowerCase().includes("back") || d.label.toLowerCase().includes("rear"));
+      if(rearDevice) cameraSelect.value = rearDevice.deviceId;
+
+      startScanner(cameraSelect.value);
     } catch(err){
-      alert("Camera access denied or not available");
+      console.error(err);
+      resultDiv.textContent = "Camera access denied or unavailable.";
     }
   }
-  populateCameras();
 
-  // Start scanning
-  startBtn.addEventListener('click', ()=>{
-    const deviceId = cameraSelect.value;
-    if(!deviceId){ alert("Select a camera first"); return; }
-    resultDiv.textContent = "Scanning...";
+  async function startScanner(deviceId){
     codeReader.reset();
-
+    resultDiv.textContent = "Scanning...";
     codeReader.decodeFromVideoDevice(deviceId, video, (result, err)=>{
       if(result){
-        currentCode = result.getText();
-        if(existingCodes.has(currentCode)){
-          resultDiv.textContent = "⚠ Already exists: " + currentCode;
-          saveBtn.disabled = true;
+        const code = result.getText();
+        if(!existingCodes.has(code)){
+          existingCodes.add(code);
+          currentCode = code;
+
+          // Save automatically to Firebase
+          db.collection("scans").add({
+            code: code,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            copied:false
+          });
+
+          // Beep + flash effect
+          beep.play();
+          flashScreen();
+          resultDiv.textContent = "✅ Saved: " + code;
         } else {
-          resultDiv.textContent = "✅ Scanned: " + currentCode;
-          saveBtn.disabled = false;
+          resultDiv.textContent = "⚠ Already exists: " + code;
         }
       }
     }).catch(err=>{
       console.error(err);
-      resultDiv.textContent = "Camera error";
+      resultDiv.textContent = "Camera error.";
     });
+  }
+
+  function flashScreen(){
+    document.body.style.background = "#ffff99";
+    setTimeout(()=>{ document.body.style.background = "white"; },100);
+  }
+
+  cameraSelect.addEventListener('change', ()=>{
+    startScanner(cameraSelect.value);
   });
 
-  // Save scanned code to Firebase
-  saveBtn.addEventListener('click', ()=>{
-    if(!currentCode) return;
-    if(existingCodes.has(currentCode)) return;
-    existingCodes.add(currentCode);
-    db.collection("scans").add({
-      code: currentCode,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      copied:false
-    });
-    resultDiv.textContent = "✅ Saved: " + currentCode;
-    saveBtn.disabled = true;
-    currentCode = "";
-  });
+  // Auto initialize cameras
+  initCameras();
 </script>
 
 </body>
