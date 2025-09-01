@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QR Boarding Pass Parser</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f9; display:flex; justify-content:center; }
+  .container { max-width: 900px; width:100%; display:flex; gap:20px; }
+  .scanner, .list { flex:1; background:#fff; padding:20px; border-radius:12px; box-shadow:0 0 12px rgba(0,0,0,0.1); }
+  h2 { text-align:center; color: #333; }
+  label { display: block; margin-top: 15px; font-weight: bold; }
+  input, select { width: 100%; padding: 10px; margin-top: 5px; border:1px solid #ccc; border-radius:6px; }
+  table { width:100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+  th { background:#007bff; color:#fff; }
+  tr:nth-child(even) { background:#f9f9f9; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="scanner">
+ 
+    <label for="qrInput">Paste Code / Scan Code:</label>
+    <input type="text" id="qrInput" placeholder="Paste or scan BarCode data here" />
+    
+    <label for="flightSelect">Flights Today:</label>
+    <select id="flightSelect">
+      <option value="">--Choose Flight--</option>
+    </select>
+    
+    <table id="qrTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Flight No</th>
+          <th>Name</th>
+          <th>Seat No</th>
+          <th>FQTV</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getFirestore, collection, query, where, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+// 🔹 Firebase config
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const qrInput = document.getElementById("qrInput");
+const qrTableBody = document.querySelector("#qrTable tbody");
+const flightSelect = document.getElementById("flightSelect");
+
+let allEntries = []; // keep all today's entries
+
+// --- QR parse function ---
+function parseQR(code){
+  code = code.trim().toUpperCase().replace(/\s+/g,' ');
+  const allParts = code.split(' ');
+  let name="", flightNo="", seatNo="", fq="";
+
+  if(code.startsWith("TKVCPO")){
+    const tkIndex = code.indexOf("TK0");
+    if(tkIndex !== -1){
+      flightNo = code.substring(tkIndex, tkIndex+6);
+      name = code.substring(6, tkIndex);
+    }
+    const mlePos = code.indexOf("MLE");
+    if(mlePos !== -1){
+      const afterMLE = code.substring(mlePos).split(' ')[0];
+      if(afterMLE.length >= 11) seatNo = afterMLE.substring(8,11);
+    }
+  } else {
+    name = allParts[0].substring(2);
+    const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+    if(mleIndex!==-1){
+      const mleWord = allParts[mleIndex];
+      const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+      flightNo = mleWord.slice(-2)+nextWord;
+      const partsAfterMLE = allParts.slice(mleIndex+1);
+      for(let w of partsAfterMLE){
+        if(w.length>=9 && !w.startsWith("QR") && !w.includes("MLE")){
+          seatNo = w.substring(5, w.length-4);
+          break;
+        }
+      }
+    }
+  }
+
+  const lastChar = code.slice(-1);
+  const airline = flightNo.slice(0,2);
+  if(airline==="BA" && allParts.length>=3) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
+  else if(airline==="EK" && allParts.length>=4) fq = allParts[allParts.length-4]+" "+allParts[allParts.length-3];
+  else if(airline==="EY" && allParts.length>=4) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
+  else if(flightNo.startsWith("QR") && allParts.length>=5 && allParts[allParts.length-5]==="2A") fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
+  
+  if(fq){
+    if(lastChar==="1") fq+="/P";
+    else if(lastChar==="2") fq+="/G";
+    else if(lastChar==="S") fq+="/S";
+  }
+
+  return { name:name||"-", flightNo:flightNo||"-", seatNo:seatNo||"-", fq: fq||"-" };
+}
+
+// --- Load today's entries ---
+function loadTodayEntries(){
+  const today = new Date().toISOString().split("T")[0];
+  const q = query(collection(db,"qr_entries"), where("date","==",today));
+  
+  onSnapshot(q, snapshot=>{
+    allEntries = [];
+    qrTableBody.innerHTML = "";
+    const flightSet = new Set();
+
+    snapshot.forEach(docSnap=>{
+      const d = docSnap.data();
+      allEntries.push(d);
+      flightSet.add(d.flightNo);
+    });
+
+    // populate flight dropdown
+    flightSelect.innerHTML = '<option value="">--Choose Flight--</option>';
+    flightSet.forEach(f=> flightSelect.innerHTML+=`<option value="${f}">${f}</option>`);
+
+    displayEntries(); // show all entries initially
+  });
+}
+
+// --- Display entries (with optional flight filter) ---
+function displayEntries(flight=""){
+  qrTableBody.innerHTML = "";
+  allEntries.filter(d => flight==="" || d.flightNo===flight)
+            .forEach(d=>{
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${d.date}</td><td>${d.flightNo}</td><td>${d.name}</td><td>${d.seatNo}</td><td>${d.fq}</td>`;
+      qrTableBody.appendChild(row);
+  });
+}
+
+// --- On QR input ---
+qrInput.addEventListener("input", async ()=>{
+  const code = qrInput.value.trim();
+  if(!code) return;
+
+  const parsed = parseQR(code);
+  const today = new Date().toISOString().split("T")[0];
+
+  try{
+    await addDoc(collection(db,"qr_entries"), {...parsed, date: today});
+    qrInput.value="";
+  }catch(err){ console.error("Error saving QR:", err); }
+});
+
+// --- Filter by flight ---
+flightSelect.addEventListener("change", ()=> displayEntries(flightSelect.value));
+
+// Initialize
+loadTodayEntries();
+</script>
+</body>
+</html>
