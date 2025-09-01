@@ -6,7 +6,7 @@
 <style>
   body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f9; display:flex; justify-content:center; }
   .container { max-width: 900px; width:100%; display:flex; gap:20px; }
-  .scanner, .list { flex:1; background:#fff; padding:20px; border-radius:12px; box-shadow:0 0 12px rgba(0,0,0,0.1); }
+  .scanner { flex:1; background:#fff; padding:20px; border-radius:12px; box-shadow:0 0 12px rgba(0,0,0,0.1); }
   h2 { text-align:center; color: #333; }
   label { display: block; margin-top: 15px; font-weight: bold; }
   input, select { width: 100%; padding: 10px; margin-top: 5px; border:1px solid #ccc; border-radius:6px; }
@@ -20,9 +20,9 @@
 <div class="container">
 
   <div class="scanner">
- 
-    <label for="qrInput">Paste Code / Scan Code:</label>
-    <input type="text" id="qrInput" placeholder="Paste or scan BarCode data here" />
+    <h2>QR Boarding Pass Parser</h2>
+    <label for="qrInput">Paste QR / Scan Code:</label>
+    <input type="text" id="qrInput" placeholder="Paste or scan QR data here" />
     
     <label for="flightSelect">Flights Today:</label>
     <select id="flightSelect">
@@ -45,133 +45,132 @@
 
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getFirestore, collection, query, where, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+<!-- Firebase Compat Scripts for IE / MS Access -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-// 🔹 Firebase config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+<script>
+  // --- Firebase init ---
+  var firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  var qrInput = document.getElementById("qrInput");
+  var qrTableBody = document.querySelector("#qrTable tbody");
+  var flightSelect = document.getElementById("flightSelect");
 
-const qrInput = document.getElementById("qrInput");
-const qrTableBody = document.querySelector("#qrTable tbody");
-const flightSelect = document.getElementById("flightSelect");
+  var allEntries = []; // keep all today's entries
 
-let allEntries = []; // keep all today's entries
+  // --- Parse QR ---
+  function parseQR(code){
+    code = code.trim().toUpperCase().replace(/\s+/g,' ');
+    var allParts = code.split(' ');
+    var name="", flightNo="", seatNo="", fq="";
 
-// --- QR parse function ---
-function parseQR(code){
-  code = code.trim().toUpperCase().replace(/\s+/g,' ');
-  const allParts = code.split(' ');
-  let name="", flightNo="", seatNo="", fq="";
-
-  if(code.startsWith("TKVCPO")){
-    const tkIndex = code.indexOf("TK0");
-    if(tkIndex !== -1){
-      flightNo = code.substring(tkIndex, tkIndex+6);
-      name = code.substring(6, tkIndex);
-    }
-    const mlePos = code.indexOf("MLE");
-    if(mlePos !== -1){
-      const afterMLE = code.substring(mlePos).split(' ')[0];
-      if(afterMLE.length >= 11) seatNo = afterMLE.substring(8,11);
-    }
-  } else {
-    name = allParts[0].substring(2);
-    const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
-    if(mleIndex!==-1){
-      const mleWord = allParts[mleIndex];
-      const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
-      flightNo = mleWord.slice(-2)+nextWord;
-      const partsAfterMLE = allParts.slice(mleIndex+1);
-      for(let w of partsAfterMLE){
-        if(w.length>=9 && !w.startsWith("QR") && !w.includes("MLE")){
-          seatNo = w.substring(5, w.length-4);
-          break;
+    if(code.startsWith("TKVCPO")){
+      var tkIndex = code.indexOf("TK0");
+      if(tkIndex !== -1){
+        flightNo = code.substring(tkIndex, tkIndex+6);
+        name = code.substring(6, tkIndex);
+      }
+      var mlePos = code.indexOf("MLE");
+      if(mlePos !== -1){
+        var afterMLE = code.substring(mlePos).split(' ')[0];
+        if(afterMLE.length >= 11) seatNo = afterMLE.substring(8,11);
+      }
+    } else {
+      name = allParts[0].substring(2);
+      var mleIndex = allParts.findIndex(function(w){ return w.includes("MLE"); });
+      if(mleIndex!==-1){
+        var mleWord = allParts[mleIndex];
+        var nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+        flightNo = mleWord.slice(-2)+nextWord;
+        var partsAfterMLE = allParts.slice(mleIndex+1);
+        for(var i=0;i<partsAfterMLE.length;i++){
+          var w = partsAfterMLE[i];
+          if(w.length>=9 && w.indexOf("QR")===-1 && w.indexOf("MLE")===-1){
+            seatNo = w.substring(5, w.length-4);
+            break;
+          }
         }
       }
     }
+
+    var lastChar = code.slice(-1);
+    var airline = flightNo.slice(0,2);
+    if(airline==="BA" && allParts.length>=3) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
+    else if(airline==="EK" && allParts.length>=4) fq = allParts[allParts.length-4]+" "+allParts[allParts.length-3];
+    else if(airline==="EY" && allParts.length>=4) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
+    else if(flightNo.startsWith("QR") && allParts.length>=5 && allParts[allParts.length-5]==="2A") fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
+    
+    if(fq){
+      if(lastChar==="1") fq+="/P";
+      else if(lastChar==="2") fq+="/G";
+      else if(lastChar==="S") fq+="/S";
+    }
+
+    return { name: name||"-", flightNo: flightNo||"-", seatNo: seatNo||"-", fq: fq||"-" };
   }
 
-  const lastChar = code.slice(-1);
-  const airline = flightNo.slice(0,2);
-  if(airline==="BA" && allParts.length>=3) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
-  else if(airline==="EK" && allParts.length>=4) fq = allParts[allParts.length-4]+" "+allParts[allParts.length-3];
-  else if(airline==="EY" && allParts.length>=4) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
-  else if(flightNo.startsWith("QR") && allParts.length>=5 && allParts[allParts.length-5]==="2A") fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
-  
-  if(fq){
-    if(lastChar==="1") fq+="/P";
-    else if(lastChar==="2") fq+="/G";
-    else if(lastChar==="S") fq+="/S";
-  }
-
-  return { name:name||"-", flightNo:flightNo||"-", seatNo:seatNo||"-", fq: fq||"-" };
-}
-
-// --- Load today's entries ---
-function loadTodayEntries(){
-  const today = new Date().toISOString().split("T")[0];
-  const q = query(collection(db,"qr_entries"), where("date","==",today));
-  
-  onSnapshot(q, snapshot=>{
-    allEntries = [];
-    qrTableBody.innerHTML = "";
-    const flightSet = new Set();
-
-    snapshot.forEach(docSnap=>{
-      const d = docSnap.data();
-      allEntries.push(d);
-      flightSet.add(d.flightNo);
-    });
-
-    // populate flight dropdown
-    flightSelect.innerHTML = '<option value="">--Choose Flight--</option>';
-    flightSet.forEach(f=> flightSelect.innerHTML+=`<option value="${f}">${f}</option>`);
-
-    displayEntries(); // show all entries initially
-  });
-}
-
-// --- Display entries (with optional flight filter) ---
-function displayEntries(flight=""){
-  qrTableBody.innerHTML = "";
-  allEntries.filter(d => flight==="" || d.flightNo===flight)
-            .forEach(d=>{
-      const row = document.createElement("tr");
-      row.innerHTML = `<td>${d.date}</td><td>${d.flightNo}</td><td>${d.name}</td><td>${d.seatNo}</td><td>${d.fq}</td>`;
+  // --- Display entries ---
+  function displayEntries(flightFilter){
+    qrTableBody.innerHTML="";
+    allEntries.filter(function(d){ return !flightFilter || d.flightNo===flightFilter; })
+              .forEach(function(d){
+      var row = document.createElement("tr");
+      row.innerHTML = "<td>"+d.date+"</td><td>"+d.flightNo+"</td><td>"+d.name+"</td><td>"+d.seatNo+"</td><td>"+d.fq+"</td>";
       qrTableBody.appendChild(row);
+    });
+  }
+
+  // --- Load today's entries ---
+  function loadTodayEntries(){
+    var today = new Date().toISOString().split("T")[0];
+    var q = db.collection("qr_entries").where("date","==",today);
+    q.onSnapshot(function(snapshot){
+      allEntries=[];
+      var flightSet = new Set();
+      snapshot.forEach(function(doc){
+        var d = doc.data();
+        allEntries.push(d);
+        flightSet.add(d.flightNo);
+      });
+
+      // Populate dropdown
+      flightSelect.innerHTML='<option value="">--Choose Flight--</option>';
+      flightSet.forEach(function(f){ flightSelect.innerHTML+='<option value="'+f+'">'+f+'</option>'; });
+
+      displayEntries(); // show all entries initially
+    });
+  }
+
+  // --- On QR input ---
+  qrInput.addEventListener("input", function(){
+    var code = qrInput.value.trim();
+    if(!code) return;
+
+    var parsed = parseQR(code);
+    var today = new Date().toISOString().split("T")[0];
+
+    db.collection("qr_entries").add({...parsed, date: today})
+      .then(function(){ qrInput.value=""; })
+      .catch(function(err){ console.error("Error saving QR:", err); });
   });
-}
 
-// --- On QR input ---
-qrInput.addEventListener("input", async ()=>{
-  const code = qrInput.value.trim();
-  if(!code) return;
+  // --- Filter by flight ---
+  flightSelect.addEventListener("change", function(){
+    displayEntries(flightSelect.value);
+  });
 
-  const parsed = parseQR(code);
-  const today = new Date().toISOString().split("T")[0];
-
-  try{
-    await addDoc(collection(db,"qr_entries"), {...parsed, date: today});
-    qrInput.value="";
-  }catch(err){ console.error("Error saving QR:", err); }
-});
-
-// --- Filter by flight ---
-flightSelect.addEventListener("change", ()=> displayEntries(flightSelect.value));
-
-// Initialize
-loadTodayEntries();
+  // --- Init ---
+  loadTodayEntries();
 </script>
 </body>
 </html>
