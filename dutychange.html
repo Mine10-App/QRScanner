@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Duty Change Request</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="form-container">
+  <h2>Duty Change Request</h2>
+
+  <div class="top-buttons">
+    <button class="ribbon-button" onclick="goToDashboard()">Dashboard</button>
+    <button class="ribbon-button" onclick="logout()">Logout</button>
+  </div>
+
+  <form id="dutyChangeForm">
+    <div class="form-row">
+      <label for="requestedStaff">Requested Staff:</label>
+      <input type="text" id="requestedStaff" readonly>
+    </div>
+
+    <div class="form-row">
+      <label for="recipient">Recipient Staff:</label>
+      <select id="recipient" required>
+        <option value="">--Select--</option>
+        <option value="Mohamed Mujahid">Mohamed Mujahid</option>
+        <option value="Magrib Ibrahim">Magrib Ibrahim</option>
+        <option value="Ruhushath Ahmed">Ruhushath Ahmed</option>
+        <option value="Moahmed Jeezan">Moahmed Jeezan</option>
+        <option value="Aishath Aroosha">Aishath Aroosha</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="date">Date:</label>
+      <input type="date" id="date" required>
+    </div>
+
+    <div class="form-row">
+      <label for="dutyTime">Duty Time:</label>
+      <input type="time" id="dutyTime" required>
+    </div>
+
+    <button type="submit" class="ribbon-button">Send Request</button>
+  </form>
+
+  <div id="confirmation" style="margin-top:15px; color:green;"></div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // 🔹 Replace with your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDvHKlApQ4wClz-y0ejSG91ahKBWvPCSM0",
+  authDomain: "leeli-37413.firebaseapp.com",
+  projectId: "leeli-37413",
+  storageBucket: "leeli-37413.firebasestorage.app",
+  messagingSenderId: "1055234470933",
+  appId: "1:1055234470933:web:a7c063c08dbb21d94e8a1c",
+  measurementId: "G-LMKVKWY3TB"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const currentUser = sessionStorage.getItem("currentUser");
+  if(!currentUser){
+    window.location.href = "index.html";
+  } else {
+    document.getElementById("requestedStaff").value = currentUser;
+  }
+
+  function goToDashboard(){
+    window.location.href = "dashboard.html";
+  }
+
+  function logout(){
+    auth.signOut().then(() => {
+      sessionStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
+  }
+
+  document.getElementById("dutyChangeForm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const requestedStaff = document.getElementById("requestedStaff").value;
+    const recipient = document.getElementById("recipient").value;
+    const date = document.getElementById("date").value;
+    const dutyTime = document.getElementById("dutyTime").value;
+
+    if(!recipient){
+      alert("Please select a recipient staff.");
+      return;
+    }
+
+    db.collection("dutyRequests").add({
+      requestedStaff,
+      recipient,
+      date,
+      dutyTime,
+      status: "pending",
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      document.getElementById("confirmation").innerText = `Request sent to ${recipient}.`;
+      document.getElementById("dutyChangeForm").reset();
+      document.getElementById("requestedStaff").value = currentUser;
+    }).catch((error) => {
+      console.error("Error sending request:", error);
+    });
+  });
+</script>
+</body>
+</html>

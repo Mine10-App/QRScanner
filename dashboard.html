@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="form-container">
+  <h2>Welcome, <span id="userName"></span></h2>
+
+  <div class="top-buttons">
+    <button class="ribbon-button" onclick="goToDutyChange()">Request Duty Change</button>
+    <button class="ribbon-button" onclick="logout()">Logout</button>
+  </div>
+
+  <h3>Requests Assigned To You</h3>
+  <div id="incomingRequests">
+    <!-- Incoming requests will appear here -->
+  </div>
+
+  <h3>Requests Sent By You</h3>
+  <div id="sentRequests">
+    <!-- Sent requests will appear here -->
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // 🔹 Replace with your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDvHKlApQ4wClz-y0ejSG91ahKBWvPCSM0",
+  authDomain: "leeli-37413.firebaseapp.com",
+  projectId: "leeli-37413",
+  storageBucket: "leeli-37413.firebasestorage.app",
+  messagingSenderId: "1055234470933",
+  appId: "1:1055234470933:web:a7c063c08dbb21d94e8a1c",
+  measurementId: "G-LMKVKWY3TB"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // Get current user
+  const currentUser = sessionStorage.getItem("currentUser");
+  if(!currentUser){
+    window.location.href = "index.html";
+  } else {
+    document.getElementById("userName").innerText = currentUser;
+  }
+
+  // Navigate to Duty Change page
+  function goToDutyChange(){
+    window.location.href = "dutychange.html";
+  }
+
+  // Logout
+  function logout(){
+    auth.signOut().then(() => {
+      sessionStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
+  }
+
+  // Load requests
+  function loadRequests() {
+    const incomingContainer = document.getElementById("incomingRequests");
+    const sentContainer = document.getElementById("sentRequests");
+
+    incomingContainer.innerHTML = "<p>Loading...</p>";
+    sentContainer.innerHTML = "<p>Loading...</p>";
+
+    db.collection("dutyRequests").get().then((querySnapshot) => {
+      let incomingHTML = "";
+      let sentHTML = "";
+
+      querySnapshot.forEach((doc) => {
+        const req = doc.data();
+        const reqId = doc.id;
+
+        // Incoming requests
+        if(req.recipient === currentUser){
+          incomingHTML += `
+            <div class="request-card">
+              <p><strong>From:</strong> ${req.requestedStaff}</p>
+              <p><strong>Date:</strong> ${req.date}</p>
+              <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
+              <p><strong>Status:</strong> ${req.status}</p>
+              ${req.status === "pending" ? `<button onclick="acceptRequest('${reqId}')">Accept</button>
+              <button onclick="rejectRequest('${reqId}')">Reject</button>` : ""}
+              <hr>
+            </div>
+          `;
+        }
+
+        // Sent requests
+        if(req.requestedStaff === currentUser){
+          sentHTML += `
+            <div class="request-card">
+              <p><strong>To:</strong> ${req.recipient}</p>
+              <p><strong>Date:</strong> ${req.date}</p>
+              <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
+              <p><strong>Status:</strong> ${req.status}</p>
+              <hr>
+            </div>
+          `;
+        }
+      });
+
+      incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
+      sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
+    });
+  }
+
+  // Accept request
+  function acceptRequest(id){
+    db.collection("dutyRequests").doc(id).update({status: "accepted"}).then(() => {
+      alert("Request accepted!");
+      loadRequests();
+    });
+  }
+
+  // Reject request
+  function rejectRequest(id){
+    db.collection("dutyRequests").doc(id).update({status: "rejected"}).then(() => {
+      alert("Request rejected!");
+      loadRequests();
+    });
+  }
+
+  // Initial load
+  loadRequests();
+</script>
+</body>
+</html>
