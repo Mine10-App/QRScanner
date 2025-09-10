@@ -44,7 +44,6 @@ function login() {
 
   if (user) {
     localStorage.setItem("currentUser", user.name);
-    localStorage.setItem("currentUsername", user.username);
     localStorage.setItem("currentRCNo", user.rcNo);
     window.location.href = "dashboard.html";
   } else {
@@ -52,10 +51,8 @@ function login() {
   }
 }
 
-// ===== LOGOUT FUNCTION =====
-function logout() {
+function logout(){
   localStorage.removeItem("currentUser");
-  localStorage.removeItem("currentUsername");
   localStorage.removeItem("currentRCNo");
   window.location.href = "login.html";
 }
