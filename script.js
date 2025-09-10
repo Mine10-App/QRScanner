@@ -38,17 +38,25 @@ const users = [
 function login() {
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
+  const errorMsg = document.getElementById("errorMsg");
 
-  const user = users.find(u => u.username === username && u.password === password);
-
-  if (user) {
-    localStorage.setItem("currentUser", user.name);
-    localStorage.setItem("currentRCNo", user.rcNo);
-    window.location.href = "dashboard.html";
-  } else {
-    document.getElementById("errorMsg").innerText = "Invalid username or password!";
-  }
+  db.collection("users")
+    .where("username", "==", username)
+    .where("password", "==", password)
+    .get()
+    .then(snapshot => {
+      if (snapshot.empty) {
+        errorMsg.innerText = "Invalid username or password!";
+      } else {
+        const userData = snapshot.docs[0].data();
+        localStorage.setItem("currentUser", userData.name);
+        localStorage.setItem("currentRCNo", userData.rcNo);
+        window.location.href = "dashboard.html";
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      errorMsg.innerText = "Error connecting to server!";
+    });
 }
-
-
 
