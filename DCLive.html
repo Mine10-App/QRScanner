@@ -44,9 +44,11 @@
 <script src="sca.js"></script> <!-- must have firebase.initializeApp(config) -->
 
 <script>
-  const db = firebase.firestore();
 
-  function loadAcceptedRequests() {
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function loadAcceptedRequests() {
     const tableBody = document.getElementById("requestsTable");
     const filterDate = document.getElementById("filterDate").value;
     const filterStaff = document.getElementById("filterStaff").value.toLowerCase();
