@@ -5,105 +5,63 @@
 <title>Dashboard</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-  }
-  th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-  }
-  th {
-    background-color: #f2f2f2;
-  }
-  .top-buttons {
-    margin-bottom: 20px;
-  }
-  /* Button styling */
-  .action-btn {
-    padding: 3px 8px;
-    margin: 0 2px;
-    font-size: 0.85em;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-  .accept-btn { background-color: #4CAF50; color: white; }
-  .reject-btn { background-color: #f44336; color: white; }
+  .btn { font-size: 12px; padding: 4px 8px; margin: 2px; cursor: pointer; border: none; border-radius: 4px; }
+  .btn-accept { background-color: #28a745; color: white; }
+  .btn-reject { background-color: #dc3545; color: white; }
+  .btn-cancel { background-color: #ffc107; color: black; }
+  .request-card { border: 1px solid #ccc; padding: 8px; margin: 5px; border-radius: 5px; }
+  .request-row { display: flex; gap: 10px; align-items: center; }
 </style>
 </head>
 <body>
 <div class="form-container">
   <h2>Welcome, <span id="userName"></span></h2>
-
   <div class="top-buttons">
     <button onclick="goToDutyChange()">Request Duty Change</button>
     <button onclick="logout()">Logout</button>
   </div>
 
   <h3>Requests Assigned To You</h3>
-  <table id="incomingRequestsTable">
-    <thead>
-      <tr>
-        <th>From</th>
-        <th>Date</th>
-        <th>Duty Time</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td colspan="5">Loading...</td></tr>
-    </tbody>
-  </table>
+  <div id="incomingRequests"><p>Loading...</p></div>
 
   <h3>Requests Sent By You</h3>
-  <table id="sentRequestsTable">
-    <thead>
-      <tr>
-        <th>To</th>
-        <th>Date</th>
-        <th>Duty Time</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td colspan="4">Loading...</td></tr>
-    </tbody>
-  </table>
+  <div id="sentRequests"><p>Loading...</p></div>
 </div>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="sca.js"></script>
 <script>
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
+  // Current logged-in user
+  const currentUser = localStorage.getItem("currentUser");
+  const currentRCNo = localStorage.getItem("currentRCNo");
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+  if(!currentUser){
+    alert("Please login first!");
+    window.location.href = "login.html";
+  } else {
+    document.getElementById("userName").innerText = currentUser;
+  }
 
-const currentUser = localStorage.getItem("currentUser");
-if(!currentUser){
-  alert("Please login first!");
-  window.location.href = "login.html";
-} else {
-  document.getElementById("userName").innerText = currentUser;
-}
+  function goToDutyChange(){ window.location.href = "dutychange.html"; }
+  function logout(){ 
+    localStorage.removeItem("currentUser"); 
+    localStorage.removeItem("currentRCNo"); 
+    window.location.href = "login.html"; 
+  }
 
-function goToDutyChange(){ window.location.href = "dutychange.html"; }
-function logout(){ localStorage.clear(); window.location.href = "login.html"; }
+  function loadRequests(){
+    const incomingContainer = document.getElementById("incomingRequests");
+    const sentContainer = document.getElementById("sentRequests");
 
-function loadRequests() {
-  const incomingBody = document.querySelector("#incomingRequestsTable tbody");
-  const sentBody = document.querySelector("#sentRequestsTable tbody");
-
-  db.collection("dutyRequests").orderBy("timestamp", "desc").get()
+    db.collection("dutyRequests").orderBy("timestamp", "desc").get()
     .then(snapshot => {
-      incomingBody.innerHTML = "";
-      sentBody.innerHTML = "";
+      let incomingHTML = "";
+      let sentHTML = "";
 
       snapshot.forEach(doc => {
         const req = doc.data();
@@ -111,41 +69,51 @@ function loadRequests() {
 
         // Incoming requests
         if(req.recipient === currentUser){
-          const actions = req.status==="pending" 
-            ? `<button class="action-btn accept-btn" onclick="updateRequest('${reqId}','accepted')">Accept</button>
-               <button class="action-btn reject-btn" onclick="updateRequest('${reqId}','rejected')">Reject</button>` 
-            : "";
-          incomingBody.innerHTML += `<tr>
-            <td>${req.requestedStaff}</td>
-            <td>${req.date}</td>
-            <td>${req.dutyTime}</td>
-            <td>${req.status}</td>
-            <td>${actions}</td>
-          </tr>`;
+          incomingHTML += `
+            <div class="request-card request-row">
+              <span><strong>From:</strong> ${req.requestedStaff}</span>
+              <span><strong>Date:</strong> ${req.date}</span>
+              <span><strong>Duty Time:</strong> ${req.dutyTime}</span>
+              <span><strong>Status:</strong> ${req.status}</span>
+              ${req.status === "pending" ? `<button class="btn btn-accept" onclick="acceptRequest('${reqId}')">Accept</button>
+              <button class="btn btn-reject" onclick="rejectRequest('${reqId}')">Reject</button>` : ""}
+            </div>`;
         }
 
         // Sent requests
         if(req.requestedStaff === currentUser){
-          sentBody.innerHTML += `<tr>
-            <td>${req.recipient}</td>
-            <td>${req.date}</td>
-            <td>${req.dutyTime}</td>
-            <td>${req.status}</td>
-          </tr>`;
+          sentHTML += `
+            <div class="request-card request-row">
+              <span><strong>To:</strong> ${req.recipient}</span>
+              <span><strong>Date:</strong> ${req.date}</span>
+              <span><strong>Duty Time:</strong> ${req.dutyTime}</span>
+              <span><strong>Status:</strong> ${req.status}</span>
+              ${req.status === "pending" ? `<button class="btn btn-cancel" onclick="cancelRequest('${reqId}')">Cancel</button>` : ""}
+            </div>`;
         }
       });
 
-      if(incomingBody.innerHTML === "") incomingBody.innerHTML = "<tr><td colspan='5'>No pending requests.</td></tr>";
-      if(sentBody.innerHTML === "") sentBody.innerHTML = "<tr><td colspan='4'>No requests sent.</td></tr>";
+      incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
+      sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
     });
-}
+  }
 
-function updateRequest(id, status){
-  db.collection("dutyRequests").doc(id).update({status})
-    .then(() => loadRequests());
-}
+  function acceptRequest(id){
+    db.collection("dutyRequests").doc(id).update({status: "accepted"}).then(loadRequests);
+  }
 
-loadRequests();
+  function rejectRequest(id){
+    db.collection("dutyRequests").doc(id).update({status: "rejected"}).then(loadRequests);
+  }
+
+  function cancelRequest(id){
+    if(confirm("Are you sure you want to cancel this request?")){
+      db.collection("dutyRequests").doc(id).delete().then(loadRequests);
+    }
+  }
+
+  // Initial load
+  loadRequests();
 </script>
 </body>
 </html>
