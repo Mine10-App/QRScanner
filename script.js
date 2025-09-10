@@ -41,14 +41,16 @@ function login() {
 
   const user = users.find(u => u.username === username && u.password === password);
 
-  if (user) {
-    sessionStorage.setItem("currentUser", user.name);
-    sessionStorage.setItem("currentRCNo", user.rcNo);
+ if(user){
+    localStorage.setItem("currentUser", user.name);  // must match key exactly
+    localStorage.setItem("currentRCNo", user.rcNo);
     window.location.href = "dashboard.html";
+
   } else {
     document.getElementById("errorMsg").innerText = "Invalid username or password!";
   }
 }
+
 
 
 
