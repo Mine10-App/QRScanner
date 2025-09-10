@@ -41,7 +41,7 @@ function login() {
 
   const user = users.find(u => u.email === email && u.password === password);
 
-  if(user){
+  if (user) {
     localStorage.setItem("currentUser", user.name);
     localStorage.setItem("currentRCNo", user.rcNo);
     window.location.href = "dashboard.html";
@@ -50,14 +50,4 @@ function login() {
   }
 }
 
-function logout(){
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("currentRCNo");
-  window.location.href = "login.html";
-}
-
-function DC(){
-  
-  window.location.href = "DutyChange.html";
-}
 
