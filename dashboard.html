@@ -28,7 +28,8 @@
 
   <script>
     // Get current user from localStorage
-    const currentUser = sessionStorage.getItem("currentUser");
+    const currentUser = localStorage.getItem("currentUser"); 
+    const currentRCNo = localStorage.getItem("currentRCNo");
     if (!currentUser) {
         alert("Please login first!");
         window.location.href = "login.html";
