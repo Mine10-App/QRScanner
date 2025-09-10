@@ -20,52 +20,7 @@
     <p id="errorMsg" style="color:red;"></p>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="script.js"></script>
-  <script>
-    // Firebase config
-     const firebaseConfig = {
-  apiKey: "AIzaSyDvHKlApQ4wClz-y0ejSG91ahKBWvPCSM0",
-  authDomain: "leeli-37413.firebaseapp.com",
-  projectId: "leeli-37413",
-  storageBucket: "leeli-37413.firebasestorage.app",
-  messagingSenderId: "1055234470933",
-  appId: "1:1055234470933:web:a7c063c08dbb21d94e8a1c",
-  measurementId: "G-LMKVKWY3TB"
-};
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    function login() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const errorMsg = document.getElementById("errorMsg");
-
-      if (!email || !password) return;
-
-      db.collection("users").where("email", "==", email).where("password", "==", password)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            errorMsg.innerText = "Invalid email or password";
-          } else {
-            // Save current user
-            const userData = snapshot.docs[0].data();
-            localStorage.setItem("currentUser", userData.name);
-            localStorage.setItem("currentEmail", userData.email);
-            window.location.href = "dashboard.html";
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          errorMsg.innerText = "Error connecting to server";
-        });
-    }
-  </script>
+  <!-- Use only your script.js -->
+  <script src="script.js"></script>
 </body>
 </html>
-
