@@ -5,7 +5,8 @@
 <title>Duty Change Request</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .small-btn { padding: 4px 8px; font-size: 0.8rem; margin-right: 5px; }
+  .top-buttons button { padding: 5px 10px; margin-right: 5px; font-size: 0.9rem; }
+  .form-row { margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -13,8 +14,8 @@
   <h2>Duty Change Request</h2>
 
   <div class="top-buttons">
-    <button class="small-btn" onclick="goToDashboard()">Dashboard</button>
-    <button class="small-btn" onclick="logout()">Logout</button>
+    <button onclick="goToDashboard()">Dashboard</button>
+    <button onclick="logout()">Logout</button>
   </div>
 
   <form id="dutyChangeForm">
@@ -45,47 +46,71 @@
       <input type="time" id="dutyTime" required>
     </div>
 
-    <button type="submit" class="small-btn">Send Request</button>
+    <button type="submit">Send Request</button>
   </form>
 
   <div id="confirmation" style="margin-top:15px; color:green;"></div>
 </div>
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="sca.js"></script>
+<script src="sca.js"></script> <!-- your separate config file -->
 
 <script>
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-const currentUser = localStorage.getItem("currentUser");
-if (!currentUser) {
-  alert("Please login first!");
-  window.location.href = "login.html";
-} else {
-  document.getElementById("requestedStaff").value = currentUser;
-}
+  // Get current user
+  const currentUser = localStorage.getItem("currentUser");
+  if (!currentUser) {
+    alert("Please login first!");
+    window.location.href = "login.html";
+  } else {
+    document.getElementById("requestedStaff").value = currentUser;
+  }
 
-function goToDashboard() {
-  window.location.href = "dashboard.html";
-}
+  function goToDashboard(){
+    window.location.href = "dashboard.html";
+  }
 
-function logout() {
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("currentRCNo");
-  window.location.href = "login.html";
-}
+  function logout(){
+    // Clear user info from localStorage
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("currentRCNo");
+    window.location.href = "login.html";
+  }
 
-// Check half-month limit
-function canSendRequest(requests, currentUser, requestDate) {
-    const date = new Date(requestDate);
-    const day = date.getDate();
-    const month = date.getMonth();
-    const year = date.getFullYear();
-    const half = day <= 15 ? 1 : 2;
+  // Submit duty change request
+  document.getElementById("dutyChangeForm").addEventListener("submit", function(e){
+    e.preventDefault();
 
-    const userRequestsThisHalf = requests.filter(req => {
-        const reqDate = new Date(req.date);
-        const reqHalf = reqDate.getDate() <= 15 ? 1 : 2;
-        return req.requestedStaff === current
+    const requestedStaff = document.getElementById("requestedStaff").value;
+    const recipient = document.getElementById("recipient").value;
+    const date = document.getElementById("date").value;
+    const dutyTime = document.getElementById("dutyTime").value;
+
+    if(!recipient){
+      alert("Please select a recipient staff.");
+      return;
+    }
+
+    db.collection("dutyRequests").add({
+      requestedStaff,
+      recipient,
+      date,
+      dutyTime,
+      status: "pending",
+      applied: false,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      document.getElementById("confirmation").innerText = `Request sent to ${recipient}.`;
+      document.getElementById("dutyChangeForm").reset();
+      document.getElementById("requestedStaff").value = currentUser;
+    }).catch((error) => {
+      console.error("Error sending request:", error);
+    });
+  });
+</script>
+</body>
+</html>
