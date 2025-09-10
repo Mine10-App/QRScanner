@@ -25,10 +25,10 @@
     </div>
 
     <div class="form-row">
-  <label for="recipient">Recipient Staff:</label>
-  <select id="recipient" required>
-    <option value="">--Select--</option>
-  </select>
+      <label for="recipient">Recipient Staff:</label>
+      <select id="recipient" required>
+        <option value="">--Select--</option>
+      </select>
     </div>
 
     <div class="form-row">
@@ -51,11 +51,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="sca.js"></script> 
-  <script src="aqj.js"></script> 
+<script src="aqj.js"></script> 
 
 <script>
-
-  
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
@@ -73,18 +71,14 @@
   }
 
   function logout(){
-    // Clear user info from localStorage
     localStorage.removeItem("currentUser");
     localStorage.removeItem("currentRCNo");
     window.location.href = "login.html";
   }
 
-   // Populate recipient dropdown from aqj.js users array
+  // Populate recipient dropdown from aqj.js users array
   const recipientSelect = document.getElementById("recipient");
-
-  // Loop through users from aqj.js
   users.forEach(user => {
-    // Don't include current logged-in user
     if(user.name !== currentUser){
       const option = document.createElement("option");
       option.value = user.name;
@@ -93,8 +87,8 @@
     }
   });
 
-  // Submit duty change request
-  document.getElementById("dutyChangeForm").addEventListener("submit", function(e){
+  // Submit duty change request with limits
+  document.getElementById("dutyChangeForm").addEventListener("submit", async function(e){
     e.preventDefault();
 
     const requestedStaff = document.getElementById("requestedStaff").value;
@@ -107,25 +101,69 @@
       return;
     }
 
-    db.collection("dutyRequests").add({
-      requestedStaff,
-      recipient,
-      date,
-      dutyTime,
-      status: "pending",
-      applied: false,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      document.getElementById("confirmation").innerText = `Request sent to ${recipient}.`;
+    if(!date){
+      alert("Please select a date.");
+      return;
+    }
+
+    // figure out 1–15 or 16–end
+    const reqDate = new Date(date);
+    const year = reqDate.getFullYear();
+    const month = reqDate.getMonth(); // 0 = Jan
+    let startDate, endDate;
+
+    if (reqDate.getDate() <= 15) {
+      startDate = new Date(year, month, 1);
+      endDate   = new Date(year, month, 15, 23, 59, 59);
+    } else {
+      startDate = new Date(year, month, 16);
+      endDate   = new Date(year, month + 1, 0, 23, 59, 59); // last day
+    }
+
+    try {
+      // 1️⃣ Check if this staff already made a request for this same date
+      const sameDateSnap = await db.collection("dutyRequests")
+        .where("requestedStaff", "==", requestedStaff)
+        .where("date", "==", date)  // exact same date string
+        .get();
+
+      if (!sameDateSnap.empty) {
+        alert("⚠️ You already made a request for this date.");
+        return;
+      }
+
+      // 2️⃣ Count how many requests this staff already made in the current half
+      const snapshot = await db.collection("dutyRequests")
+        .where("requestedStaff", "==", requestedStaff)
+        .where("date", ">=", startDate.toISOString().split("T")[0])
+        .where("date", "<=", endDate.toISOString().split("T")[0])
+        .get();
+
+      if (snapshot.size >= 2) {
+        alert("⚠️ You can only make 2 requests per half-month (1–15 or 16–end).");
+        return;
+      }
+
+      // 3️⃣ If allowed, add new request
+      await db.collection("dutyRequests").add({
+        requestedStaff,
+        recipient,
+        date,
+        dutyTime,
+        status: "pending",
+        applied: false,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      document.getElementById("confirmation").innerText = `✅ Request sent to ${recipient}.`;
       document.getElementById("dutyChangeForm").reset();
       document.getElementById("requestedStaff").value = currentUser;
-    }).catch((error) => {
-      console.error("Error sending request:", error);
-    });
+
+    } catch (error) {
+      console.error("Error checking/adding request:", error);
+      alert("Error sending request. Check console.");
+    }
   });
 </script>
 </body>
 </html>
-
-
-
