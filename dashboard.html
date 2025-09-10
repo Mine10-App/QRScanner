@@ -77,7 +77,7 @@ function loadRequests() {
           <div class="request-card">
             <p><strong>From:</strong> ${req.requestedStaff}</p>
             <p><strong>Date:</strong> ${req.date}</p>
-            <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
+            <p><strong>Date:</strong> ${req.date.toDate().toLocaleDateString()}</p>
             <p><strong>Status:</strong> ${req.status}</p>
             ${req.status === "pending" ? `<button class="small-btn accept" onclick="acceptRequest('${id}')">Accept</button>
             <button class="small-btn reject" onclick="rejectRequest('${id}')">Reject</button>` : ""}
@@ -91,7 +91,7 @@ function loadRequests() {
         sentHTML += `
           <div class="request-card">
             <p><strong>To:</strong> ${req.recipient}</p>
-            <p><strong>Date:</strong> ${req.date}</p>
+            <p><strong>Date:</strong> ${req.date.toDate().toLocaleDateString()}</p>
             <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
             <p><strong>Status:</strong> ${req.status}</p>
             ${!req.applied ? `<button class="small-btn delete" onclick="cancelRequest('${id}')">Cancel</button>` : "<span>Applied</span>"}
@@ -142,4 +142,5 @@ loadRequests();
 </script>
 </body>
 </html>
+
 
