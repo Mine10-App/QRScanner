@@ -5,115 +5,40 @@
 <title>Dashboard</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .btn { font-size: 12px; padding: 4px 8px; margin: 2px; cursor: pointer; border: none; border-radius: 4px; }
-  .btn-accept { background-color: #28a745; color: white; }
-  .btn-reject { background-color: #dc3545; color: white; }
-  .btn-cancel { background-color: #ffc107; color: black; }
-  .request-card { border: 1px solid #ccc; padding: 8px; margin: 5px; border-radius: 5px; }
-  .request-row { display: flex; gap: 10px; align-items: center; }
+.button-small { font-size: 12px; padding: 4px 8px; margin:2px; border:none; cursor:pointer; }
+.accept-btn { background-color: green; color: white; }
+.reject-btn, .cancel-btn { background-color: red; color: white; }
+.request-card { border: 1px solid #ccc; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between; }
+.column { float:left; width:48%; margin:1%; }
 </style>
 </head>
 <body>
-<div class="form-container">
-  <h2>Welcome, <span id="userName"></span></h2>
-  <div class="top-buttons">
-    <button onclick="goToDutyChange()">Request Duty Change</button>
-    <button onclick="logout()">Logout</button>
-  </div>
+<h2>Welcome, <span id="userName"></span></h2>
 
-  <h3>Requests Assigned To You</h3>
-  <div id="incomingRequests"><p>Loading...</p></div>
-
-  <h3>Requests Sent By You</h3>
-  <div id="sentRequests"><p>Loading...</p></div>
+<div>
+  <button class="button-small" onclick="goToDutyChange()">Request Duty Change</button>
+  <button class="button-small" onclick="logout()">Logout</button>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="sca.js"></script>
-<script>
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+<div style="overflow:auto;">
+  <div class="column">
+    <h3>Incoming Requests</h3>
+    <div id="incomingRequests"></div>
+  </div>
+  <div class="column">
+    <h3>Sent Requests</h3>
+    <div id="sentRequests"></div>
+  </div>
+</div>
 
-  // Current logged-in user
-  const currentUser = localStorage.getItem("currentUser");
-  const currentRCNo = localStorage.getItem("currentRCNo");
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-  if(!currentUser){
-    alert("Please login first!");
-    window.location.href = "login.html";
-  } else {
-    document.getElementById("userName").innerText = currentUser;
-  }
+<!-- Separate Firebase config -->
+<script src="firebase-config.js"></script>
 
-  function goToDutyChange(){ window.location.href = "dutychange.html"; }
-  function logout(){ 
-    localStorage.removeItem("currentUser"); 
-    localStorage.removeItem("currentRCNo"); 
-    window.location.href = "login.html"; 
-  }
-
-  function loadRequests(){
-    const incomingContainer = document.getElementById("incomingRequests");
-    const sentContainer = document.getElementById("sentRequests");
-
-    db.collection("dutyRequests").orderBy("timestamp", "desc").get()
-    .then(snapshot => {
-      let incomingHTML = "";
-      let sentHTML = "";
-
-      snapshot.forEach(doc => {
-        const req = doc.data();
-        const reqId = doc.id;
-
-        // Incoming requests
-        if(req.recipient === currentUser){
-          incomingHTML += `
-            <div class="request-card request-row">
-              <span><strong>From:</strong> ${req.requestedStaff}</span>
-              <span><strong>Date:</strong> ${req.date}</span>
-              <span><strong>Duty Time:</strong> ${req.dutyTime}</span>
-              <span><strong>Status:</strong> ${req.status}</span>
-              ${req.status === "pending" ? `<button class="btn btn-accept" onclick="acceptRequest('${reqId}')">Accept</button>
-              <button class="btn btn-reject" onclick="rejectRequest('${reqId}')">Reject</button>` : ""}
-            </div>`;
-        }
-
-        // Sent requests
-        if(req.requestedStaff === currentUser){
-          sentHTML += `
-            <div class="request-card request-row">
-              <span><strong>To:</strong> ${req.recipient}</span>
-              <span><strong>Date:</strong> ${req.date}</span>
-              <span><strong>Duty Time:</strong> ${req.dutyTime}</span>
-              <span><strong>Status:</strong> ${req.status}</span>
-              ${req.status === "pending" ? `<button class="btn btn-cancel" onclick="cancelRequest('${reqId}')">Cancel</button>` : ""}
-            </div>`;
-        }
-      });
-
-      incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
-      sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
-    });
-  }
-
-  function acceptRequest(id){
-    db.collection("dutyRequests").doc(id).update({status: "accepted"}).then(loadRequests);
-  }
-
-  function rejectRequest(id){
-    db.collection("dutyRequests").doc(id).update({status: "rejected"}).then(loadRequests);
-  }
-
-  function cancelRequest(id){
-    if(confirm("Are you sure you want to cancel this request?")){
-      db.collection("dutyRequests").doc(id).delete().then(loadRequests);
-    }
-  }
-
-  // Initial load
-  loadRequests();
-</script>
+<!-- Separate dashboard logic -->
+<script src="dashboard.js"></script>
 </body>
 </html>
