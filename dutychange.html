@@ -57,7 +57,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // Get current user
   const currentUser = localStorage.getItem("currentUser");
   if (!currentUser) {
     alert("Please login first!");
@@ -93,23 +92,25 @@
 
     const requestedStaff = document.getElementById("requestedStaff").value;
     const recipient = document.getElementById("recipient").value;
-    const dateInput = document.getElementById("date").value;  // string YYYY-MM-DD
+    const dateInput = document.getElementById("date").value;
     const dutyTime = document.getElementById("dutyTime").value;
 
     if(!recipient){
       alert("Please select a recipient staff.");
       return;
     }
-
     if(!dateInput){
       alert("Please select a date.");
       return;
     }
 
-    // Convert to Date object
+    // Convert to Firestore Timestamp
     const reqDate = new Date(dateInput);
+    const reqTimestamp = firebase.firestore.Timestamp.fromDate(reqDate);
+
+    // Get start & end for half-month period
     const year = reqDate.getFullYear();
-    const month = reqDate.getMonth(); // 0 = Jan
+    const month = reqDate.getMonth();
 
     let startDate, endDate;
     if (reqDate.getDate() <= 15) {
@@ -117,14 +118,17 @@
       endDate   = new Date(year, month, 15, 23, 59, 59);
     } else {
       startDate = new Date(year, month, 16);
-      endDate   = new Date(year, month + 1, 0, 23, 59, 59); // last day
+      endDate   = new Date(year, month + 1, 0, 23, 59, 59);
     }
+
+    const startTimestamp = firebase.firestore.Timestamp.fromDate(startDate);
+    const endTimestamp   = firebase.firestore.Timestamp.fromDate(endDate);
 
     try {
       // 1️⃣ Check if this staff already made a request for this same date
       const sameDateSnap = await db.collection("dutyRequests")
         .where("requestedStaff", "==", requestedStaff)
-        .where("date", "==", reqDate)   // compare Timestamp
+        .where("date", "==", reqTimestamp)
         .get();
 
       if (!sameDateSnap.empty) {
@@ -135,8 +139,8 @@
       // 2️⃣ Count how many requests this staff already made in the current half
       const snapshot = await db.collection("dutyRequests")
         .where("requestedStaff", "==", requestedStaff)
-        .where("date", ">=", startDate)
-        .where("date", "<=", endDate)
+        .where("date", ">=", startTimestamp)
+        .where("date", "<=", endTimestamp)
         .get();
 
       if (snapshot.size >= 2) {
@@ -148,7 +152,7 @@
       await db.collection("dutyRequests").add({
         requestedStaff,
         recipient,
-        date: reqDate,   // store as Timestamp
+        date: reqTimestamp,   // store as Timestamp
         dutyTime,
         status: "pending",
         applied: false,
@@ -166,6 +170,8 @@
   });
 </script>
 
+
 </body>
 </html>
+
 
