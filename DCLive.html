@@ -10,8 +10,6 @@
   th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
   th { background-color: #f2f2f2; }
   button { padding: 4px 8px; margin: 2px; }
-  .accept-btn { background-color: green; color: white; }
-  .reject-btn { background-color: red; color: white; }
 </style>
 </head>
 <body>
@@ -39,7 +37,7 @@
   </tbody>
 </table>
 
-<script src="sca.js"></script> <!-- Your firebase config file -->
+<script src="sca.js"></script> <!-- Firebase config -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 <script>
   const db = firebase.firestore();
@@ -49,37 +47,41 @@
     const filterDate = document.getElementById("filterDate").value;
     const filterStaff = document.getElementById("filterStaff").value.toLowerCase();
 
-    let query = db.collection("dutyRequests").where("status", "==", "accepted");
+    // Get all accepted requests
+    db.collection("dutyRequests").where("status", "==", "accepted").get()
+      .then(snapshot => {
+        let rows = "";
 
-    query.get().then(snapshot => {
-      let rows = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const requestDate = data.date;
+          const staffName = data.requestedStaff.toLowerCase();
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const requestDate = data.date;
-        const staffName = data.requestedStaff.toLowerCase();
+          // Apply filters if any
+          if ((filterDate && filterDate !== requestDate) ||
+              (filterStaff && !staffName.includes(filterStaff))) return;
 
-        // Apply filters
-        if ((filterDate && filterDate !== requestDate) ||
-            (filterStaff && !staffName.includes(filterStaff))) return;
+          rows += `
+            <tr>
+              <td>${data.requestedStaff}</td>
+              <td>${data.recipient}</td>
+              <td>${data.date}</td>
+              <td>${data.dutyTime}</td>
+              <td>${data.status}</td>
+              <td>
+                ${data.applied ? 'Applied' : `<button onclick="markApplied('${doc.id}')">Apply</button>`}
+                <button onclick="deleteRequest('${doc.id}')" ${data.applied ? 'disabled' : ''}>Delete</button>
+              </td>
+            </tr>
+          `;
+        });
 
-        rows += `
-          <tr>
-            <td>${data.requestedStaff}</td>
-            <td>${data.recipient}</td>
-            <td>${data.date}</td>
-            <td>${data.dutyTime}</td>
-            <td>${data.status}</td>
-            <td>
-              ${data.applied ? 'Applied' : `<button onclick="markApplied('${doc.id}')">Apply</button>`}
-              <button onclick="deleteRequest('${doc.id}')" ${data.applied ? 'disabled' : ''}>Delete</button>
-            </td>
-          </tr>
-        `;
+        tableBody.innerHTML = rows || "<tr><td colspan='6'>No accepted requests found.</td></tr>";
+      })
+      .catch(err => {
+        console.error(err);
+        tableBody.innerHTML = "<tr><td colspan='6'>Error loading requests.</td></tr>";
       });
-
-      tableBody.innerHTML = rows || "<tr><td colspan='6'>No accepted requests found.</td></tr>";
-    });
   }
 
   function markApplied(id) {
