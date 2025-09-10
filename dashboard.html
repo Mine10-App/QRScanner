@@ -10,9 +10,8 @@
   <h2>Welcome, <span id="userName"></span></h2>
 
   <div class="top-buttons">
-    <button onclick="goToDutyChange()">Request Duty Change</button>
-    <button onclick="logout()">Logout</button>
-    <a href="change-password.html">Change Password</a>
+    <button class="ribbon-button" onclick="goToDutyChange()">Request Duty Change</button>
+    <button class="ribbon-button" onclick="logout()">Logout</button>
   </div>
 
   <h3>Requests Assigned To You</h3>
@@ -22,79 +21,82 @@
   <div id="sentRequests"><p>Loading...</p></div>
 </div>
 
-<script src="script.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <script>
-  // Get current user
-  const currentUser = localStorage.getItem("currentUser");
-  const currentUsername = localStorage.getItem("currentUsername");
+const firebaseConfig = {
+  apiKey: "AIzaSyDvHKlApQ4wClz-y0ejSG91ahKBWvPCSM0",
+  authDomain: "leeli-37413.firebaseapp.com",
+  projectId: "leeli-37413",
+  storageBucket: "leeli-37413.firebasestorage.app",
+  messagingSenderId: "1055234470933",
+  appId: "1:1055234470933:web:a7c063c08dbb21d94e8a1c",
+  measurementId: "G-LMKVKWY3TB"
+};
 
-  if (!currentUser) {
-    alert("Please login first!");
-    window.location.href = "login.html";
-  } else {
-    document.getElementById("userName").innerText = currentUser;
-  }
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  function goToDutyChange() {
-    window.location.href = "dutychange.html";
-  }
+const currentUser = localStorage.getItem("currentUser");
+if(!currentUser){
+  alert("Please login first!");
+  window.location.href = "login.html";
+} else {
+  document.getElementById("userName").innerText = currentUser;
+}
 
-  // ===== Sample Requests =====
-  const dutyRequests = [
-    { id: "1", requestedStaff: "mohamed", recipient: "mariyam", date: "2025-09-11", dutyTime: "Morning", status: "pending" },
-    { id: "2", requestedStaff: "mariyam", recipient: "mohamed", date: "2025-09-12", dutyTime: "Evening", status: "accepted" },
-  ];
+function goToDutyChange(){ window.location.href = "dutychange.html"; }
+function logout(){ localStorage.clear(); window.location.href = "login.html"; }
 
-  function loadRequests() {
-    const incomingContainer = document.getElementById("incomingRequests");
-    const sentContainer = document.getElementById("sentRequests");
+function loadRequests(){
+  const incomingContainer = document.getElementById("incomingRequests");
+  const sentContainer = document.getElementById("sentRequests");
 
-    let incomingHTML = "";
-    let sentHTML = "";
+  incomingContainer.innerHTML = "<p>Loading...</p>";
+  sentContainer.innerHTML = "<p>Loading...</p>";
 
-    dutyRequests.forEach(req => {
-      if(req.recipient === currentUsername){
-        incomingHTML += `
-          <div class="request-card">
+  db.collection("dutyRequests").orderBy("timestamp", "desc").get()
+    .then(snapshot => {
+      let incomingHTML = "";
+      let sentHTML = "";
+
+      snapshot.forEach(doc => {
+        const req = doc.data();
+        const reqId = doc.id;
+
+        if(req.recipient === currentUser){
+          incomingHTML += `<div class="request-card">
             <p><strong>From:</strong> ${req.requestedStaff}</p>
             <p><strong>Date:</strong> ${req.date}</p>
             <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
             <p><strong>Status:</strong> ${req.status}</p>
-            ${req.status === "pending" ? `<button onclick="acceptRequest('${req.id}')">Accept</button>
-            <button onclick="rejectRequest('${req.id}')">Reject</button>` : ""}
-            <hr>
-          </div>`;
-      }
+            ${req.status==="pending" ? `<button onclick="updateRequest('${reqId}','accepted')">Accept</button>
+            <button onclick="updateRequest('${reqId}','rejected')">Reject</button>` : ""}
+            <hr></div>`;
+        }
 
-      if(req.requestedStaff === currentUsername){
-        sentHTML += `
-          <div class="request-card">
+        if(req.requestedStaff === currentUser){
+          sentHTML += `<div class="request-card">
             <p><strong>To:</strong> ${req.recipient}</p>
             <p><strong>Date:</strong> ${req.date}</p>
             <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
-            <p><strong>Status:</strong> ${req.status}</p>
-            <hr>
-          </div>`;
-      }
+            <p><strong>Status:</strong> ${req.status}</p><hr></div>`;
+        }
+      });
+
+      incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
+      sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
     });
+}
 
-    incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
-    sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
-  }
+function updateRequest(id, status){
+  db.collection("dutyRequests").doc(id).update({status})
+    .then(() => loadRequests());
+}
 
-  function acceptRequest(id){
-    const req = dutyRequests.find(r => r.id === id);
-    if(req) req.status = "accepted";
-    loadRequests();
-  }
-
-  function rejectRequest(id){
-    const req = dutyRequests.find(r => r.id === id);
-    if(req) req.status = "rejected";
-    loadRequests();
-  }
-
-  loadRequests();
+loadRequests();
 </script>
 </body>
 </html>
