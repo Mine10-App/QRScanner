@@ -50,7 +50,7 @@ const firebaseConfig = {
   // Get current user
   const currentUser = sessionStorage.getItem("currentUser");
   if(!currentUser){
-    window.location.href = "dashboard.html";
+    window.location.href = "login.html";
   } else {
     document.getElementById("userName").innerText = currentUser;
   }
@@ -139,5 +139,6 @@ const firebaseConfig = {
 </script>
 </body>
 </html>
+
 
 
