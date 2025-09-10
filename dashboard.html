@@ -6,84 +6,64 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="form-container">
-  <h2>Welcome, <span id="userName"></span></h2>
+  <div class="form-container">
+    <h2>Welcome, <span id="userName"></span></h2>
 
-  <div class="top-buttons">
-    <button class="ribbon-button" onclick="goToDutyChange()">Request Duty Change</button>
-    <button class="ribbon-button" onclick="logout()">Logout</button>
-    <a href="change-password.html">Change Password</a>
+    <div class="top-buttons">
+      <button class="ribbon-button" onclick="goToDutyChange()">Request Duty Change</button>
+      <button class="ribbon-button" onclick="logout()">Logout</button>
+      <a href="change-password.html">Change Password</a>
+    </div>
+
+    <h3>Requests Assigned To You</h3>
+    <div id="incomingRequests">
+      <p>Loading...</p>
+    </div>
+
+    <h3>Requests Sent By You</h3>
+    <div id="sentRequests">
+      <p>Loading...</p>
+    </div>
   </div>
 
-  <h3>Requests Assigned To You</h3>
-  <div id="incomingRequests">
-    <!-- Incoming requests will appear here -->
-  </div>
+  <script>
+    // Get current user from localStorage
+    const currentUser = localStorage.getItem("currentUser");
+    const currentRCNo = localStorage.getItem("currentRCNo");
 
-  <h3>Requests Sent By You</h3>
-  <div id="sentRequests">
-    <!-- Sent requests will appear here -->
-  </div>
-</div>
+    // Redirect to login if not logged in
+    if(!currentUser){
+      window.location.href = "login.html";
+    } else {
+      document.getElementById("userName").innerText = currentUser;
+    }
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    // Navigate to Duty Change page
+    function goToDutyChange(){
+      window.location.href = "dutychange.html";
+    }
 
-<script>
-  // 🔹 Replace with your Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDvHKlApQ4wClz-y0ejSG91ahKBWvPCSM0",
-  authDomain: "leeli-37413.firebaseapp.com",
-  projectId: "leeli-37413",
-  storageBucket: "leeli-37413.firebasestorage.app",
-  messagingSenderId: "1055234470933",
-  appId: "1:1055234470933:web:a7c063c08dbb21d94e8a1c",
-  measurementId: "G-LMKVKWY3TB"
-};
+    // Logout function
+    function logout(){
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("currentRCNo");
+      window.location.href = "login.html";
+    }
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+    // Sample requests data (for demonstration, replace with Firebase if needed)
+    const dutyRequests = [
+      { id: "1", requestedStaff: "John Doe", recipient: "Sara Ali", date: "2025-09-11", dutyTime: "Morning", status: "pending" },
+      { id: "2", requestedStaff: "Sara Ali", recipient: "John Doe", date: "2025-09-12", dutyTime: "Evening", status: "accepted" },
+    ];
 
-  // Get current user
-  const currentUser = sessionStorage.getItem("currentUser");
-  if(!currentUser){
-    window.location.href = "login.html";
-  } else {
-    document.getElementById("userName").innerText = currentUser;
-  }
+    function loadRequests() {
+      const incomingContainer = document.getElementById("incomingRequests");
+      const sentContainer = document.getElementById("sentRequests");
 
-  // Navigate to Duty Change page
-  function goToDutyChange(){
-    window.location.href = "dutychange.html";
-  }
-
-  // Logout
-  function logout(){
-    auth.signOut().then(() => {
-      sessionStorage.removeItem("currentUser");
-      window.location.href = "index.html";
-    });
-  }
-
-  // Load requests
-  function loadRequests() {
-    const incomingContainer = document.getElementById("incomingRequests");
-    const sentContainer = document.getElementById("sentRequests");
-
-    incomingContainer.innerHTML = "<p>Loading...</p>";
-    sentContainer.innerHTML = "<p>Loading...</p>";
-
-    db.collection("dutyRequests").get().then((querySnapshot) => {
       let incomingHTML = "";
       let sentHTML = "";
 
-      querySnapshot.forEach((doc) => {
-        const req = doc.data();
-        const reqId = doc.id;
-
+      dutyRequests.forEach(req => {
         // Incoming requests
         if(req.recipient === currentUser){
           incomingHTML += `
@@ -92,8 +72,8 @@ const firebaseConfig = {
               <p><strong>Date:</strong> ${req.date}</p>
               <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
               <p><strong>Status:</strong> ${req.status}</p>
-              ${req.status === "pending" ? `<button onclick="acceptRequest('${reqId}')">Accept</button>
-              <button onclick="rejectRequest('${reqId}')">Reject</button>` : ""}
+              ${req.status === "pending" ? `<button onclick="acceptRequest('${req.id}')">Accept</button>
+              <button onclick="rejectRequest('${req.id}')">Reject</button>` : ""}
               <hr>
             </div>
           `;
@@ -115,30 +95,24 @@ const firebaseConfig = {
 
       incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
       sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
-    });
-  }
+    }
 
-  // Accept request
-  function acceptRequest(id){
-    db.collection("dutyRequests").doc(id).update({status: "accepted"}).then(() => {
-      alert("Request accepted!");
+    // Accept request (local example)
+    function acceptRequest(id){
+      const req = dutyRequests.find(r => r.id === id);
+      if(req) req.status = "accepted";
       loadRequests();
-    });
-  }
+    }
 
-  // Reject request
-  function rejectRequest(id){
-    db.collection("dutyRequests").doc(id).update({status: "rejected"}).then(() => {
-      alert("Request rejected!");
+    // Reject request (local example)
+    function rejectRequest(id){
+      const req = dutyRequests.find(r => r.id === id);
+      if(req) req.status = "rejected";
       loadRequests();
-    });
-  }
+    }
 
-  // Initial load
-  loadRequests();
-</script>
+    // Initial load
+    loadRequests();
+  </script>
 </body>
 </html>
-
-
-
