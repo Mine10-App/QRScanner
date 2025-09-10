@@ -1,7 +1,7 @@
 // Sample users
 const users = [
-  { username: "Sobah", password: "12345", name: "Mohamed Sobah", rcNo: "T-0160" },
-  { username: "Shiara", password: "12345", name: "Mariyam Shiara", rcNo: "A-7503" },
+  { username: "sobah", password: "12345", name: "Mohamed Sobah", rcNo: "T-0160" },
+  { username: "shiara", password: "12345", name: "Mariyam Shiara", rcNo: "A-7503" },
   { username: "musrifa", password: "12345", name: "Musrifa Riyaaz", rcNo: "T-0112" },
   { username: "hussain", password: "12345", name: "Hussain Ahmed", rcNo: "T-0115" },
   { username: "inaz", password: "12345", name: "Mohamed Inaz", rcNo: "A-4206" },
@@ -49,5 +49,6 @@ function login() {
     document.getElementById("errorMsg").innerText = "Invalid username or password!";
   }
 }
+
 
 
