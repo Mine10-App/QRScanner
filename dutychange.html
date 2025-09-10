@@ -25,15 +25,10 @@
     </div>
 
     <div class="form-row">
-      <label for="recipient">Recipient Staff:</label>
-      <select id="recipient" required>
-        <option value="">--Select--</option>
-        <option value="Mohamed Mujahid">Mohamed Mujahid</option>
-        <option value="Magrib Ibrahim">Magrib Ibrahim</option>
-        <option value="Ruhushath Ahmed">Ruhushath Ahmed</option>
-        <option value="Moahmed Jeezan">Moahmed Jeezan</option>
-        <option value="Aishath Aroosha">Aishath Aroosha</option>
-      </select>
+  <label for="recipient">Recipient Staff:</label>
+  <select id="recipient" required>
+    <option value="">--Select--</option>
+  </select>
     </div>
 
     <div class="form-row">
@@ -55,9 +50,24 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="sca.js"></script> <!-- your separate config file -->
+<script src="sca.js"></script> 
+  <script src="aqj.js"></script> 
 
 <script>
+ // Populate recipient dropdown from aqj.js users array
+  const recipientSelect = document.getElementById("recipient");
+
+  // Loop through users from aqj.js
+  users.forEach(user => {
+    // Don't include current logged-in user
+    if(user.name !== currentUser){
+      const option = document.createElement("option");
+      option.value = user.name;
+      option.textContent = user.name;
+      recipientSelect.appendChild(option);
+    }
+  });
+  
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
@@ -114,3 +124,4 @@
 </script>
 </body>
 </html>
+
