@@ -8,11 +8,12 @@
   body { font-family: Arial, sans-serif; margin:0; padding:0; background: #f9f9f9; }
   h2 { margin-left: 20px; color: #333; }
 
+  /* Filters on top-right */
   .filters {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin: 10px 20px;
   }
   .filters label { font-size: 0.85rem; }
@@ -24,8 +25,8 @@
     border-radius: 4px;
   }
   .filters button {
-    padding: 5px 10px;
-    font-size: 0.85rem;
+    padding: 4px 8px;           /* Smaller button */
+    font-size: 0.8rem;
     border: none;
     border-radius: 4px;
     background-color: #007BFF;
@@ -35,6 +36,7 @@
   }
   .filters button:hover { background-color: #0056b3; }
 
+  /* Table */
   table {
     width: 95%;
     margin: 0 auto 20px;
@@ -47,7 +49,26 @@
   th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 0.9rem; }
   th { background-color: #007BFF; color: #fff; }
   tr:hover { background: #f1faff; }
-  button { cursor: pointer; }
+
+  /* Action buttons inside table */
+  .table-btn {
+    padding: 3px 6px;        /* Small button */
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin: 2px;
+    transition: 0.2s;
+  }
+  .apply-btn { background-color: #4CAF50; color: white; }
+  .apply-btn:hover { background-color: #3e8e41; }
+  .delete-btn { background-color: #FF5722; color: white; }
+  .delete-btn:hover { background-color: #e64a19; }
+
+  @media (max-width: 768px) {
+    table, th, td { font-size: 0.85rem; }
+    .filters input, .filters button { font-size: 0.75rem; padding: 3px 5px; }
+  }
 </style>
 </head>
 <body>
@@ -56,7 +77,7 @@
 <div class="filters">
   <label>Date: <input type="date" id="filterDate"></label>
   <label>Request Staff: <input type="text" id="filterStaff" placeholder="Name"></label>
-  <button onclick="loadAcceptedRequests()">Apply Filter</button>
+  <button onclick="loadAcceptedRequests()">Filter</button>
 </div>
 
 <table>
@@ -100,7 +121,6 @@ function loadAcceptedRequests() {
         let rows = "";
         snapshot.forEach(doc => {
           const data = doc.data();
-
           const requestDate = data.date instanceof firebase.firestore.Timestamp
             ? data.date.toDate().toISOString().split("T")[0]
             : (data.date || "");
@@ -117,8 +137,8 @@ function loadAcceptedRequests() {
               <td>${data.dutyTime || ""}</td>
               <td>${data.status || ""}</td>
               <td>
-                ${data.applied ? 'Applied' : `<button onclick="markApplied('${doc.id}')">Apply</button>`}
-                <button onclick="deleteRequest('${doc.id}')" ${data.applied ? 'disabled' : ''}>Delete</button>
+                ${data.applied ? 'Applied' : `<button class="table-btn apply-btn" onclick="markApplied('${doc.id}')">Apply</button>`}
+                <button class="table-btn delete-btn" onclick="deleteRequest('${doc.id}')" ${data.applied ? 'disabled' : ''}>Delete</button>
               </td>
             </tr>
           `;
@@ -144,6 +164,7 @@ function deleteRequest(id) {
       .catch(err => console.error("Error deleting:", err));
 }
 
+// Initial load
 loadAcceptedRequests();
 </script>
 </body>
