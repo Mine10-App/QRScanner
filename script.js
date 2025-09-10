@@ -36,17 +36,17 @@ const users = [
 ];
 
 function login() {
-  const email = document.getElementById("email").value.trim();
+  const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
 
-  const user = users.find(u => u.email === email && u.password === password);
+  const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
     localStorage.setItem("currentUser", user.name);
     localStorage.setItem("currentRCNo", user.rcNo);
     window.location.href = "dashboard.html";
   } else {
-    document.getElementById("errorMsg").innerText = "Invalid email or password!";
+    document.getElementById("errorMsg").innerText = "Invalid username or password!";
   }
 }
 
