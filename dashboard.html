@@ -21,6 +21,17 @@
   .top-buttons {
     margin-bottom: 20px;
   }
+  /* Button styling */
+  .action-btn {
+    padding: 3px 8px;
+    margin: 0 2px;
+    font-size: 0.85em;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .accept-btn { background-color: #4CAF50; color: white; }
+  .reject-btn { background-color: #f44336; color: white; }
 </style>
 </head>
 <body>
@@ -67,17 +78,9 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+<script src="sca.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDvHKlApQ4wClz-y0ejSG91ahKBWvPCSM0",
-  authDomain: "leeli-37413.firebaseapp.com",
-  projectId: "leeli-37413",
-  storageBucket: "leeli-37413.firebasestorage.app",
-  messagingSenderId: "1055234470933",
-  appId: "1:1055234470933:web:a7c063c08dbb21d94e8a1c",
-  measurementId: "G-LMKVKWY3TB"
-};
+
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -109,8 +112,8 @@ function loadRequests() {
         // Incoming requests
         if(req.recipient === currentUser){
           const actions = req.status==="pending" 
-            ? `<button onclick="updateRequest('${reqId}','accepted')">Accept</button>
-               <button onclick="updateRequest('${reqId}','rejected')">Reject</button>` 
+            ? `<button class="action-btn accept-btn" onclick="updateRequest('${reqId}','accepted')">Accept</button>
+               <button class="action-btn reject-btn" onclick="updateRequest('${reqId}','rejected')">Reject</button>` 
             : "";
           incomingBody.innerHTML += `<tr>
             <td>${req.requestedStaff}</td>
