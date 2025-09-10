@@ -16,93 +16,81 @@
 
   <form id="dutyChangeForm">
     <div class="form-row">
-      <label for="requestedStaff">Requested Staff:</label>
+      <label>Requested Staff:</label>
       <input type="text" id="requestedStaff" readonly>
     </div>
 
     <div class="form-row">
-      <label for="recipient">Recipient Staff:</label>
+      <label>Recipient Staff:</label>
       <select id="recipient" required>
         <option value="">--Select--</option>
-        <option value="Mohamed Mujahid">Mohamed Mujahid</option>
-        <option value="Magrib Ibrahim">Magrib Ibrahim</option>
-        <option value="Ruhushath Ahmed">Ruhushath Ahmed</option>
-        <option value="Abdulla Irufan">Abdulla Irufan</option>
-        <option value="Hassan Haneef">Hassan Haneef</option>
+        <option value="Mohamed Sobah">Mohamed Sobah</option>
+        <option value="Mariyam Shiara">Mariyam Shiara</option>
+        <option value="Hussain Ahmed">Hussain Ahmed</option>
       </select>
     </div>
 
     <div class="form-row">
-      <label for="date">Date:</label>
+      <label>Date:</label>
       <input type="date" id="date" required>
     </div>
 
     <div class="form-row">
-      <label for="dutyTime">Duty Time:</label>
+      <label>Duty Time:</label>
       <input type="time" id="dutyTime" required>
     </div>
 
     <button type="submit">Send Request</button>
   </form>
 
-  <div id="confirmation" style="margin-top:15px; color:green;"></div>
+  <div id="confirmation" style="color:green;"></div>
 </div>
 
-<script src="script.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <script>
-  const currentUser = localStorage.getItem("currentUser");
-  if (!currentUser) {
-    alert("Please login first!");
-    window.location.href = "login.html";
-  } else {
-    document.getElementById("requestedStaff").value = currentUser;
-  }
+const firebaseConfig = {
+  apiKey: "AIzaSyDvHKlApQ4wClz-y0ejSG91ahKBWvPCSM0",
+  authDomain: "leeli-37413.firebaseapp.com",
+  projectId: "leeli-37413",
+  storageBucket: "leeli-37413.firebasestorage.app",
+  messagingSenderId: "1055234470933",
+  appId: "1:1055234470933:web:a7c063c08dbb21d94e8a1c",
+  measurementId: "G-LMKVKWY3TB"
+};
 
-  function goToDashboard() {
-    window.location.href = "dashboard.html";
-  }
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const currentUser = localStorage.getItem("currentUser");
 
-  function logout() {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("currentUsername");
-    localStorage.removeItem("currentRCNo");
-    window.location.href = "login.html";
-  }
+if(!currentUser){
+  alert("Please login first!");
+  window.location.href = "login.html";
+} else {
+  document.getElementById("requestedStaff").value = currentUser;
+}
 
-  // Initialize duty requests array in localStorage if not exists
-  if(!localStorage.getItem("dutyRequests")){
-    localStorage.setItem("dutyRequests", JSON.stringify([]));
-  }
+function goToDashboard(){ window.location.href = "dashboard.html"; }
+function logout(){ localStorage.clear(); window.location.href = "login.html"; }
 
-  document.getElementById("dutyChangeForm").addEventListener("submit", function(e){
-    e.preventDefault();
+document.getElementById("dutyChangeForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const requestedStaff = currentUser;
+  const recipient = document.getElementById("recipient").value;
+  const date = document.getElementById("date").value;
+  const dutyTime = document.getElementById("dutyTime").value;
 
-    const requestedStaff = document.getElementById("requestedStaff").value;
-    const recipient = document.getElementById("recipient").value;
-    const date = document.getElementById("date").value;
-    const dutyTime = document.getElementById("dutyTime").value;
-
-    if(!recipient){
-      alert("Please select a recipient staff.");
-      return;
-    }
-
-    // Save request in localStorage
-    const requests = JSON.parse(localStorage.getItem("dutyRequests"));
-    requests.push({
-      id: Date.now(),
-      requestedStaff,
-      recipient,
-      date,
-      dutyTime,
-      status: "pending"
-    });
-    localStorage.setItem("dutyRequests", JSON.stringify(requests));
-
+  db.collection("dutyRequests").add({
+    requestedStaff, recipient, date, dutyTime,
+    status: "pending",
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
     document.getElementById("confirmation").innerText = `Request sent to ${recipient}.`;
     document.getElementById("dutyChangeForm").reset();
     document.getElementById("requestedStaff").value = currentUser;
   });
+});
 </script>
 </body>
 </html>
