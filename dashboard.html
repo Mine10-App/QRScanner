@@ -64,42 +64,77 @@ function loadRequests() {
   sentContainer.innerHTML = "<p>Loading...</p>";
 
   db.collection("dutyRequests").orderBy("date").get().then(snapshot => {
-    let incomingHTML = "";
-    let sentHTML = "";
+    let incomingHTML = `
+      <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+          <th>From</th>
+          <th>Date</th>
+          <th>Duty Time</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+    `;
+
+    let sentHTML = `
+      <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+          <th>To</th>
+          <th>Date</th>
+          <th>Duty Time</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+    `;
 
     snapshot.forEach(doc => {
       const req = doc.data();
       const id = doc.id;
 
-      // Incoming requests assigned to current user
+      // Convert Firestore Timestamp to readable string
+      const dateStr = req.date && req.date.toDate 
+        ? req.date.toDate().toISOString().split("T")[0] 
+        : req.date;
+
+      const timeStr = req.dutyTime || "";
+
+      // Incoming requests
       if(req.recipient === currentUser){
         incomingHTML += `
-          <div class="request-card">
-            <p><strong>From:</strong> ${req.requestedStaff}</p>
-            <p><strong>Date:</strong> ${req.date}</p>
-            <p><strong>Date:</strong> ${req.date.toDate().toLocaleDateString()}</p>
-            <p><strong>Status:</strong> ${req.status}</p>
-            ${req.status === "pending" ? `<button class="small-btn accept" onclick="acceptRequest('${id}')">Accept</button>
-            <button class="small-btn reject" onclick="rejectRequest('${id}')">Reject</button>` : ""}
-            <hr>
-          </div>
+          <tr>
+            <td>${req.requestedStaff}</td>
+            <td>${dateStr}</td>
+            <td>${timeStr}</td>
+            <td>${req.status}</td>
+            <td>
+              ${req.status === "pending" ? `
+                <button class="small-btn accept" onclick="acceptRequest('${id}')">Accept</button>
+                <button class="small-btn reject" onclick="rejectRequest('${id}')">Reject</button>
+              ` : "-"}
+            </td>
+          </tr>
         `;
       }
 
-      // Sent requests by current user
+      // Sent requests
       if(req.requestedStaff === currentUser){
         sentHTML += `
-          <div class="request-card">
-            <p><strong>To:</strong> ${req.recipient}</p>
-            <p><strong>Date:</strong> ${req.date.toDate().toLocaleDateString()}</p>
-            <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
-            <p><strong>Status:</strong> ${req.status}</p>
-            ${!req.applied ? `<button class="small-btn delete" onclick="cancelRequest('${id}')">Cancel</button>` : "<span>Applied</span>"}
-            <hr>
-          </div>
+          <tr>
+            <td>${req.recipient}</td>
+            <td>${dateStr}</td>
+            <td>${timeStr}</td>
+            <td>${req.status}</td>
+            <td>
+              ${!req.applied ? `
+                <button class="small-btn delete" onclick="cancelRequest('${id}')">Cancel</button>
+              ` : "Applied"}
+            </td>
+          </tr>
         `;
       }
     });
+
+    incomingHTML += "</table>";
+    sentHTML += "</table>";
 
     incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
     sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
@@ -142,5 +177,6 @@ loadRequests();
 </script>
 </body>
 </html>
+
 
 
