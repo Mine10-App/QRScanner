@@ -69,12 +69,15 @@ const firebaseConfig = {
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  const currentUser = sessionStorage.getItem("currentUser");
-  if(!currentUser){
-    window.location.href = "index.html";
-  } else {
-    document.getElementById("requestedStaff").value = currentUser;
-  }
+   const currentUser = localStorage.getItem("currentUser");
+    const currentRCNo = localStorage.getItem("currentRCNo");
+
+    // Redirect to login if not logged in
+    if(!currentUser){
+      window.location.href = "login.html";
+    } else {
+      document.getElementById("userName").innerText = currentUser;
+    }
 
   function goToDashboard(){
     window.location.href = "dashboard.html";
@@ -118,3 +121,4 @@ const firebaseConfig = {
 </script>
 </body>
 </html>
+
