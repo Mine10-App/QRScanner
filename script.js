@@ -6,7 +6,7 @@ function login() {
   const password = document.getElementById("password").value;
 
   // Look up user in users.js
-  const user = users.find(u => u.username === username && u.password === password);
+  const user = aqj.find(u => u.username === username && u.password === password);
 
   if(user){
     localStorage.setItem("currentUser", user.name);
@@ -16,6 +16,7 @@ function login() {
     document.getElementById("errorMsg").innerText = "Invalid username or password!";
   }
 }
+
 
 
 
