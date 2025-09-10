@@ -5,12 +5,49 @@
 <title>Accepted Requests</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  body { font-family: Arial, sans-serif; margin:0; padding:0; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  th { background-color: #f2f2f2; }
-  button { padding: 4px 8px; margin: 2px; cursor: pointer; }
-  .filters { margin: 10px 0; }
+  body { font-family: Arial, sans-serif; margin:0; padding:0; background: #f9f9f9; }
+  h2 { margin-left: 20px; color: #333; }
+
+  .filters {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 20px;
+  }
+  .filters label { font-size: 0.85rem; }
+  .filters input[type="date"],
+  .filters input[type="text"] {
+    padding: 4px 6px;
+    font-size: 0.85rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .filters button {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .filters button:hover { background-color: #0056b3; }
+
+  table {
+    width: 95%;
+    margin: 0 auto 20px;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 0.9rem; }
+  th { background-color: #007BFF; color: #fff; }
+  tr:hover { background: #f1faff; }
+  button { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -38,13 +75,11 @@
   </tbody>
 </table>
 
-<!-- ✅ Firebase SDKs in correct order -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-<script src="sca.js"></script> <!-- must have firebase.initializeApp(config) -->
+<script src="sca.js"></script>
 
 <script>
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -58,7 +93,6 @@ function loadAcceptedRequests() {
     db.collection("dutyRequests").where("status", "==", "accepted").get()
       .then(snapshot => {
         if (snapshot.empty) {
-          console.log("⚠️ No documents found with status = accepted");
           tableBody.innerHTML = "<tr><td colspan='6'>No accepted requests found.</td></tr>";
           return;
         }
@@ -66,15 +100,12 @@ function loadAcceptedRequests() {
         let rows = "";
         snapshot.forEach(doc => {
           const data = doc.data();
-          console.log("📄 Doc:", doc.id, data); // Debug log
 
-          // Safe field handling
           const requestDate = data.date instanceof firebase.firestore.Timestamp
             ? data.date.toDate().toISOString().split("T")[0]
             : (data.date || "");
           const staffName = (data.requestedStaff || "").toLowerCase();
 
-          // Apply filters
           if ((filterDate && filterDate !== requestDate) ||
               (filterStaff && !staffName.includes(filterStaff))) return;
 
@@ -96,25 +127,24 @@ function loadAcceptedRequests() {
         tableBody.innerHTML = rows || "<tr><td colspan='6'>No accepted requests found (after filters).</td></tr>";
       })
       .catch(err => {
-        console.error("❌ Error fetching requests:", err);
+        console.error("Error fetching requests:", err);
         tableBody.innerHTML = "<tr><td colspan='6'>Error loading requests.</td></tr>";
       });
-  }
+}
 
-  function markApplied(id) {
+function markApplied(id) {
     db.collection("dutyRequests").doc(id).update({ applied: true })
       .then(() => loadAcceptedRequests())
-      .catch(err => console.error("❌ Error updating:", err));
-  }
+      .catch(err => console.error("Error updating:", err));
+}
 
-  function deleteRequest(id) {
+function deleteRequest(id) {
     db.collection("dutyRequests").doc(id).delete()
       .then(() => loadAcceptedRequests())
-      .catch(err => console.error("❌ Error deleting:", err));
-  }
+      .catch(err => console.error("Error deleting:", err));
+}
 
-  // Initial load
-  loadAcceptedRequests();
+loadAcceptedRequests();
 </script>
 </body>
 </html>
