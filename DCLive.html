@@ -5,35 +5,51 @@
 <title>Accepted Requests</title>
 <link rel="stylesheet" href="style.css">
 <style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  th { background-color: #f2f2f2; }
   .small-btn { padding: 4px 8px; font-size: 0.8rem; margin-right: 5px; }
   .delete { background-color: #f44336; color: white; }
   .apply { background-color: #4CAF50; color: white; }
-  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  .filter-section { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+  input, select { padding: 4px; font-size: 0.9rem; }
 </style>
 </head>
 <body>
-<div class="form-container">
-  <h2>Accepted Requests</h2>
-  <div class="top-buttons">
-    <button class="small-btn" onclick="goToDashboard()">Dashboard</button>
-    <button class="small-btn" onclick="logout()">Logout</button>
-  </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>From</th>
-        <th>To</th>
-        <th>Date</th>
-        <th>Duty Time</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="acceptedRequests"></tbody>
-  </table>
+<h2>Accepted Requests</h2>
+
+<div class="filter-section">
+  <label for="filterName">Staff Name:</label>
+  <input type="text" id="filterName" placeholder="Enter staff name">
+
+  <label for="startDate">Start Date:</label>
+  <input type="date" id="startDate">
+
+  <label for="endDate">End Date:</label>
+  <input type="date" id="endDate">
+
+  <button class="small-btn" onclick="applyFilter()">Filter</button>
+  <button class="small-btn" onclick="resetFilter()">Reset</button>
 </div>
+
+<table id="requestsTable">
+  <thead>
+    <tr>
+      <th>Requested Staff</th>
+      <th>Recipient</th>
+      <th>Date</th>
+      <th>Duty Time</th>
+      <th>Status</th>
+      <th>Applied</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td colspan="7">Loading...</td></tr>
+  </tbody>
+</table>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -43,74 +59,86 @@
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const currentUser = localStorage.getItem("currentUser");
-if (!currentUser) {
-  alert("Please login first!");
-  window.location.href = "login.html";
-}
-
-function goToDashboard() {
-  window.location.href = "dashboard.html";
-}
-
-function logout() {
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("currentRCNo");
-  window.location.href = "login.html";
-}
+let requestsData = []; // store all requests for filtering
 
 // Load accepted requests
-function loadAcceptedRequests() {
-  const container = document.getElementById("acceptedRequests");
-  container.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
-
+function loadRequests() {
   db.collection("dutyRequests")
     .where("status", "==", "accepted")
     .orderBy("date")
     .get()
     .then(snapshot => {
-      let html = "";
-      snapshot.forEach(doc => {
-        const req = doc.data();
-        const id = doc.id;
-
-        html += `
-          <tr>
-            <td>${req.requestedStaff}</td>
-            <td>${req.recipient}</td>
-            <td>${req.date}</td>
-            <td>${req.dutyTime}</td>
-            <td>${req.applied ? "Applied" : req.status}</td>
-            <td>
-              ${!req.applied ? `<button class="small-btn apply" onclick="applyRequest('${id}')">Apply</button>
-              <button class="small-btn delete" onclick="deleteRequest('${id}')">Delete</button>` : ""}
-            </td>
-          </tr>
-        `;
-      });
-
-      container.innerHTML = html || "<tr><td colspan='6'>No accepted requests.</td></tr>";
+      requestsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      displayRequests(requestsData);
     });
 }
 
-// Apply request
-function applyRequest(id) {
-  db.collection("dutyRequests").doc(id).update({ applied: true }).then(() => {
-    alert("Request applied successfully!");
-    loadAcceptedRequests();
+// Display requests in table
+function displayRequests(data) {
+  const tbody = document.querySelector("#requestsTable tbody");
+  if(data.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7">No accepted requests found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(req => `
+    <tr>
+      <td>${req.requestedStaff}</td>
+      <td>${req.recipient}</td>
+      <td>${req.date}</td>
+      <td>${req.dutyTime}</td>
+      <td>${req.status}</td>
+      <td>${req.applied ? "Yes" : "No"}</td>
+      <td>
+        ${!req.applied ? `<button class="small-btn apply" onclick="applyRequest('${req.id}')">Apply</button>` : ""}
+        <button class="small-btn delete" onclick="deleteRequest('${req.id}')">Delete</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// Apply a request
+function applyRequest(id){
+  db.collection("dutyRequests").doc(id).update({applied: true}).then(() => {
+    alert("Request marked as applied.");
+    loadRequests();
   });
 }
 
-// Delete request
-function deleteRequest(id) {
-  if(confirm("Are you sure you want to delete this request?")) {
+// Delete a request
+function deleteRequest(id){
+  if(confirm("Are you sure you want to delete this request?")){
     db.collection("dutyRequests").doc(id).delete().then(() => {
-      loadAcceptedRequests();
+      loadRequests();
     });
   }
 }
 
-loadAcceptedRequests();
+// Filter requests
+function applyFilter(){
+  const name = document.getElementById("filterName").value.toLowerCase();
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+
+  const filtered = requestsData.filter(req => {
+    const matchName = req.requestedStaff.toLowerCase().includes(name) || req.recipient.toLowerCase().includes(name);
+    const matchStart = start ? req.date >= start : true;
+    const matchEnd = end ? req.date <= end : true;
+    return matchName && matchStart && matchEnd;
+  });
+
+  displayRequests(filtered);
+}
+
+function resetFilter(){
+  document.getElementById("filterName").value = "";
+  document.getElementById("startDate").value = "";
+  document.getElementById("endDate").value = "";
+  displayRequests(requestsData);
+}
+
+// Initial load
+loadRequests();
 </script>
 </body>
 </html>
