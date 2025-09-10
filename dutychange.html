@@ -54,19 +54,7 @@
   <script src="aqj.js"></script> 
 
 <script>
- // Populate recipient dropdown from aqj.js users array
-  const recipientSelect = document.getElementById("recipient");
 
-  // Loop through users from aqj.js
-  users.forEach(user => {
-    // Don't include current logged-in user
-    if(user.name !== currentUser){
-      const option = document.createElement("option");
-      option.value = user.name;
-      option.textContent = user.name;
-      recipientSelect.appendChild(option);
-    }
-  });
   
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
@@ -90,6 +78,20 @@
     localStorage.removeItem("currentRCNo");
     window.location.href = "login.html";
   }
+
+   // Populate recipient dropdown from aqj.js users array
+  const recipientSelect = document.getElementById("recipient");
+
+  // Loop through users from aqj.js
+  users.forEach(user => {
+    // Don't include current logged-in user
+    if(user.name !== currentUser){
+      const option = document.createElement("option");
+      option.value = user.name;
+      option.textContent = user.name;
+      recipientSelect.appendChild(option);
+    }
+  });
 
   // Submit duty change request
   document.getElementById("dutyChangeForm").addEventListener("submit", function(e){
@@ -124,4 +126,5 @@
 </script>
 </body>
 </html>
+
 
