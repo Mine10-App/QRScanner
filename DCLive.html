@@ -6,10 +6,11 @@
 <link rel="stylesheet" href="style.css">
 <style>
   body { font-family: Arial, sans-serif; margin:0; padding:0; }
-  table { width: 100%; border-collapse: collapse; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
   th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
   th { background-color: #f2f2f2; }
-  button { padding: 4px 8px; margin: 2px; }
+  button { padding: 4px 8px; margin: 2px; cursor: pointer; }
+  .filters { margin: 10px 0; }
 </style>
 </head>
 <body>
@@ -36,38 +37,52 @@
     <tr><td colspan="6">Loading...</td></tr>
   </tbody>
 </table>
+
+<!-- ✅ Firebase SDKs in correct order -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-<script src="sca.js"></script>
+<script src="sca.js"></script> <!-- must have firebase.initializeApp(config) -->
 
-db = firebase.firestore();
+<script>
+  const db = firebase.firestore();
 
   function loadAcceptedRequests() {
     const tableBody = document.getElementById("requestsTable");
     const filterDate = document.getElementById("filterDate").value;
     const filterStaff = document.getElementById("filterStaff").value.toLowerCase();
 
-    // Get all accepted requests
+    tableBody.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+
     db.collection("dutyRequests").where("status", "==", "accepted").get()
       .then(snapshot => {
-        let rows = "";
+        if (snapshot.empty) {
+          console.log("⚠️ No documents found with status = accepted");
+          tableBody.innerHTML = "<tr><td colspan='6'>No accepted requests found.</td></tr>";
+          return;
+        }
 
+        let rows = "";
         snapshot.forEach(doc => {
           const data = doc.data();
-          const requestDate = data.date;
-          const staffName = data.requestedStaff.toLowerCase();
+          console.log("📄 Doc:", doc.id, data); // Debug log
 
-          // Apply filters if any
+          // Safe field handling
+          const requestDate = data.date instanceof firebase.firestore.Timestamp
+            ? data.date.toDate().toISOString().split("T")[0]
+            : (data.date || "");
+          const staffName = (data.requestedStaff || "").toLowerCase();
+
+          // Apply filters
           if ((filterDate && filterDate !== requestDate) ||
               (filterStaff && !staffName.includes(filterStaff))) return;
 
           rows += `
             <tr>
-              <td>${data.requestedStaff}</td>
-              <td>${data.recipient}</td>
-              <td>${data.date}</td>
-              <td>${data.dutyTime}</td>
-              <td>${data.status}</td>
+              <td>${data.requestedStaff || ""}</td>
+              <td>${data.recipient || ""}</td>
+              <td>${requestDate}</td>
+              <td>${data.dutyTime || ""}</td>
+              <td>${data.status || ""}</td>
               <td>
                 ${data.applied ? 'Applied' : `<button onclick="markApplied('${doc.id}')">Apply</button>`}
                 <button onclick="deleteRequest('${doc.id}')" ${data.applied ? 'disabled' : ''}>Delete</button>
@@ -76,25 +91,51 @@ db = firebase.firestore();
           `;
         });
 
-        tableBody.innerHTML = rows || "<tr><td colspan='6'>No accepted requests found.</td></tr>";
+        tableBody.innerHTML = rows || "<tr><td colspan='6'>No accepted requests found (after filters).</td></tr>";
       })
       .catch(err => {
-        console.error(err);
+        console.error("❌ Error fetching requests:", err);
         tableBody.innerHTML = "<tr><td colspan='6'>Error loading requests.</td></tr>";
       });
   }
 
   function markApplied(id) {
     db.collection("dutyRequests").doc(id).update({ applied: true })
-      .then(() => loadAcceptedRequests());
+      .then(() => loadAcceptedRequests())
+      .catch(err => console.error("❌ Error updating:", err));
   }
 
   function deleteRequest(id) {
     db.collection("dutyRequests").doc(id).delete()
-      .then(() => loadAcceptedRequests());
+      .then(() => loadAcceptedRequests())
+      .catch(err => console.error("❌ Error deleting:", err));
   }
 
-  loadAcceptedRequests(); // Initial load
+  // Initial load
+  loadAcceptedRequests();
 </script>
 </body>
 </html>
+⚡ Next step for you:
+
+Open browser console (F12 → Console tab).
+
+Look for the 📄 Doc: logs.
+
+👉 If you see logs but no rows → filter/date mismatch.
+👉 If no logs at all → either field name status doesn’t match, or Firebase init (sca.js) is wrong.
+
+Do you want me to also show you what sca.js should look like so we can confirm Firebase is initialized properly?
+
+
+
+
+
+
+
+
+
+
+
+Choose filesNo file chosenChoose filesNo file chosen
+ChatGP
