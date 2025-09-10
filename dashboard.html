@@ -4,21 +4,64 @@
 <meta charset="UTF-8">
 <title>Dashboard</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+  .top-buttons {
+    margin-bottom: 20px;
+  }
+</style>
 </head>
 <body>
 <div class="form-container">
   <h2>Welcome, <span id="userName"></span></h2>
 
   <div class="top-buttons">
-    <button class="ribbon-button" onclick="goToDutyChange()">Request Duty Change</button>
-    <button class="ribbon-button" onclick="logout()">Logout</button>
+    <button onclick="goToDutyChange()">Request Duty Change</button>
+    <button onclick="logout()">Logout</button>
   </div>
 
   <h3>Requests Assigned To You</h3>
-  <div id="incomingRequests"><p>Loading...</p></div>
+  <table id="incomingRequestsTable">
+    <thead>
+      <tr>
+        <th>From</th>
+        <th>Date</th>
+        <th>Duty Time</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="5">Loading...</td></tr>
+    </tbody>
+  </table>
 
   <h3>Requests Sent By You</h3>
-  <div id="sentRequests"><p>Loading...</p></div>
+  <table id="sentRequestsTable">
+    <thead>
+      <tr>
+        <th>To</th>
+        <th>Date</th>
+        <th>Duty Time</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="4">Loading...</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- Firebase SDK -->
@@ -50,44 +93,47 @@ if(!currentUser){
 function goToDutyChange(){ window.location.href = "dutychange.html"; }
 function logout(){ localStorage.clear(); window.location.href = "login.html"; }
 
-function loadRequests(){
-  const incomingContainer = document.getElementById("incomingRequests");
-  const sentContainer = document.getElementById("sentRequests");
-
-  incomingContainer.innerHTML = "<p>Loading...</p>";
-  sentContainer.innerHTML = "<p>Loading...</p>";
+function loadRequests() {
+  const incomingBody = document.querySelector("#incomingRequestsTable tbody");
+  const sentBody = document.querySelector("#sentRequestsTable tbody");
 
   db.collection("dutyRequests").orderBy("timestamp", "desc").get()
     .then(snapshot => {
-      let incomingHTML = "";
-      let sentHTML = "";
+      incomingBody.innerHTML = "";
+      sentBody.innerHTML = "";
 
       snapshot.forEach(doc => {
         const req = doc.data();
         const reqId = doc.id;
 
+        // Incoming requests
         if(req.recipient === currentUser){
-          incomingHTML += `<div class="request-card">
-            <p><strong>From:</strong> ${req.requestedStaff}</p>
-            <p><strong>Date:</strong> ${req.date}</p>
-            <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
-            <p><strong>Status:</strong> ${req.status}</p>
-            ${req.status==="pending" ? `<button onclick="updateRequest('${reqId}','accepted')">Accept</button>
-            <button onclick="updateRequest('${reqId}','rejected')">Reject</button>` : ""}
-            <hr></div>`;
+          const actions = req.status==="pending" 
+            ? `<button onclick="updateRequest('${reqId}','accepted')">Accept</button>
+               <button onclick="updateRequest('${reqId}','rejected')">Reject</button>` 
+            : "";
+          incomingBody.innerHTML += `<tr>
+            <td>${req.requestedStaff}</td>
+            <td>${req.date}</td>
+            <td>${req.dutyTime}</td>
+            <td>${req.status}</td>
+            <td>${actions}</td>
+          </tr>`;
         }
 
+        // Sent requests
         if(req.requestedStaff === currentUser){
-          sentHTML += `<div class="request-card">
-            <p><strong>To:</strong> ${req.recipient}</p>
-            <p><strong>Date:</strong> ${req.date}</p>
-            <p><strong>Duty Time:</strong> ${req.dutyTime}</p>
-            <p><strong>Status:</strong> ${req.status}</p><hr></div>`;
+          sentBody.innerHTML += `<tr>
+            <td>${req.recipient}</td>
+            <td>${req.date}</td>
+            <td>${req.dutyTime}</td>
+            <td>${req.status}</td>
+          </tr>`;
         }
       });
 
-      incomingContainer.innerHTML = incomingHTML || "<p>No pending requests.</p>";
-      sentContainer.innerHTML = sentHTML || "<p>No requests sent.</p>";
+      if(incomingBody.innerHTML === "") incomingBody.innerHTML = "<tr><td colspan='5'>No pending requests.</td></tr>";
+      if(sentBody.innerHTML === "") sentBody.innerHTML = "<tr><td colspan='4'>No requests sent.</td></tr>";
     });
 }
 
