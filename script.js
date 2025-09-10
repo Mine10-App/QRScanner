@@ -35,20 +35,29 @@ const users = [
   { username: "mohamed", password: "12345", name: "Mohamed Ibrahim", rcNo: "623" }
 ];
 
+// ===== LOGIN FUNCTION =====
 function login() {
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
 
   const user = users.find(u => u.username === username && u.password === password);
 
- if(user){
-    localStorage.setItem("currentUser", user.name);  // must match key exactly
+  if (user) {
+    localStorage.setItem("currentUser", user.name);
+    localStorage.setItem("currentUsername", user.username);
     localStorage.setItem("currentRCNo", user.rcNo);
     window.location.href = "dashboard.html";
-
   } else {
     document.getElementById("errorMsg").innerText = "Invalid username or password!";
   }
+}
+
+// ===== LOGOUT FUNCTION =====
+function logout() {
+  localStorage.removeItem("currentUser");
+  localStorage.removeItem("currentUsername");
+  localStorage.removeItem("currentRCNo");
+  window.location.href = "login.html";
 }
 
 
