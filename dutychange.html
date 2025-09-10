@@ -4,87 +4,88 @@
 <meta charset="UTF-8">
 <title>Duty Change Request</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  .small-btn { padding: 4px 8px; font-size: 0.8rem; margin-right: 5px; }
+</style>
 </head>
 <body>
 <div class="form-container">
   <h2>Duty Change Request</h2>
 
   <div class="top-buttons">
-    <button onclick="goToDashboard()">Dashboard</button>
-    <button onclick="logout()">Logout</button>
+    <button class="small-btn" onclick="goToDashboard()">Dashboard</button>
+    <button class="small-btn" onclick="logout()">Logout</button>
   </div>
 
   <form id="dutyChangeForm">
     <div class="form-row">
-      <label>Requested Staff:</label>
+      <label for="requestedStaff">Requested Staff:</label>
       <input type="text" id="requestedStaff" readonly>
     </div>
 
     <div class="form-row">
-      <label>Recipient Staff:</label>
+      <label for="recipient">Recipient Staff:</label>
       <select id="recipient" required>
         <option value="">--Select--</option>
-        <option value="Mohamed Sobah">Mohamed Sobah</option>
-        <option value="Mariyam Shiara">Mariyam Shiara</option>
-        <option value="Abdulla Irufan">Abdulla Irufan</option>
+        <option value="Mohamed Mujahid">Mohamed Mujahid</option>
+        <option value="Magrib Ibrahim">Magrib Ibrahim</option>
+        <option value="Ruhushath Ahmed">Ruhushath Ahmed</option>
+        <option value="Moahmed Jeezan">Moahmed Jeezan</option>
+        <option value="Aishath Aroosha">Aishath Aroosha</option>
       </select>
     </div>
 
     <div class="form-row">
-      <label>Date:</label>
+      <label for="date">Date:</label>
       <input type="date" id="date" required>
     </div>
 
     <div class="form-row">
-      <label>Duty Time:</label>
+      <label for="dutyTime">Duty Time:</label>
       <input type="time" id="dutyTime" required>
     </div>
 
-    <button type="submit">Send Request</button>
+    <button type="submit" class="small-btn">Send Request</button>
   </form>
 
-  <div id="confirmation" style="color:green;"></div>
+  <div id="confirmation" style="margin-top:15px; color:green;"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="sca.js"></script>
+
 <script>
-
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const currentUser = localStorage.getItem("currentUser");
 
-if(!currentUser){
+const currentUser = localStorage.getItem("currentUser");
+if (!currentUser) {
   alert("Please login first!");
   window.location.href = "login.html";
 } else {
   document.getElementById("requestedStaff").value = currentUser;
 }
 
-function goToDashboard(){ window.location.href = "dashboard.html"; }
-function logout(){ localStorage.clear(); window.location.href = "login.html"; }
+function goToDashboard() {
+  window.location.href = "dashboard.html";
+}
 
-document.getElementById("dutyChangeForm").addEventListener("submit", function(e){
-  e.preventDefault();
-  const requestedStaff = currentUser;
-  const recipient = document.getElementById("recipient").value;
-  const date = document.getElementById("date").value;
-  const dutyTime = document.getElementById("dutyTime").value;
+function logout() {
+  localStorage.removeItem("currentUser");
+  localStorage.removeItem("currentRCNo");
+  window.location.href = "login.html";
+}
 
-  db.collection("dutyRequests").add({
-    requestedStaff, recipient, date, dutyTime,
-    status: "pending",
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    document.getElementById("confirmation").innerText = `Request sent to ${recipient}.`;
-    document.getElementById("dutyChangeForm").reset();
-    document.getElementById("requestedStaff").value = currentUser;
-  });
-});
-</script>
-</body>
-</html>
+// Check half-month limit
+function canSendRequest(requests, currentUser, requestDate) {
+    const date = new Date(requestDate);
+    const day = date.getDate();
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const half = day <= 15 ? 1 : 2;
 
-
+    const userRequestsThisHalf = requests.filter(req => {
+        const reqDate = new Date(req.date);
+        const reqHalf = reqDate.getDate() <= 15 ? 1 : 2;
+        return req.requestedStaff === current
