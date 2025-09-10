@@ -5,11 +5,17 @@
 <title>Dashboard</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .small-btn { padding: 4px 8px; font-size: 0.8rem; margin-right: 5px; }
-  .delete { background-color: #f44336; color: white; }
-  .accept { background-color: #4CAF50; color: white; }
-  .reject { background-color: #f44336; color: white; }
-  .request-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+  .small-btn { padding: 4px 8px; font-size: 0.8rem; margin-right: 5px; cursor: pointer; }
+  .delete { background-color: #f44336; color: white; border: none; }
+  .accept { background-color: #4CAF50; color: white; border: none; }
+  .reject { background-color: #f44336; color: white; border: none; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+  th { background: #f0f0f0; text-align: left; }
+  td, th { border: 1px solid #ccc; padding: 6px 8px; }
+  .status-pending { color: orange; font-weight: bold; }
+  .status-accepted { color: green; font-weight: bold; }
+  .status-rejected { color: red; font-weight: bold; }
+  .form-container { max-width: 900px; margin: auto; padding: 20px; }
 </style>
 </head>
 <body>
@@ -37,6 +43,7 @@
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// Get current user
 const currentUser = localStorage.getItem("currentUser");
 if(!currentUser){
   alert("Please login first!");
@@ -65,7 +72,7 @@ function loadRequests() {
 
   db.collection("dutyRequests").orderBy("date").get().then(snapshot => {
     let incomingHTML = `
-      <table border="1" cellpadding="5" cellspacing="0">
+      <table>
         <tr>
           <th>From</th>
           <th>Date</th>
@@ -74,9 +81,8 @@ function loadRequests() {
           <th>Action</th>
         </tr>
     `;
-
     let sentHTML = `
-      <table border="1" cellpadding="5" cellspacing="0">
+      <table>
         <tr>
           <th>To</th>
           <th>Date</th>
@@ -90,12 +96,17 @@ function loadRequests() {
       const req = doc.data();
       const id = doc.id;
 
-      // Convert Firestore Timestamp to readable string
+      // Convert Firestore Timestamp -> readable string
       const dateStr = req.date && req.date.toDate 
         ? req.date.toDate().toISOString().split("T")[0] 
         : req.date;
-
       const timeStr = req.dutyTime || "";
+
+      // Status color
+      let statusClass = "";
+      if(req.status === "pending") statusClass = "status-pending";
+      else if(req.status === "accepted") statusClass = "status-accepted";
+      else if(req.status === "rejected") statusClass = "status-rejected";
 
       // Incoming requests
       if(req.recipient === currentUser){
@@ -104,7 +115,7 @@ function loadRequests() {
             <td>${req.requestedStaff}</td>
             <td>${dateStr}</td>
             <td>${timeStr}</td>
-            <td>${req.status}</td>
+            <td class="${statusClass}">${req.status}</td>
             <td>
               ${req.status === "pending" ? `
                 <button class="small-btn accept" onclick="acceptRequest('${id}')">Accept</button>
@@ -122,7 +133,7 @@ function loadRequests() {
             <td>${req.recipient}</td>
             <td>${dateStr}</td>
             <td>${timeStr}</td>
-            <td>${req.status}</td>
+            <td class="${statusClass}">${req.status}</td>
             <td>
               ${!req.applied ? `
                 <button class="small-btn delete" onclick="cancelRequest('${id}')">Cancel</button>
@@ -177,6 +188,3 @@ loadRequests();
 </script>
 </body>
 </html>
-
-
-
