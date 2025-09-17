@@ -4,79 +4,18 @@
 <meta charset="UTF-8">
 <title>Booking Form</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f9;
-    margin: 20px;
-  }
-
-  h2 {
-    text-align: center;
-    color: #333;
-  }
-
-  form {
-    max-width: 900px;
-    margin: auto;
-    background: #fff;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  }
-
-  label {
-    display: block;
-    margin-top: 10px;
-    font-weight: bold;
-  }
-
-  input, select, button {
-    padding: 8px;
-    width: 100%;
-    margin-top: 5px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-
-  .readonly-field {
-    background: #f0f0f0;
-  }
-
-  .hidden {
-    display: none;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-top: 10px;
-  }
-
-  .full-width {
-    grid-column: 1 / -1;
-  }
-
-  .totals, .cash-section {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    margin-top: 15px;
-  }
-
-  button {
-    width: 100%;
-    background: #007bff;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-top: 20px;
-  }
-
-  button:hover {
-    background: #0056b3;
-  }
+  body { font-family: Arial,sans-serif; background:#f4f6f9; margin:20px; }
+  h2 { text-align:center; color:#333; }
+  form { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.1); }
+  label { display:block; margin-top:10px; font-weight:bold; }
+  input, select, button { padding:8px; width:100%; margin-top:5px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
+  .readonly-field { background:#f0f0f0; }
+  .hidden { display:none; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:10px; }
+  .full-width { grid-column:1/-1; }
+  .totals, .cash-section { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; margin-top:15px; }
+  button { width:100%; background:#007bff; color:white; font-size:1rem; cursor:pointer; margin-top:20px; }
+  button:hover { background:#0056b3; }
 </style>
 </head>
 <body>
@@ -169,8 +108,10 @@
 
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
+<!-- Load rates first -->
 <script src="rate.js"></script>
 
+<!-- Firebase modular -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
@@ -179,7 +120,6 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Elements
   const dateField = document.getElementById("date");
   const qrInput = document.getElementById("qrInput");
   const nameField = document.getElementById("name");
@@ -201,10 +141,8 @@
   const totalField = document.getElementById("totalField");
   const outputDiv = document.getElementById("output");
 
-  // Set today's date
   dateField.value = new Date().toISOString().split('T')[0];
 
-  // QR Parsing (same as before)
   function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     const allParts = code.split(' ');
@@ -238,8 +176,9 @@
     qrInput.value='';
   });
 
-  // Calculate totals
   function calculate(){
+    if(typeof rates === "undefined") return;
+
     const curr = currencyType.value;
     const rate = rateType.value;
     const adults = parseInt(adultCount.value)||0;
@@ -268,21 +207,21 @@
       balanceField.value = (given-total).toFixed(2);
     } else balanceField.value="";
 
-    return {subtotal, gstAmount, total, adultRate, kidRate, gstPercent};
+    return {subtotal, gstAmount, total};
   }
 
-  // Show/hide cash fields
-  paymentType.addEventListener("change", ()=>{ 
-    cashFields.classList.toggle("hidden", paymentType.value!=="Cash"); 
-    calculate(); 
+  // Event listeners for real-time calculation
+  [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
+    el.addEventListener("input", calculate);
+    el.addEventListener("change", calculate);
   });
 
-  [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{ 
-    el.addEventListener("input",calculate); 
-    el.addEventListener("change",calculate); 
+  paymentType.addEventListener("change", ()=>{
+    cashFields.classList.toggle("hidden", paymentType.value!=="Cash");
+    calculate();
   });
 
-  calculate();
+  calculate(); // initial calc
 
   // Save to Firebase
   document.getElementById("saveBtn").addEventListener("click", async ()=>{
@@ -316,7 +255,7 @@
       await addDoc(collection(db, "bookings"), entryData);
       outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
 
-      // Clear fields but keep currency/date/rate intact
+      // Clear only specific fields
       nameField.value = "";
       flightField.value = "";
       seatField.value = "";
@@ -332,6 +271,7 @@
       alert("Error saving to Firebase");
     }
   });
+
 </script>
 </body>
 </html>
