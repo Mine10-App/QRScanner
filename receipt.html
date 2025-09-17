@@ -37,12 +37,7 @@
 <script src="fire1.js"></script>
 
 <script>
-// Company Info
-const companyInfo = {
-  name: "My Company Pvt Ltd",
-  address: "123 Airport Road, Malé",
-  phone: "+960 123-4567"
-};
+
 
 const receiptInput = document.getElementById("receiptInput");
 const fetchBtn = document.getElementById("fetchBtn");
@@ -70,8 +65,7 @@ fetchBtn.addEventListener("click", async () => {
 
     // Build receipt
     let html = `<h2>${companyInfo.name}</h2>`;
-    html += `<h2>${companyInfo.address}</h2>`;
-    html += `<h2>${companyInfo.phone}</h2>`;
+    
 
     // Show VOID if applicable
     if(data.voided){
