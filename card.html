@@ -47,7 +47,6 @@
     display: none;
   }
 
-  /* Grid layout */
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -85,12 +84,10 @@
 <h2>Booking Entry</h2>
 
 <form id="bookingForm">
-  <!-- QR Code input on top -->
   <label for="qrInput">Scan/Paste QR Code (optional):</label>
   <input type="text" id="qrInput" placeholder="Paste or scan QR code here" class="full-width">
 
   <div class="form-grid">
-    <!-- Left column -->
     <div>
       <label>Date:</label>
       <input type="date" id="date">
@@ -105,7 +102,6 @@
       <input type="text" id="seat">
     </div>
 
-    <!-- Right column -->
     <div>
       <label>Currency:</label>
       <select id="currencyType">
@@ -126,7 +122,6 @@
       <input type="number" id="kidCount" value="0" min="0">
     </div>
 
-    <!-- Payment type and Receipt No -->
     <div class="full-width">
       <label>Payment Type:</label>
       <select id="paymentType">
@@ -150,7 +145,6 @@
     </div>
   </div>
 
-  <!-- Totals -->
   <div class="totals">
     <div>
       <label>Total Adults:</label>
@@ -175,16 +169,13 @@
 
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
-<!-- External rate.js -->
 <script src="rate.js"></script>
 
-<!-- Firebase (modular) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
   import { firebaseConfig } from "./fire.js";
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
@@ -213,20 +204,16 @@
   // Set today's date
   dateField.value = new Date().toISOString().split('T')[0];
 
-  // QR Parsing
+  // QR Parsing (same as before)
   function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     const allParts = code.split(' ');
     let name="", flightNo="", seatNo="";
-
     if(code.startsWith("TKVCPO")){
       const tkIndex = code.indexOf("TK0");
-      if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex); }
+      if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex);}
       const mlePos = code.indexOf("MLE");
-      if(mlePos!=-1){
-        const afterMLE = code.substring(mlePos).split(' ')[0];
-        if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);
-      }
+      if(mlePos!=-1){ const afterMLE = code.substring(mlePos).split(' ')[0]; if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);}
     } else {
       name = allParts[0].substring(2);
       const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
@@ -236,10 +223,7 @@
         flightNo = mleWord.slice(-2)+nextWord;
         const partsAfterMLE = allParts.slice(mleIndex+1);
         for(let w of partsAfterMLE){
-          if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){
-            seatNo = w.substring(5,w.length-4);
-            break;
-          }
+          if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ seatNo = w.substring(5,w.length-4); break; }
         }
       }
     }
@@ -264,9 +248,9 @@
     const adultKey = `Adult${rate}${curr}`;
     const kidKey = `Kids${rate}${curr}`;
 
-    const adultRate = rates[adultKey].price;
-    const kidRate = rates[kidKey].price;
-    const gstPercent = rates[adultKey].GST;
+    const adultRate = rates[adultKey]?.price || 0;
+    const kidRate = rates[kidKey]?.price || 0;
+    const gstPercent = rates[adultKey]?.GST || 0;
 
     const totalAdults = adults*adultRate;
     const totalKids = kids*kidRate;
@@ -331,8 +315,18 @@
     try {
       await addDoc(collection(db, "bookings"), entryData);
       outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
-      document.getElementById("bookingForm").reset();
-      calculate();
+
+      // Clear fields but keep currency/date/rate intact
+      nameField.value = "";
+      flightField.value = "";
+      seatField.value = "";
+      adultCount.value = 0;
+      kidCount.value = 0;
+      givenAmount.value = "";
+      balanceField.value = "";
+      receiptNo.value = "";
+
+      calculate(); // recalc totals
     } catch(err) {
       console.error("Error saving to Firestore:", err);
       alert("Error saving to Firebase");
