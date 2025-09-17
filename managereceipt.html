@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Manage Bookings</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 20px; }
+  h2 { text-align: center; color: #333; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  th { background: #007bff; color: white; }
+  input, select, button, textarea { padding: 6px; border-radius: 5px; border: 1px solid #ccc; }
+  button { cursor: pointer; }
+  .voided { background-color: #f8d7da; }
+</style>
+</head>
+<body>
+
+<h2>Manage Bookings</h2>
+
+<div>
+  <label>Search by Receipt No:</label>
+  <input type="number" id="searchReceipt" placeholder="Enter Receipt No">
+  <button id="searchBtn">Search</button>
+  <button id="loadAllBtn">Load All</button>
+</div>
+
+<div id="bookingsDiv" style="margin-top:20px;"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="fire1.js"></script>
+
+<script>
+const bookingsDiv = document.getElementById("bookingsDiv");
+const searchReceipt = document.getElementById("searchReceipt");
+const searchBtn = document.getElementById("searchBtn");
+const loadAllBtn = document.getElementById("loadAllBtn");
+
+// Fetch and display bookings
+async function loadBookings(query = null) {
+  bookingsDiv.innerHTML = "Loading...";
+  let snapshot;
+  try {
+    if(query){
+      snapshot = await db.collection("bookings")
+                         .where("receiptNo", "==", parseInt(query))
+                         .get();
+    } else {
+      snapshot = await db.collection("bookings")
+                         .orderBy("timestamp", "desc")
+                         .get();
+    }
+
+    if(snapshot.empty){
+      bookingsDiv.innerHTML = "<p>No bookings found.</p>";
+      return;
+    }
+
+    let html = `<table>
+      <tr>
+        <th>Receipt No</th>
+        <th>Date</th>
+        <th>Name</th>
+        <th>Flight</th>
+        <th>Seat</th>
+        <th>Adults</th>
+        <th>Kids</th>
+        <th>Total</th>
+        <th>Payment</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>`;
+
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const voidedClass = data.voided ? "voided" : "";
+      html += `
+      <tr class="${voidedClass}">
+        <td>${data.receiptNo}</td>
+        <td>${data.date}</td>
+        <td>${data.name}</td>
+        <td>${data.flight}</td>
+        <td>${data.seat}</td>
+        <td>${data.adults}</td>
+        <td>${data.kids}</td>
+        <td>${data.total.toFixed(2)} ${data.currency}</td>
+        <td>${data.paymentType}</td>
+        <td>${data.voided ? "VOID" : "Active"}</td>
+        <td>
+          <button onclick="editBooking('${doc.id}')">Edit</button>
+          <button onclick="deleteBooking('${doc.id}')">Delete</button>
+          <button onclick="voidBooking('${doc.id}')">Void</button>
+        </td>
+      </tr>`;
+    });
+
+    html += `</table>`;
+    bookingsDiv.innerHTML = html;
+  } catch(err){
+    console.error(err);
+    bookingsDiv.innerHTML = "<p>Error loading bookings: " + err.message + "</p>";
+  }
+}
+
+// Edit booking
+async function editBooking(docId){
+  const docRef = db.collection("bookings").doc(docId);
+  const docSnap = await docRef.get();
+  if(!docSnap.exists){ alert("Booking not found!"); return; }
+  const data = docSnap.data();
+
+  const newName = prompt("Name:", data.name);
+  if(newName===null) return;
+  const newFlight = prompt("Flight:", data.flight);
+  if(newFlight===null) return;
+  const newSeat = prompt("Seat:", data.seat);
+  if(newSeat===null) return;
+  const newAdults = prompt("Adults:", data.adults);
+  if(newAdults===null) return;
+  const newKids = prompt("Kids:", data.kids);
+  if(newKids===null) return;
+  const newPayment = prompt("Payment Type (Cash/Card):", data.paymentType);
+  if(newPayment===null) return;
+
+  try{
+    await docRef.update({
+      name: newName,
+      flight: newFlight,
+      seat: newSeat,
+      adults: parseInt(newAdults),
+      kids: parseInt(newKids),
+      paymentType: newPayment
+    });
+    alert("Booking updated!");
+    loadBookings();
+  } catch(err){
+    alert("Error updating: " + err.message);
+  }
+}
+
+// Delete booking
+async function deleteBooking(docId){
+  if(!confirm("Are you sure you want to delete this booking?")) return;
+  try{
+    await db.collection("bookings").doc(docId).delete();
+    alert("Booking deleted!");
+    loadBookings();
+  } catch(err){
+    alert("Error deleting: " + err.message);
+  }
+}
+
+// Void booking
+async function voidBooking(docId){
+  const reason = prompt("Enter reason for voiding this receipt:");
+  if(!reason) return;
+  try{
+    await db.collection("bookings").doc(docId).update({
+      voided: true,
+      voidReason: reason
+    });
+    alert("Booking voided!");
+    loadBookings();
+  } catch(err){
+    alert("Error voiding: " + err.message);
+  }
+}
+
+// Event listeners
+searchBtn.addEventListener("click", ()=> loadBookings(searchReceipt.value));
+loadAllBtn.addEventListener("click", ()=> loadBookings());
+
+window.addEventListener("DOMContentLoaded", ()=> loadBookings());
+</script>
+</body>
+</html>
