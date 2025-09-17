@@ -10,7 +10,6 @@
   label { display: block; margin-top: 10px; font-weight: bold; }
   input, select, button { padding: 8px; width: 100%; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
   .readonly-field { background: #f0f0f0; }
-  .hidden { display: none; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
   .full-width { grid-column: 1 / -1; }
   .totals, .cash-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
@@ -131,6 +130,41 @@ const outputDiv = document.getElementById("output");
 dateField.value = new Date().toISOString().split('T')[0];
 cashFields.style.display = "none"; // hide cash fields initially
 
+// QR code parser
+function parseQR(code){
+  code = code.trim().toUpperCase().replace(/\s+/g,' ');
+  const allParts = code.split(' ');
+  let name="", flightNo="", seatNo="";
+  if(code.startsWith("TKVCPO")){
+    const tkIndex = code.indexOf("TK0");
+    if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex);}
+    const mlePos = code.indexOf("MLE");
+    if(mlePos!=-1){ const afterMLE = code.substring(mlePos).split(' ')[0]; if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);}
+  } else {
+    name = allParts[0].substring(2);
+    const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+    if(mleIndex!=-1){
+      const mleWord = allParts[mleIndex];
+      const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+      flightNo = mleWord.slice(-2)+nextWord;
+      const partsAfterMLE = allParts.slice(mleIndex+1);
+      for(let w of partsAfterMLE){
+        if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ seatNo = w.substring(5,w.length-4); break; }
+      }
+    }
+  }
+  return {name, flightNo, seatNo};
+}
+
+qrInput.addEventListener("change", ()=>{
+  const parsed = parseQR(qrInput.value);
+  if(parsed.name) nameField.value = parsed.name;
+  if(parsed.flightNo) flightField.value = parsed.flightNo;
+  if(parsed.seatNo) seatField.value = parsed.seatNo;
+  qrInput.value='';
+});
+
+// calculate totals and balance
 function calculate(){
   const curr = currencyType.value;
   const rate = rateType.value;
@@ -162,6 +196,7 @@ function calculate(){
   return {subtotal, gstAmount, total};
 }
 
+// toggle cash fields
 function toggleCashFields() {
   if(paymentType.value==="Cash"){
     cashFields.style.display = "grid";
@@ -172,6 +207,7 @@ function toggleCashFields() {
   }
 }
 
+// get next receipt number safely with transaction
 async function getNextReceiptNo() {
   const counterRef = db.collection("counters").doc("receiptCounter");
   try {
@@ -194,48 +230,82 @@ async function getNextReceiptNo() {
   }
 }
 
-function generateReceiptHTML(data){
-  // Thermal printer friendly style (58mm width)
-  return `
-  <html>
-  <head>
-  <style>
-    body { font-family: monospace; font-size: 12px; width: 58mm; margin:0; }
-    .center { text-align:center; }
-    .line { border-top:1px dashed #000; margin:5px 0; }
-    .row { display:flex; justify-content:space-between; }
-  </style>
-  </head>
-  <body>
-    <div class="center">Company Name</div>
-    <div class="center">Cash Receipt</div>
-    <div class="line"></div>
-    <div class="row"><span>Receipt No:</span><span>${data.receiptNo}</span></div>
-    <div class="row"><span>Date:</span><span>${data.date}</span></div>
-    <div class="row"><span>Name:</span><span>${data.name}</span></div>
-    <div class="row"><span>Flight:</span><span>${data.flight}</span></div>
-    <div class="row"><span>Seat:</span><span>${data.seat}</span></div>
-    <div class="row"><span>Payment:</span><span>${data.paymentType}</span></div>
-    <div class="row"><span>Currency:</span><span>${data.currency}</span></div>
-    <div class="line"></div>
-    <div class="row"><span>Adults:</span><span>${data.adults}</span></div>
-    <div class="row"><span>Kids:</span><span>${data.kids}</span></div>
-    <div class="row"><span>GST:</span><span>${data.gst.toFixed(2)}</span></div>
-    <div class="row"><span>Total:</span><span>${data.total.toFixed(2)}</span></div>
-    ${data.paymentType==="Cash"?`<div class="row"><span>Given:</span><span>${data.givenAmount.toFixed(2)}</span></div>
-    <div class="row"><span>Balance:</span><span>${data.balance.toFixed(2)}</span></div>`:``}
-    <div class="line"></div>
-    <div class="center"><b>This package is valid for 3 hours</b></div>
-    <div class="center">Thank you!</div>
-  </body>
-  </html>
-  `;
+// Function to print receipt
+async function printReceipt(receiptNumber) {
+  try {
+    const bookingQuery = await db.collection("bookings")
+      .where("receiptNo", "==", receiptNumber)
+      .limit(1)
+      .get();
+
+    if (bookingQuery.empty) {
+      alert("Receipt not found!");
+      return;
+    }
+
+    const booking = bookingQuery.docs[0].data();
+    let copies = parseInt(prompt("How many receipts to print?", "1"));
+    if (isNaN(copies) || copies < 1) copies = 1;
+
+    for (let i = 0; i < copies; i++) {
+      const receiptWindow = window.open('', 'PRINT', 'height=600,width=400');
+      receiptWindow.document.write(`
+        <html>
+          <head>
+            <title>Receipt ${booking.receiptNo}</title>
+            <style>
+              body { font-family: monospace; font-size: 12px; padding: 5px; }
+              h3, h4 { text-align: center; margin: 2px; }
+              .line { border-bottom: 1px dashed #000; margin: 5px 0; }
+            </style>
+          </head>
+          <body>
+            <h3>Booking Receipt</h3>
+            <h4>Receipt No: ${booking.receiptNo}</h4>
+            <div class="line"></div>
+            <p>Date: ${booking.date}</p>
+            <p>Name: ${booking.name}</p>
+            <p>Flight No: ${booking.flight}</p>
+            <p>Seat No: ${booking.seat}</p>
+            <p>Adults: ${booking.adults}</p>
+            <p>Kids: ${booking.kids}</p>
+            <p>GST: ${booking.gst.toFixed(2)}</p>
+            <p>Total: ${booking.total.toFixed(2)} ${booking.currency}</p>
+            <p>Payment Method: ${booking.paymentType}</p>
+            <p>${booking.paymentType === 'Cash' ? `Given Amount: ${booking.givenAmount}<br>Balance: ${booking.balance}` : ''}</p>
+            <div class="line"></div>
+            <p style="text-align:center;">This package is valid for 3 hours</p>
+          </body>
+        </html>
+      `);
+      receiptWindow.document.close();
+      receiptWindow.focus();
+      receiptWindow.print();
+      receiptWindow.close();
+    }
+  } catch (err) {
+    console.error("Error printing receipt:", err);
+    alert("Error printing receipt: " + err.message);
+  }
 }
 
-paymentType.addEventListener("change", ()=>{ toggleCashFields(); calculate(); });
-[currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{ el.addEventListener("input",calculate); el.addEventListener("change",calculate); });
-window.addEventListener("DOMContentLoaded", ()=>{ toggleCashFields(); calculate(); });
+// event listeners
+paymentType.addEventListener("change", ()=>{
+  toggleCashFields();
+  calculate();
+});
 
+[currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
+  el.addEventListener("input", calculate);
+  el.addEventListener("change", calculate);
+});
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  toggleCashFields();
+  calculate();
+});
+
+// Save to Firebase and print
 document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const totals = calculate();
   const nextReceiptNo = await getNextReceiptNo();
@@ -265,22 +335,14 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
   try {
     await db.collection("bookings").add(data);
     outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully! Receipt No: ${nextReceiptNo}</p>`;
-
-    let copies = prompt("How many copies to print?", "1");
-    copies = parseInt(copies) || 1;
-
-    const receiptHTML = generateReceiptHTML(data);
-    for(let i=0;i<copies;i++){
-      const printWindow = window.open('','_blank');
-      printWindow.document.write(receiptHTML);
-      printWindow.document.close();
-      printWindow.print();
-    }
-
     document.getElementById("bookingForm").reset();
     dateField.value = new Date().toISOString().split('T')[0];
     toggleCashFields();
     calculate();
+
+    if(confirm("Do you want to print the receipt?")){
+      printReceipt(nextReceiptNo);
+    }
 
   } catch(err){
     console.error("Error saving booking:", err);
