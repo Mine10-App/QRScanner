@@ -1,159 +1,327 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Booking Form</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    label { display: block; margin-top: 8px; }
-    input, select, button { margin-top: 5px; padding: 6px; width: 200px; }
-    .readonly-field { background: #f0f0f0; border: 1px solid #ccc; }
-    .hidden { display: none; }
-  </style>
+<meta charset="UTF-8">
+<title>Booking Form</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 20px;
+  }
+
+  h2 {
+    text-align: center;
+    color: #333;
+  }
+
+  form {
+    max-width: 900px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  }
+
+  label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+  }
+
+  input, select, button {
+    padding: 8px;
+    width: 100%;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+
+  .readonly-field {
+    background: #f0f0f0;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  /* Grid layout */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 10px;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .totals, .cash-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-top: 15px;
+  }
+
+  button {
+    width: 100%;
+    background: #007bff;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+
+  button:hover {
+    background: #0056b3;
+  }
+</style>
 </head>
 <body>
-  <h2>Booking Entry</h2>
 
-  <form id="bookingForm">
-    <label>Date: <input type="date" id="date"></label>
-    <label>Name: <input type="text" id="name"></label>
-    <label>Flight No: <input type="text" id="flight"></label>
-    <label>Seat No: <input type="text" id="seat"></label>
-    <label>Currency:
+<h2>Booking Entry</h2>
+
+<form id="bookingForm">
+  <!-- QR Code input on top -->
+  <label for="qrInput">Scan/Paste QR Code (optional):</label>
+  <input type="text" id="qrInput" placeholder="Paste or scan QR code here" class="full-width">
+
+  <div class="form-grid">
+    <!-- Left column -->
+    <div>
+      <label>Date:</label>
+      <input type="date" id="date">
+
+      <label>Name:</label>
+      <input type="text" id="name">
+
+      <label>Flight No:</label>
+      <input type="text" id="flight">
+
+      <label>Seat No:</label>
+      <input type="text" id="seat">
+    </div>
+
+    <!-- Right column -->
+    <div>
+      <label>Currency:</label>
       <select id="currencyType">
         <option value="USD">USD</option>
         <option value="MVR">MVR</option>
       </select>
-    </label>
-    <label>Rate:
+
+      <label>Rate:</label>
       <select id="rateType">
-        <option value="A">Rate A</option>
+        <option value="A" selected>Rate A</option>
         <option value="B">Rate B</option>
       </select>
-    </label>
-    <label>Adults: <input type="number" id="adultCount" value="0" min="0"></label>
-    <label>Kids: <input type="number" id="kidCount" value="0" min="0"></label>
-    <label>Payment Type:
+
+      <label>Adults:</label>
+      <input type="number" id="adultCount" value="0" min="0">
+
+      <label>Kids:</label>
+      <input type="number" id="kidCount" value="0" min="0">
+    </div>
+
+    <!-- Payment type and Receipt No -->
+    <div class="full-width">
+      <label>Payment Type:</label>
       <select id="paymentType">
         <option value="Cash">Cash</option>
         <option value="Card">Card</option>
       </select>
-    </label>
 
-    <!-- Cash payment extra fields -->
-    <div id="cashFields" class="hidden">
-      <label>Given Amount: <input type="number" id="givenAmount" min="0" step="0.01"></label>
-      <label>Balance: <input type="text" id="balanceField" class="readonly-field" readonly></label>
+      <div id="cashFields" class="cash-section hidden">
+        <div>
+          <label>Given Amount:</label>
+          <input type="number" id="givenAmount" min="0" step="0.01">
+        </div>
+        <div>
+          <label>Balance:</label>
+          <input type="text" id="balanceField" class="readonly-field" readonly>
+        </div>
+      </div>
+
+      <label>Receipt No:</label>
+      <input type="text" id="receiptNo">
     </div>
+  </div>
 
-    <h3>Totals</h3>
-    <label>Total Adults: <input type="text" id="totalAdults" class="readonly-field" readonly></label>
-    <label>Total Kids: <input type="text" id="totalKids" class="readonly-field" readonly></label>
-    <label>GST: <input type="text" id="gstField" class="readonly-field" readonly></label>
-    <label>Total: <input type="text" id="totalField" class="readonly-field" readonly></label>
+  <!-- Totals -->
+  <div class="totals">
+    <div>
+      <label>Total Adults:</label>
+      <input type="text" id="totalAdults" class="readonly-field" readonly>
+    </div>
+    <div>
+      <label>Total Kids:</label>
+      <input type="text" id="totalKids" class="readonly-field" readonly>
+    </div>
+    <div>
+      <label>GST:</label>
+      <input type="text" id="gstField" class="readonly-field" readonly>
+    </div>
+    <div>
+      <label>Total:</label>
+      <input type="text" id="totalField" class="readonly-field" readonly>
+    </div>
+  </div>
 
-    <button type="button" id="saveBtn">Save Entry</button>
-  </form>
+  <button type="button" id="saveBtn">Save Entry</button>
+</form>
 
-  <div id="output"></div>
+<div id="output" style="max-width:900px;margin:20px auto;"></div>
 
-  <!-- Link external rate.js -->
-  <script src="rate.js"></script>
+<!-- External rate.js -->
+<script src="rate.js"></script>
+<!-- Firebase config -->
+<script src="fire.js"></script>
 
-  <script>
-    // Elements
-    const dateField = document.getElementById("date");
-    const currencyType = document.getElementById("currencyType");
-    const rateType = document.getElementById("rateType");
-    const adultCount = document.getElementById("adultCount");
-    const kidCount = document.getElementById("kidCount");
-    const paymentType = document.getElementById("paymentType");
-    const givenAmount = document.getElementById("givenAmount");
-    const balanceField = document.getElementById("balanceField");
-    const cashFields = document.getElementById("cashFields");
+<script>
+  // Elements
+  const dateField = document.getElementById("date");
+  const qrInput = document.getElementById("qrInput");
+  const nameField = document.getElementById("name");
+  const flightField = document.getElementById("flight");
+  const seatField = document.getElementById("seat");
+  const currencyType = document.getElementById("currencyType");
+  const rateType = document.getElementById("rateType");
+  const adultCount = document.getElementById("adultCount");
+  const kidCount = document.getElementById("kidCount");
+  const paymentType = document.getElementById("paymentType");
+  const givenAmount = document.getElementById("givenAmount");
+  const balanceField = document.getElementById("balanceField");
+  const cashFields = document.getElementById("cashFields");
+  const receiptNo = document.getElementById("receiptNo");
 
-    const totalAdultsField = document.getElementById("totalAdults");
-    const totalKidsField = document.getElementById("totalKids");
-    const gstField = document.getElementById("gstField");
-    const totalField = document.getElementById("totalField");
-    const outputDiv = document.getElementById("output");
+  const totalAdultsField = document.getElementById("totalAdults");
+  const totalKidsField = document.getElementById("totalKids");
+  const gstField = document.getElementById("gstField");
+  const totalField = document.getElementById("totalField");
+  const outputDiv = document.getElementById("output");
 
-    // Set today’s date
-    dateField.value = new Date().toISOString().split('T')[0];
+  // Set today's date
+  dateField.value = new Date().toISOString().split('T')[0];
 
-    function calculate() {
-      const curr = currencyType.value;
-      const rate = rateType.value;
-      const adults = parseInt(adultCount.value) || 0;
-      const kids = parseInt(kidCount.value) || 0;
+  // QR Parsing
+  function parseQR(code){
+    code = code.trim().toUpperCase().replace(/\s+/g,' ');
+    const allParts = code.split(' ');
+    let name="", flightNo="", seatNo="";
 
-      const adultKey = `Adult${rate}${curr}`;
-      const kidKey = `Kids${rate}${curr}`;
-
-      const adultRate = rates[adultKey].price;
-      const kidRate = rates[kidKey].price;
-      const gstPercent = rates[adultKey].GST;
-
-      const totalAdults = adults * adultRate;
-      const totalKids = kids * kidRate;
-      const subtotal = totalAdults + totalKids;
-      const gstAmount = subtotal * (gstPercent / 100);
-      const total = subtotal + gstAmount;
-
-      totalAdultsField.value = totalAdults.toFixed(2);
-      totalKidsField.value = totalKids.toFixed(2);
-      gstField.value = gstAmount.toFixed(2);
-      totalField.value = total.toFixed(2);
-
-      // Calculate balance if cash
-      if (paymentType.value === "Cash") {
-        const given = parseFloat(givenAmount.value) || 0;
-        balanceField.value = (given - total).toFixed(2);
-      } else {
-        balanceField.value = "";
+    if(code.startsWith("TKVCPO")){
+      const tkIndex = code.indexOf("TK0");
+      if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex);}
+      const mlePos = code.indexOf("MLE");
+      if(mlePos!=-1){
+        const afterMLE = code.substring(mlePos).split(' ')[0];
+        if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);
       }
-
-      return { subtotal, gstAmount, total, adultRate, kidRate, gstPercent };
+    }else{
+      name = allParts[0].substring(2);
+      const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+      if(mleIndex!=-1){
+        const mleWord = allParts[mleIndex];
+        const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+        flightNo = mleWord.slice(-2)+nextWord;
+        const partsAfterMLE = allParts.slice(mleIndex+1);
+        for(let w of partsAfterMLE){
+          if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){
+            seatNo = w.substring(5,w.length-4);
+            break;
+          }
+        }
+      }
     }
+    return {name, flightNo, seatNo};
+  }
 
-    // Show/hide cash fields
-    paymentType.addEventListener("change", () => {
-      if (paymentType.value === "Cash") {
-        cashFields.classList.remove("hidden");
-      } else {
-        cashFields.classList.add("hidden");
-      }
+  qrInput.addEventListener("change", ()=>{
+    const parsed = parseQR(qrInput.value);
+    if(parsed.name) nameField.value = parsed.name;
+    if(parsed.flightNo) flightField.value = parsed.flightNo;
+    if(parsed.seatNo) seatField.value = parsed.seatNo;
+    qrInput.value='';
+  });
+
+  // Calculate totals
+  function calculate(){
+    const curr = currencyType.value;
+    const rate = rateType.value;
+    const adults = parseInt(adultCount.value)||0;
+    const kids = parseInt(kidCount.value)||0;
+
+    const adultKey = `Adult${rate}${curr}`;
+    const kidKey = `Kids${rate}${curr}`;
+
+    const adultRate = rates[adultKey].price;
+    const kidRate = rates[kidKey].price;
+    const gstPercent = rates[adultKey].GST;
+
+    const totalAdults = adults*adultRate;
+    const totalKids = kids*kidRate;
+    const subtotal = totalAdults+totalKids;
+    const gstAmount = subtotal*(gstPercent/100);
+    const total = subtotal+gstAmount;
+
+    totalAdultsField.value = totalAdults.toFixed(2);
+    totalKidsField.value = totalKids.toFixed(2);
+    gstField.value = gstAmount.toFixed(2);
+    totalField.value = total.toFixed(2);
+
+    if(paymentType.value==="Cash"){
+      const given = parseFloat(givenAmount.value)||0;
+      balanceField.value = (given-total).toFixed(2);
+    }else balanceField.value="";
+
+    return {subtotal, gstAmount, total, adultRate, kidRate, gstPercent};
+  }
+
+  // Show/hide cash fields
+  paymentType.addEventListener("change", ()=>{ cashFields.classList.toggle("hidden", paymentType.value!=="Cash"); calculate(); });
+
+  [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{ el.addEventListener("input",calculate); el.addEventListener("change",calculate); });
+
+  calculate();
+
+  // Save to Firebase
+  document.getElementById("saveBtn").addEventListener("click", async ()=>{
+    const {subtotal, gstAmount, total, adultRate, kidRate, gstPercent} = calculate();
+
+    if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
+
+    const entryData = {
+      date: dateField.value,
+      name: nameField.value,
+      flightNo: flightField.value,
+      seatNo: seatField.value,
+      currency: currencyType.value,
+      rateType: rateType.value,
+      adults: adultCount.value,
+      kids: kidCount.value,
+      totalAdults: totalAdultsField.value,
+      totalKids: totalKidsField.value,
+      gst: gstField.value,
+      total: totalField.value,
+      paymentType: paymentType.value,
+      givenAmount: paymentType.value==="Cash"?givenAmount.value:null,
+      balance: paymentType.value==="Cash"?balanceField.value:null,
+      receiptNo: receiptNo.value.trim()
+    };
+
+    try{
+      await db.collection("bookings").add(entryData);
+      outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
+      document.getElementById("bookingForm").reset();
       calculate();
-    });
-
-    // Live update totals
-    [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el => {
-      el.addEventListener("input", calculate);
-      el.addEventListener("change", calculate);
-    });
-
-    calculate(); // initialize
-
-    document.getElementById("saveBtn").addEventListener("click", () => {
-      const { subtotal, gstAmount, total, adultRate, kidRate, gstPercent } = calculate();
-      outputDiv.innerHTML = `
-        <h3>Saved Entry</h3>
-        <p><strong>Date:</strong> ${dateField.value}</p>
-        <p><strong>Name:</strong> ${document.getElementById("name").value}</p>
-        <p><strong>Flight No:</strong> ${document.getElementById("flight").value}</p>
-        <p><strong>Seat No:</strong> ${document.getElementById("seat").value}</p>
-        <p><strong>Adults:</strong> ${adultCount.value} × ${adultRate.toFixed(2)}</p>
-        <p><strong>Kids:</strong> ${kidCount.value} × ${kidRate.toFixed(2)}</p>
-        <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
-        <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
-        <p><strong>Total:</strong> ${total.toFixed(2)}</p>
-        <p><strong>Payment Type:</strong> ${paymentType.value}</p>
-        ${paymentType.value === "Cash" ? `
-          <p><strong>Given Amount:</strong> ${givenAmount.value}</p>
-          <p><strong>Balance:</strong> ${balanceField.value}</p>
-        ` : ""}
-      `;
-    });
-  </script>
+    }catch(err){
+      console.error(err);
+      alert("Error saving to Firebase");
+    }
+  });
+</script>
 </body>
 </html>
