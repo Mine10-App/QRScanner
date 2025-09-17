@@ -62,18 +62,17 @@
 <h1>Daily Sales Report</h1>
 
 <label for="reportDate">Select Date:</label>
-<input type="date" id="reportDate" value="<?php echo date('Y-m-d'); ?>">
+<input type="date" id="reportDate">
 <button id="generateBtn">Generate Report</button>
 
 <div id="reportContainer" style="display:none;">
   <h2 id="reportTitle"></h2>
-  <div class="summary" id="summaryDiv"></div>
-  <h3>Receipts</h3>
+
+  <h3>Active Receipts</h3>
   <table id="receiptsTable">
     <thead>
       <tr>
         <th>Receipt No</th>
-        <th>Name</th>
         <th>Payment Type</th>
         <th>Currency</th>
         <th>Total Amount</th>
@@ -82,6 +81,21 @@
     </thead>
     <tbody></tbody>
   </table>
+
+  <h3>Voided Receipts</h3>
+  <table id="voidedTable">
+    <thead>
+      <tr>
+        <th>Receipt No</th>
+        <th>Payment Type</th>
+        <th>Currency</th>
+        <th>Total Amount</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="summary" id="summaryDiv"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -95,6 +109,7 @@ const reportContainer = document.getElementById("reportContainer");
 const reportTitle = document.getElementById("reportTitle");
 const summaryDiv = document.getElementById("summaryDiv");
 const receiptsTableBody = document.querySelector("#receiptsTable tbody");
+const voidedTableBody = document.querySelector("#voidedTable tbody");
 
 generateBtn.addEventListener("click", async () => {
   const selectedDate = reportDateInput.value;
@@ -104,48 +119,56 @@ generateBtn.addEventListener("click", async () => {
   reportTitle.innerText = `Sales Report for ${selectedDate}`;
 
   try {
-    // Get all bookings for the selected date
-    const start = new Date(selectedDate);
-    const end = new Date(selectedDate);
-    end.setDate(end.getDate() + 1);
+    const start = new Date(selectedDate + "T00:00:00");
+    const end = new Date(selectedDate + "T23:59:59");
 
     const snapshot = await db.collection("bookings")
       .where("timestamp", ">=", start)
-      .where("timestamp", "<", end)
+      .where("timestamp", "<=", end)
       .get();
 
     let totalByCurrency = {};
     let totalByPayment = {};
-    let totalReceipts = [];
-
     receiptsTableBody.innerHTML = "";
+    voidedTableBody.innerHTML = "";
 
     snapshot.docs.forEach(doc => {
       const data = doc.data();
 
-      // Totals by currency
-      if(!totalByCurrency[data.currency]) totalByCurrency[data.currency] = 0;
-      totalByCurrency[data.currency] += data.total;
+      if(data.voided){
+        // Voided receipts table
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.receiptNo}</td>
+          <td>${data.paymentType}</td>
+          <td>${data.currency}</td>
+          <td>${data.total.toFixed(2)}</td>
+        `;
+        voidedTableBody.appendChild(tr);
+      } else {
+        // Active receipts table
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.receiptNo}</td>
+          <td>${data.paymentType}</td>
+          <td>${data.currency}</td>
+          <td>${data.total.toFixed(2)}</td>
+          <td>Active</td>
+        `;
+        receiptsTableBody.appendChild(tr);
 
-      // Totals by payment type
-      if(!totalByPayment[data.paymentType]) totalByPayment[data.paymentType] = 0;
-      totalByPayment[data.paymentType] += data.total;
+        // Totals by currency
+        if(!totalByCurrency[data.currency]) totalByCurrency[data.currency] = 0;
+        totalByCurrency[data.currency] += data.total;
 
-      // Receipts table
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${data.receiptNo}</td>
-        <td>${data.name}</td>
-        <td>${data.paymentType}</td>
-        <td>${data.currency}</td>
-        <td>${data.total.toFixed(2)}</td>
-        <td class="${data.voided ? 'voided' : ''}">${data.voided ? 'VOID' : 'Active'}</td>
-      `;
-      receiptsTableBody.appendChild(tr);
+        // Totals by payment type
+        if(!totalByPayment[data.paymentType]) totalByPayment[data.paymentType] = 0;
+        totalByPayment[data.paymentType] += data.total;
+      }
     });
 
-    // Build summary
-    summaryDiv.innerHTML = "<h3>Summary</h3>";
+    // Build summary (after receipts)
+    summaryDiv.innerHTML = "<h3>Summary (Active Receipts Only)</h3>";
     for(const curr in totalByCurrency){
       summaryDiv.innerHTML += `<div>Total in ${curr}: ${totalByCurrency[curr].toFixed(2)}</div>`;
     }
