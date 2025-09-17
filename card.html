@@ -63,6 +63,13 @@
   button:hover {
     background-color: #0056b3;
   }
+  #output {
+    margin-top: 30px;
+    background: #fafafa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+  }
 </style>
 </head>
 <body>
@@ -109,13 +116,14 @@
 
   <button id="saveEntryBtn">Save Entry</button>
 
-  <div id="output" style="margin-top: 30px;"></div>
+  <div id="output"></div>
 </div>
 
-<script src="rate.js"></script> <!-- include your rate.js file -->
+<!-- link to rate.js -->
+<script src="rate.js"></script>
 
 <script>
-  // Set current date input to today's date in yyyy-mm-dd format
+  // Set current date
   const currentDateInput = document.getElementById('currentDate');
   const today = new Date().toISOString().split('T')[0];
   currentDateInput.value = today;
@@ -130,7 +138,7 @@
   const currencyType = document.getElementById('currencyType');
   const outputDiv = document.getElementById('output');
 
-  // QR Parsing function (same as before)
+  // QR Parsing function
   function parseQR(code) {
     code = code.trim().toUpperCase().replace(/\s+/g, ' ');
     const allParts = code.split(' ');
@@ -163,11 +171,9 @@
         }
       }
     }
-
     return { name: name || "", flightNo: flightNo || "", seatNo: seatNo || "" };
   }
 
-  // On QR input change, parse and fill the fields
   qrInput.addEventListener('change', () => {
     const code = qrInput.value.trim();
     if (!code) return;
@@ -178,21 +184,19 @@
     qrInput.value = '';
   });
 
-  // === Calculation function ===
+  // Calculation function
   function calculateTotal() {
     const adults = parseInt(adultCount.value, 10) || 0;
     const kids = parseInt(kidCount.value, 10) || 0;
 
-    // Using AdultA & KidsA rates from rate.js (you can change to AdultB/KidsB if needed)
     const adultRate = rates.AdultA.price;
     const kidRate = rates.KidsA.price;
-    const gstPercent = rates.AdultA.GST; // assume same GST for all
+    const gstPercent = rates.AdultA.GST;
 
     const subtotal = (adults * adultRate) + (kids * kidRate);
     const gstAmount = subtotal * (gstPercent / 100);
     const total = subtotal + gstAmount;
 
-    // Show calculation live
     outputDiv.innerHTML = `
       <h3>Calculation</h3>
       <p><strong>Adults:</strong> ${adults} × ${adultRate} = ${(adults * adultRate).toFixed(2)}</p>
@@ -201,15 +205,12 @@
       <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
       <p><strong>Total:</strong> ${total.toFixed(2)}</p>
     `;
-
     return { subtotal, gstAmount, total, gstPercent };
   }
 
-  // Recalculate when counts change
   adultCount.addEventListener("input", calculateTotal);
   kidCount.addEventListener("input", calculateTotal);
 
-  // On Save button click
   document.getElementById('saveEntryBtn').addEventListener('click', () => {
     const name = nameInput.value.trim();
     const flightNo = flightInput.value.trim();
@@ -233,10 +234,8 @@
       return;
     }
 
-    // Calculate totals before saving
     const { subtotal, gstAmount, total, gstPercent } = calculateTotal();
 
-    // Show saved data
     outputDiv.innerHTML = `
       <h3>Saved Entry</h3>
       <p><strong>Date:</strong> ${date}</p>
@@ -253,7 +252,6 @@
       <p><strong>Total:</strong> ${total.toFixed(2)}</p>
     `;
 
-    // Clear form except date
     nameInput.value = "";
     flightInput.value = "";
     seatInput.value = "";
@@ -263,8 +261,5 @@
     currencyType.value = "";
   });
 </script>
-
 </body>
 </html>
-
-
