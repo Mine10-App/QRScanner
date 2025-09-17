@@ -103,22 +103,9 @@
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
 <script type="module">
-  // --- Import rates and Firebase ---
+  // --- Import rates and Firestore DB ---
   import { rates } from './rate.js';
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-  // --- Firebase Config ---
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  import { db, collection, addDoc } from './fire.js';
 
   // --- DOM Elements ---
   const dateField = document.getElementById("date");
