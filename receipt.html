@@ -27,16 +27,26 @@
 
 <input type="number" id="receiptInput" placeholder="Enter Receipt No">
 <button id="fetchBtn">Generate Receipt</button>
+<button id="printBtn" style="display:none;">Print Receipt</button>
 
 <div id="receiptContainer" style="display:none;"></div>
+
 <script src="Co.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="fire1.js"></script>
 
 <script>
+// Company Info
+const companyInfo = {
+  name: "My Company Pvt Ltd",
+  address: "123 Airport Road, Malé",
+  phone: "+960 123-4567"
+};
+
 const receiptInput = document.getElementById("receiptInput");
 const fetchBtn = document.getElementById("fetchBtn");
+const printBtn = document.getElementById("printBtn");
 const receiptContainer = document.getElementById("receiptContainer");
 
 fetchBtn.addEventListener("click", async () => {
@@ -52,6 +62,7 @@ fetchBtn.addEventListener("click", async () => {
     if(snapshot.empty){
       receiptContainer.style.display = "block";
       receiptContainer.innerHTML = "<p style='text-align:center;'>Receipt not found</p>";
+      printBtn.style.display = "none";
       return;
     }
 
@@ -59,8 +70,8 @@ fetchBtn.addEventListener("click", async () => {
 
     // Build receipt
     let html = `<h2>${companyInfo.name}</h2>`;
-      html += `<h2>${companyInfo.address}</h2>`;
-      html += `<h2>${companyInfo.phone}</h2>`;
+    html += `<h2>${companyInfo.address}</h2>`;
+    html += `<h2>${companyInfo.phone}</h2>`;
 
     // Show VOID if applicable
     if(data.voided){
@@ -81,16 +92,16 @@ fetchBtn.addEventListener("click", async () => {
       <div class="row"><span>Payment:</span><span>${data.paymentType}</span></div>
       <div class="row"><span>Currency:</span><span>${data.currency}</span></div>
       <div class="line"></div>
-      <div class="row"><span>Adults:</span><span>${data.adults}</span></div>
-      <div class="row"><span>Kids:</span><span>${data.kids}</span></div>
-      <div class="row"><span>GST:</span><span>${data.gst.toFixed(2)}</span></div>
-      <div class="row"><span>Total:</span><span>${data.total.toFixed(2)}</span></div>
+      <div class="row"><span>Adults:</span><span>${data.adults ?? 0}</span></div>
+      <div class="row"><span>Kids:</span><span>${data.kids ?? 0}</span></div>
+      <div class="row"><span>GST:</span><span>${(data.gst ?? 0).toFixed(2)}</span></div>
+      <div class="row"><span>Total:</span><span>${(data.total ?? 0).toFixed(2)}</span></div>
     `;
 
     if(data.paymentType === "Cash"){
       html += `
-        <div class="row"><span>Given:</span><span>${data.givenAmount.toFixed(2)}</span></div>
-        <div class="row"><span>Balance:</span><span>${data.balance.toFixed(2)}</span></div>
+        <div class="row"><span>Given:</span><span>${(data.givenAmount ?? 0).toFixed(2)}</span></div>
+        <div class="row"><span>Balance:</span><span>${(data.balance ?? 0).toFixed(2)}</span></div>
       `;
     }
 
@@ -102,15 +113,19 @@ fetchBtn.addEventListener("click", async () => {
 
     receiptContainer.style.display = "block";
     receiptContainer.innerHTML = html;
-
-    // Optional: auto print
-    window.print();
+    printBtn.style.display = "block";
 
   } catch(err){
     console.error("Error fetching receipt:", err);
     receiptContainer.style.display = "block";
     receiptContainer.innerHTML = "<p style='text-align:center;color:red;'>Error fetching receipt</p>";
+    printBtn.style.display = "none";
   }
+});
+
+// Print button
+printBtn.addEventListener("click", () => {
+  window.print();
 });
 </script>
 
