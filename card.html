@@ -18,31 +18,30 @@
 </head>
 <body>
 <div class="container">
-
   <div class="scanner">
     <h2>QR Boarding Pass Parser</h2>
     <label for="qrInput">Paste QR / Scan Code:</label>
     <input type="text" id="qrInput" placeholder="Paste or scan QR data here" />
-    
-    <label for="flightSelect">Flights Today:</label>
-    <select id="flightSelect">
-      <option value="">--Choose Flight--</option>
-    </select>
     
     <table id="qrTable">
       <thead>
         <tr>
           <th>Date</th>
           <th>Flight No</th>
-          <th>Name</th>
           <th>Seat No</th>
-          <th>FQTV</th>
+          <th>No. of Pax (Adults)</th>
+          <th>No. of Pax (Kids)</th>
+          <th>Payment Method</th>
+          <th>Currency Type</th>
+          <th>Rate Selector</th>
+          <th>Total</th>
+          <th>Paid Amount</th>
+          <th>Balance</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
-
 </div>
 
 <!-- Firebase Compat Scripts for IE / MS Access -->
@@ -64,7 +63,6 @@
 
   var qrInput = document.getElementById("qrInput");
   var qrTableBody = document.querySelector("#qrTable tbody");
-  var flightSelect = document.getElementById("flightSelect");
 
   var allEntries = []; // keep all today's entries
 
@@ -72,8 +70,19 @@
   function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     var allParts = code.split(' ');
-    var name="", flightNo="", seatNo="", fq="";
+    var name="", flightNo="", seatNo="", fq="", paxAdults=0, paxKids=0, paymentMethod="", currencyType="", rateSelector="", total=0, paidAmount=0, balance=0;
 
+    // Add logic to extract pax, payment, and currency information (for now using placeholders)
+    paxAdults = 2;  // Example: Adjust this as per QR content (Adult Pax)
+    paxKids = 1;    // Example: Adjust this as per QR content (Kid Pax)
+    paymentMethod = "Credit Card";  // Placeholder for Payment Method
+    currencyType = "USD";  // Placeholder for Currency Type
+    rateSelector = "Standard"; // Placeholder for Rate Selector
+    total = 500;   // Placeholder for Total
+    paidAmount = 300;  // Placeholder for Paid Amount
+    balance = total - paidAmount;  // Calculate Balance
+
+    // Simple flight number parsing logic (e.g., for "TKVCPO" code)
     if(code.startsWith("TKVCPO")){
       var tkIndex = code.indexOf("TK0");
       if(tkIndex !== -1){
@@ -103,29 +112,39 @@
       }
     }
 
-    var lastChar = code.slice(-1);
-    var airline = flightNo.slice(0,2);
-    if(airline==="BA" && allParts.length>=3) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
-    else if(airline==="EK" && allParts.length>=4) fq = allParts[allParts.length-4]+" "+allParts[allParts.length-3];
-    else if(airline==="EY" && allParts.length>=4) fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
-    else if(flightNo.startsWith("QR") && allParts.length>=5 && allParts[allParts.length-5]==="2A") fq = allParts[allParts.length-3]+" "+allParts[allParts.length-2];
-    
-    if(fq){
-      if(lastChar==="1") fq+="/P";
-      else if(lastChar==="2") fq+="/G";
-      else if(lastChar==="S") fq+="/S";
-    }
-
-    return { name: name||"-", flightNo: flightNo||"-", seatNo: seatNo||"-", fq: fq||"-" };
+    return { 
+      name: name || "-", 
+      flightNo: flightNo || "-", 
+      seatNo: seatNo || "-", 
+      paxAdults: paxAdults,
+      paxKids: paxKids,
+      paymentMethod: paymentMethod,
+      currencyType: currencyType,
+      rateSelector: rateSelector,
+      total: total,
+      paidAmount: paidAmount,
+      balance: balance
+    };
   }
 
   // --- Display entries ---
-  function displayEntries(flightFilter){
+  function displayEntries(){
     qrTableBody.innerHTML="";
-    allEntries.filter(function(d){ return !flightFilter || d.flightNo===flightFilter; })
-              .forEach(function(d){
+    allEntries.forEach(function(d){
       var row = document.createElement("tr");
-      row.innerHTML = "<td>"+d.date+"</td><td>"+d.flightNo+"</td><td>"+d.name+"</td><td>"+d.seatNo+"</td><td>"+d.fq+"</td>";
+      row.innerHTML = `
+        <td>${d.date}</td>
+        <td>${d.flightNo}</td>
+        <td>${d.seatNo}</td>
+        <td>${d.paxAdults}</td>
+        <td>${d.paxKids}</td>
+        <td>${d.paymentMethod}</td>
+        <td>${d.currencyType}</td>
+        <td>${d.rateSelector}</td>
+        <td>${d.total}</td>
+        <td>${d.paidAmount}</td>
+        <td>${d.balance}</td>
+      `;
       qrTableBody.appendChild(row);
     });
   }
@@ -135,17 +154,11 @@
     var today = new Date().toISOString().split("T")[0];
     var q = db.collection("qr_entries").where("date","==",today);
     q.onSnapshot(function(snapshot){
-      allEntries=[];
-      var flightSet = new Set();
+      allEntries = [];
       snapshot.forEach(function(doc){
         var d = doc.data();
         allEntries.push(d);
-        flightSet.add(d.flightNo);
       });
-
-      // Populate dropdown
-      flightSelect.innerHTML='<option value="">--Choose Flight--</option>';
-      flightSet.forEach(function(f){ flightSelect.innerHTML+='<option value="'+f+'">'+f+'</option>'; });
 
       displayEntries(); // show all entries initially
     });
@@ -164,14 +177,8 @@
       .catch(function(err){ console.error("Error saving QR:", err); });
   });
 
-  // --- Filter by flight ---
-  flightSelect.addEventListener("change", function(){
-    displayEntries(flightSelect.value);
-  });
-
   // --- Init ---
   loadTodayEntries();
 </script>
 </body>
 </html>
-
