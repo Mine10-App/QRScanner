@@ -49,8 +49,15 @@ async function fetchBookings() {
   tbody.innerHTML = "<tr><td colspan='10'>Loading...</td></tr>";
 
   try {
+    // Change "bookings" to the collection you used in your save code
     const snapshot = await db.collection("bookings").orderBy("timestamp", "desc").get();
     tbody.innerHTML = "";
+
+    if(snapshot.empty){
+      tbody.innerHTML = "<tr><td colspan='10'>No bookings found.</td></tr>";
+      return;
+    }
+
     snapshot.forEach(doc => {
       const data = doc.data();
       const row = document.createElement("tr");
@@ -69,15 +76,13 @@ async function fetchBookings() {
       tbody.appendChild(row);
     });
 
-    if(snapshot.empty){
-      tbody.innerHTML = "<tr><td colspan='10'>No bookings found.</td></tr>";
-    }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="10" style="color:red;">Error fetching bookings: ${err.message}</td></tr>`;
     console.error(err);
   }
 }
 
+// Fetch bookings when page loads
 fetchBookings();
 </script>
 </body>
