@@ -199,9 +199,13 @@ paymentType.addEventListener("change", ()=>{
 
 calculate();
 
+// --- ONLY CHANGE: Firebase save using modular syntax ---
+import { collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
 document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const {subtotal, gstAmount, total} = calculate();
   if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
+
   const entryData = {
     date: dateField.value,
     name: nameField.value,
@@ -220,8 +224,9 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
     balance: paymentType.value==="Cash"?balanceField.value:null,
     receiptNo: receiptNo.value.trim()
   };
+
   try{
-    await db.collection("bookings").add(entryData);
+    await addDoc(collection(db, "bookings"), entryData);
     outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
     document.getElementById("bookingForm").reset();
     calculate();
