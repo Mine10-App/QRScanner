@@ -6,12 +6,11 @@
 <style>
   body { font-family: monospace; background: #f4f6f9; padding: 20px; }
   #receiptContainer { 
-    width: 300px;
+    width: 300px; /* typical thermal receipt width */
     margin: auto;
     background: #fff; 
     padding: 10px; 
     border: 1px solid #000; 
-    font-size: 12px;
   }
   h2, h3 { text-align: center; margin: 5px 0; }
   .line { border-top: 1px dashed #000; margin: 5px 0; }
@@ -38,34 +37,19 @@
 <script src="fire1.js"></script>
 
 <script>
-let companyInfo = null;
+// Company Info
+const companyInfo = {
+  name: "My Company Pvt Ltd",
+  address: "123 Airport Road, Malé",
+  phone: "+960 123-4567"
+};
 
 const receiptInput = document.getElementById("receiptInput");
 const fetchBtn = document.getElementById("fetchBtn");
 const printBtn = document.getElementById("printBtn");
 const receiptContainer = document.getElementById("receiptContainer");
 
-// Load company info once
-async function loadCompanyInfo() {
-  try {
-    const snapshot = await db.collection("company").doc("info").get();
-    if(snapshot.exists){
-      companyInfo = snapshot.data();
-    } else {
-      companyInfo = { name: "Unknown Company", address: "-", phone: "-" };
-    }
-  } catch(err){
-    console.error("Error loading company info:", err);
-    companyInfo = { name: "Error Company", address: "-", phone: "-" };
-  }
-}
-
-// Ensure company info is ready before clicking
 fetchBtn.addEventListener("click", async () => {
-  if(!companyInfo){
-    await loadCompanyInfo();
-  }
-
   const receiptNo = parseInt(receiptInput.value);
   if(!receiptNo) return alert("Enter a valid receipt number");
 
@@ -84,18 +68,12 @@ fetchBtn.addEventListener("click", async () => {
 
     const data = snapshot.docs[0].data();
 
-    // Handle date (Firestore timestamp or plain string)
-    let receiptDate = "";
-    if(data.date?.toDate){
-      receiptDate = data.date.toDate().toLocaleDateString();
-    } else {
-      receiptDate = data.date ?? "";
-    }
-
     // Build receipt
-    let html = `<h2>${companyInfo?.name ?? ""}</h2>`;
-    html += `<div style="text-align:center;">${companyInfo?.address ?? ""}<br>${companyInfo?.phone ?? ""}</div>`;
+    let html = `<h2>${companyInfo.name}</h2>`;
+    html += `<h2>${companyInfo.address}</h2>`;
+    html += `<h2>${companyInfo.phone}</h2>`;
 
+    // Show VOID if applicable
     if(data.voided){
       html += `<div class="void">VOID</div>`;
       if(data.voidReason){
@@ -107,12 +85,12 @@ fetchBtn.addEventListener("click", async () => {
       <h3>Cash Receipt</h3>
       <div class="line"></div>
       <div class="row"><span>Receipt No:</span><span>${data.receiptNo}</span></div>
-      <div class="row"><span>Date:</span><span>${receiptDate}</span></div>
-      <div class="row"><span>Name:</span><span>${data.name ?? ""}</span></div>
-      <div class="row"><span>Flight:</span><span>${data.flight ?? ""}</span></div>
-      <div class="row"><span>Seat:</span><span>${data.seat ?? ""}</span></div>
-      <div class="row"><span>Payment:</span><span>${data.paymentType ?? ""}</span></div>
-      <div class="row"><span>Currency:</span><span>${data.currency ?? ""}</span></div>
+      <div class="row"><span>Date:</span><span>${data.date}</span></div>
+      <div class="row"><span>Name:</span><span>${data.name}</span></div>
+      <div class="row"><span>Flight:</span><span>${data.flight}</span></div>
+      <div class="row"><span>Seat:</span><span>${data.seat}</span></div>
+      <div class="row"><span>Payment:</span><span>${data.paymentType}</span></div>
+      <div class="row"><span>Currency:</span><span>${data.currency}</span></div>
       <div class="line"></div>
       <div class="row"><span>Adults:</span><span>${data.adults ?? 0}</span></div>
       <div class="row"><span>Kids:</span><span>${data.kids ?? 0}</span></div>
@@ -145,6 +123,7 @@ fetchBtn.addEventListener("click", async () => {
   }
 });
 
+// Print button
 printBtn.addEventListener("click", () => {
   window.print();
 });
