@@ -64,8 +64,8 @@ fetchBtn.addEventListener("click", async () => {
     const data = snapshot.docs[0].data();
 
     // Build receipt
-    let html = `<h2>${companyInfo?.name ?? ""}</h2>`;
-    html += `<div style="text-align:center;">${companyInfo?.address ?? ""}<br>${companyInfo?.phone ?? ""}</div>`;
+    let html = `<h2>${companyInfo.name}</h2>`;
+    html += `<div style="text-align:center;">${companyInfo.address}<br>${companyInfo.phone}</div>`;
     
 
     // Show VOID if applicable
