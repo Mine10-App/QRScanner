@@ -11,6 +11,7 @@
     background: #fff; 
     padding: 10px; 
     border: 1px solid #000; 
+    font-size: 12px;
   }
   h2, h3 { text-align: center; margin: 5px 0; }
   .line { border-top: 1px dashed #000; margin: 5px 0; }
@@ -37,17 +38,28 @@
 <script src="fire1.js"></script>
 
 <script>
-// Company Info
-const companyInfo = {
-  name: "My Company Pvt Ltd",
-  address: "123 Airport Road, Malé",
-  phone: "+960 123-4567"
-};
+let companyInfo = null; // will be loaded from Firestore
 
 const receiptInput = document.getElementById("receiptInput");
 const fetchBtn = document.getElementById("fetchBtn");
 const printBtn = document.getElementById("printBtn");
 const receiptContainer = document.getElementById("receiptContainer");
+
+// Load company info once at page load
+async function loadCompanyInfo() {
+  try {
+    const snapshot = await db.collection("company").doc("info").get();
+    if(snapshot.exists){
+      companyInfo = snapshot.data();
+    } else {
+      companyInfo = { name: "Unknown Company", address: "-", phone: "-" };
+    }
+  } catch(err){
+    console.error("Error loading company info:", err);
+    companyInfo = { name: "Error Loading Company", address: "-", phone: "-" };
+  }
+}
+loadCompanyInfo();
 
 fetchBtn.addEventListener("click", async () => {
   const receiptNo = parseInt(receiptInput.value);
@@ -68,10 +80,14 @@ fetchBtn.addEventListener("click", async () => {
 
     const data = snapshot.docs[0].data();
 
+    // Format date (if Firestore Timestamp)
+    const receiptDate = data.date?.toDate 
+      ? data.date.toDate().toLocaleDateString()
+      : data.date;
+
     // Build receipt
-    let html = `<h2>${companyInfo.name}</h2>`;
-    html += `<h3>${companyInfo.address}</h3>`;
-    html += `<h3>${companyInfo.phone}</h3>`;
+    let html = `<h2>${companyInfo?.name ?? ""}</h2>`;
+    html += `<div style="text-align:center;">${companyInfo?.address ?? ""}<br>${companyInfo?.phone ?? ""}</div>`;
 
     // Show VOID if applicable
     if(data.voided){
@@ -85,12 +101,12 @@ fetchBtn.addEventListener("click", async () => {
       <h3>Cash Receipt</h3>
       <div class="line"></div>
       <div class="row"><span>Receipt No:</span><span>${data.receiptNo}</span></div>
-      <div class="row"><span>Date:</span><span>${data.date}</span></div>
-      <div class="row"><span>Name:</span><span>${data.name}</span></div>
-      <div class="row"><span>Flight:</span><span>${data.flight}</span></div>
-      <div class="row"><span>Seat:</span><span>${data.seat}</span></div>
-      <div class="row"><span>Payment:</span><span>${data.paymentType}</span></div>
-      <div class="row"><span>Currency:</span><span>${data.currency}</span></div>
+      <div class="row"><span>Date:</span><span>${receiptDate ?? ""}</span></div>
+      <div class="row"><span>Name:</span><span>${data.name ?? ""}</span></div>
+      <div class="row"><span>Flight:</span><span>${data.flight ?? ""}</span></div>
+      <div class="row"><span>Seat:</span><span>${data.seat ?? ""}</span></div>
+      <div class="row"><span>Payment:</span><span>${data.paymentType ?? ""}</span></div>
+      <div class="row"><span>Currency:</span><span>${data.currency ?? ""}</span></div>
       <div class="line"></div>
       <div class="row"><span>Adults:</span><span>${data.adults ?? 0}</span></div>
       <div class="row"><span>Kids:</span><span>${data.kids ?? 0}</span></div>
