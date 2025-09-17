@@ -102,8 +102,9 @@
 
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
-<!-- Firebase + Main Script -->
 <script type="module">
+  // --- Import rates and Firebase ---
+  import { rates } from './rate.js';
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
@@ -116,21 +117,8 @@
     messagingSenderId: "YOUR_SENDER_ID",
     appId: "YOUR_APP_ID"
   };
-
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
-  // --- Sample rates object ---
-  const rates = {
-    "AdultAUSD": {price: 100, GST: 12},
-    "AdultBUSD": {price: 90, GST: 12},
-    "KidsAUSD": {price: 50, GST: 12},
-    "KidsBUSD": {price: 45, GST: 12},
-    "AdultAMVR": {price: 1500, GST: 12},
-    "AdultBMVR": {price: 1400, GST: 12},
-    "KidsAMVR": {price: 750, GST: 12},
-    "KidsBMVR": {price: 700, GST: 12}
-  };
 
   // --- DOM Elements ---
   const dateField = document.getElementById("date");
@@ -226,11 +214,11 @@
 
   calculate();
 
-  // --- Save Entry to Firebase ---
+  // --- Save Entry ---
   document.getElementById("saveBtn").addEventListener("click", async ()=>{
     const {subtotal, gstAmount, total} = calculate();
     if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
-    
+
     const entryData = {
       date: dateField.value,
       name: nameField.value,
