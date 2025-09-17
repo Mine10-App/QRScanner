@@ -32,11 +32,17 @@
     </tr>
   </thead>
   <tbody>
-    <!-- Data will be inserted here -->
+    <tr><td colspan="10">Loading...</td></tr>
   </tbody>
 </table>
 
-<script src="fire1.js"></script>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<!-- Your existing Firebase config -->
+<script src="fire.js"></script>
+
 <script>
 async function fetchBookings() {
   const tbody = document.querySelector("#bookingsTable tbody");
@@ -55,13 +61,17 @@ async function fetchBookings() {
         <td>${data.seat || ''}</td>
         <td>${data.adults || 0}</td>
         <td>${data.kids || 0}</td>
-        <td>${data.total.toFixed(2) || 0}</td>
+        <td>${data.total != null ? data.total.toFixed(2) : '0.00'}</td>
         <td>${data.paymentType || ''}</td>
         <td>${data.balance != null ? data.balance.toFixed(2) : ''}</td>
         <td>${data.receiptNo || ''}</td>
       `;
       tbody.appendChild(row);
     });
+
+    if(snapshot.empty){
+      tbody.innerHTML = "<tr><td colspan='10'>No bookings found.</td></tr>";
+    }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="10" style="color:red;">Error fetching bookings: ${err.message}</td></tr>`;
     console.error(err);
