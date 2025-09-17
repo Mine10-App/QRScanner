@@ -198,8 +198,48 @@ paymentType.addEventListener("change", ()=>{
 
 calculate();
 
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  // Get calculated totals
+  const totals = calculate();
+
+  // Prepare data to save
+  const data = {
+    date: dateField.value,
+    qrCode: qrInput.value || null,
+    name: nameField.value,
+    flight: flightField.value,
+    seat: seatField.value,
+    currency: currencyType.value,
+    rate: rateType.value,
+    adults: parseInt(adultCount.value) || 0,
+    kids: parseInt(kidCount.value) || 0,
+    paymentType: paymentType.value,
+    givenAmount: paymentType.value === "Cash" ? parseFloat(givenAmount.value) || 0 : null,
+    balance: paymentType.value === "Cash" ? parseFloat(balanceField.value) || 0 : null,
+    receiptNo: receiptNo.value,
+    totalAdults: parseFloat(totalAdultsField.value),
+    totalKids: parseFloat(totalKidsField.value),
+    gst: parseFloat(gstField.value),
+    total: parseFloat(totalField.value),
+    timestamp: new Date()
+  };
+
+  try {
+    // Save to Firestore collection "bookings"
+    await db.collection("bookings").add(data);
+    outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully!</p>`;
+    // Optionally, reset the form
+    document.getElementById("bookingForm").reset();
+    dateField.value = new Date().toISOString().split('T')[0];
+    calculate();
+  } catch (err) {
+    console.error("Error saving booking:", err);
+    outputDiv.innerHTML = `<p style="color:red;">Error saving booking: ${err.message}</p>`;
+  }
+});  
 
 </script>
 </body>
 </html>
+
 
