@@ -1,177 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>QR Boarding Parser</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f9; display: flex; justify-content: center; }
-  .container { max-width: 900px; width: 100%; display: flex; gap: 20px; }
-  .scanner { flex: 1; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-  h2 { text-align: center; color: #333; }
-  label { display: block; margin-top: 15px; font-weight: bold; }
-  input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; }
-  .entry { margin-top: 20px; border: 1px solid #ccc; padding: 20px; border-radius: 8px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-  .entry-row { display: flex; margin-bottom: 12px; }
-  .entry-row label { font-weight: bold; width: 200px; }
-  .entry-row .value { flex-grow: 1; }
-</style>
+  <meta charset="UTF-8" />
+  <title>Boarding Pass Parser</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f4f6f9;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      gap: 20px;
+    }
+    .scanner {
+      flex: 1;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .entry {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .entry-row {
+      display: flex;
+      margin-bottom: 12px;
+    }
+    .entry-row label {
+      font-weight: bold;
+      width: 200px;
+    }
+    .entry-row .value {
+      flex-grow: 1;
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-  <div class="scanner">
-    <h2>QR Boarding Pass Parser</h2>
-    <label for="qrInput">Paste QR / Scan Code:</label>
-    <input type="text" id="qrInput" placeholder="Paste or scan QR data here" />
+  <div class="container">
+    <div class="scanner">
+      <h2>QR Boarding Pass Parser</h2>
 
-    <label for="adults">No. of Adults:</label>
-    <select id="adults">
-      ${[...Array(11).keys()].map(n => `<option value="${n}">${n}</option>`).join('')}
-    </select>
+      <label for="qrInput">Paste QR / Scan Code:</label>
+      <input type="text" id="qrInput" placeholder="Paste or scan QR data here" />
 
-    <label for="kids">No. of Kids:</label>
-    <select id="kids">
-      ${[...Array(11).keys()].map(n => `<option value="${n}">${n}</option>`).join('')}
-    </select>
+      <label for="adults">No. of Adults:</label>
+      <select id="adults">
+        <option value="">-- Select --</option>
+        ${[...Array(11).keys()].map(n => `<option value="${n}">${n}</option>`).join('')}
+      </select>
 
-    <label for="paymentMethod">Payment Method:</label>
-    <select id="paymentMethod">
-      <option value="Cash">Cash</option>
-      <option value="Card">Card</option>
-      <option value="Amex">Amex</option>
-      <option value="Visa">Visa</option>
-      <option value="Master">Master</option>
-    </select>
+      <label for="kids">No. of Kids:</label>
+      <select id="kids">
+        <option value="">-- Select --</option>
+        ${[...Array(11).keys()].map(n => `<option value="${n}">${n}</option>`).join('')}
+      </select>
 
-    <label for="currencyType">Currency Type:</label>
-    <select id="currencyType">
-      <option value="USD">USD</option>
-      <option value="MVR">MVR</option>
-    </select>
+      <label for="paymentMethod">Payment Method:</label>
+      <select id="paymentMethod">
+        <option value="">-- Select Payment --</option>
+        <option value="Cash">Cash</option>
+        <option value="Card">Card</option>
+        <option value="Amex">Amex</option>
+        <option value="Visa">Visa</option>
+        <option value="Master">Master</option>
+      </select>
 
-    <div id="entriesContainer"></div>
+      <label for="currencyType">Currency Type:</label>
+      <select id="currencyType">
+        <option value="">-- Select Currency --</option>
+        <option value="USD">USD</option>
+        <option value="MVR">MVR</option>
+      </select>
+
+      <div id="entriesContainer"></div>
+    </div>
   </div>
-</div>
 
-<!-- Firebase Scripts -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-<script>
-  // Firebase config
-  var firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  var db = firebase.firestore();
+  <script>
+    // --- Firebase config ---
+    var firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
 
-  const qrInput = document.getElementById("qrInput");
-  const entriesContainer = document.getElementById("entriesContainer");
+    const qrInput = document.getElementById("qrInput");
+    const adultsInput = document.getElementById("adults");
+    const kidsInput = document.getElementById("kids");
+    const paymentInput = document.getElementById("paymentMethod");
+    const currencyInput = document.getElementById("currencyType");
+    const entriesContainer = document.getElementById("entriesContainer");
 
-  const adultsInput = document.getElementById("adults");
-  const kidsInput = document.getElementById("kids");
-  const paymentInput = document.getElementById("paymentMethod");
-  const currencyInput = document.getElementById("currencyType");
+    let allEntries = [];
 
-  let allEntries = [];
+    function parseQR(code) {
+      code = code.trim().toUpperCase().replace(/\s+/g, " ");
+      const allParts = code.split(" ");
+      let name = "", flightNo = "", seatNo = "";
 
-  function parseQR(code) {
-    code = code.trim().toUpperCase().replace(/\s+/g, ' ');
-    const allParts = code.split(' ');
-    let name = "", flightNo = "", seatNo = "";
-
-    if (code.startsWith("TKVCPO")) {
-      const tkIndex = code.indexOf("TK0");
-      if (tkIndex !== -1) {
-        flightNo = code.substring(tkIndex, tkIndex + 6);
-        name = code.substring(6, tkIndex);
-      }
-      const mlePos = code.indexOf("MLE");
-      if (mlePos !== -1) {
-        const afterMLE = code.substring(mlePos).split(' ')[0];
-        if (afterMLE.length >= 11) seatNo = afterMLE.substring(8, 11);
-      }
-    } else {
-      name = allParts[0].substring(2);
-      const mleIndex = allParts.findIndex(w => w.includes("MLE"));
-      if (mleIndex !== -1) {
-        const mleWord = allParts[mleIndex];
-        const nextWord = (mleIndex + 1 < allParts.length) ? allParts[mleIndex + 1] : "";
-        flightNo = mleWord.slice(-2) + nextWord;
-        const partsAfterMLE = allParts.slice(mleIndex + 1);
-        for (let w of partsAfterMLE) {
-          if (w.length >= 9 && !w.includes("QR") && !w.includes("MLE")) {
-            seatNo = w.substring(5, w.length - 4);
-            break;
+      if (code.startsWith("TKVCPO")) {
+        const tkIndex = code.indexOf("TK0");
+        if (tkIndex !== -1) {
+          flightNo = code.substring(tkIndex, tkIndex + 6);
+          name = code.substring(6, tkIndex);
+        }
+        const mlePos = code.indexOf("MLE");
+        if (mlePos !== -1) {
+          const afterMLE = code.substring(mlePos).split(" ")[0];
+          if (afterMLE.length >= 11) seatNo = afterMLE.substring(8, 11);
+        }
+      } else {
+        name = allParts[0].substring(2);
+        const mleIndex = allParts.findIndex(w => w.includes("MLE"));
+        if (mleIndex !== -1) {
+          const mleWord = allParts[mleIndex];
+          const nextWord = (mleIndex + 1 < allParts.length) ? allParts[mleIndex + 1] : "";
+          flightNo = mleWord.slice(-2) + nextWord;
+          const partsAfterMLE = allParts.slice(mleIndex + 1);
+          for (let w of partsAfterMLE) {
+            if (w.length >= 9 && !w.includes("QR") && !w.includes("MLE")) {
+              seatNo = w.substring(5, w.length - 4);
+              break;
+            }
           }
         }
       }
+
+      return {
+        name: name || "-",
+        flightNo: flightNo || "-",
+        seatNo: seatNo || "-"
+      };
     }
 
-    return {
-      name: name || "-",
-      flightNo: flightNo || "-",
-      seatNo: seatNo || "-"
-    };
-  }
-
-  function displayEntries() {
-    entriesContainer.innerHTML = "";
-    allEntries.forEach(d => {
-      const div = document.createElement("div");
-      div.classList.add("entry");
-      div.innerHTML = `
-        <div class="entry-row"><label>Name:</label><div class="value">${d.name}</div></div>
-        <div class="entry-row"><label>Date:</label><div class="value">${d.date}</div></div>
-        <div class="entry-row"><label>Flight No:</label><div class="value">${d.flightNo}</div></div>
-        <div class="entry-row"><label>Seat No:</label><div class="value">${d.seatNo}</div></div>
-        <div class="entry-row"><label>No. of Adults:</label><div class="value">${d.paxAdults}</div></div>
-        <div class="entry-row"><label>No. of Kids:</label><div class="value">${d.paxKids}</div></div>
-        <div class="entry-row"><label>Payment Method:</label><div class="value">${d.paymentMethod}</div></div>
-        <div class="entry-row"><label>Currency Type:</label><div class="value">${d.currencyType}</div></div>
-      `;
-      entriesContainer.appendChild(div);
-    });
-  }
-
-  function loadTodayEntries() {
-    const today = new Date().toISOString().split("T")[0];
-    db.collection("qr_entries").where("date", "==", today).onSnapshot(snapshot => {
-      allEntries = [];
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        allEntries.push(d);
+    function displayEntries() {
+      entriesContainer.innerHTML = "";
+      allEntries.forEach(d => {
+        const div = document.createElement("div");
+        div.classList.add("entry");
+        div.innerHTML = `
+          <div class="entry-row"><label>Name:</label><div class="value">${d.name}</div></div>
+          <div class="entry-row"><label>Date:</label><div class="value">${d.date}</div></div>
+          <div class="entry-row"><label>Flight No:</label><div class="value">${d.flightNo}</div></div>
+          <div class="entry-row"><label>Seat No:</label><div class="value">${d.seatNo}</div></div>
+          <div class="entry-row"><label>No. of Adults:</label><div class="value">${d.paxAdults}</div></div>
+          <div class="entry-row"><label>No. of Kids:</label><div class="value">${d.paxKids}</div></div>
+          <div class="entry-row"><label>Payment Method:</label><div class="value">${d.paymentMethod}</div></div>
+          <div class="entry-row"><label>Currency Type:</label><div class="value">${d.currencyType}</div></div>
+        `;
+        entriesContainer.appendChild(div);
       });
-      displayEntries();
+    }
+
+    function loadTodayEntries() {
+      const today = new Date().toISOString().split("T")[0];
+      db.collection("qr_entries").where("date", "==", today)
+        .onSnapshot(snapshot => {
+          allEntries = [];
+          snapshot.forEach(doc => {
+            allEntries.push(doc.data());
+          });
+          displayEntries();
+        });
+    }
+
+    qrInput.addEventListener("change", () => {
+      const code = qrInput.value.trim();
+      if (!code) return;
+
+      const parsed = parseQR(code);
+      const date = new Date().toISOString().split("T")[0];
+
+      const paxAdults = parseInt(adultsInput.value) || 0;
+      const paxKids = parseInt(kidsInput.value) || 0;
+      const paymentMethod = paymentInput.value || "-";
+      const currencyType = currencyInput.value || "-";
+
+      const entry = {
+        ...parsed,
+        date,
+        paxAdults,
+        paxKids,
+        paymentMethod,
+        currencyType
+      };
+
+      db.collection("qr_entries").add(entry)
+        .then(() => {
+          qrInput.value = "";
+          adultsInput.value = "";
+          kidsInput.value = "";
+          paymentInput.value = "";
+          currencyInput.value = "";
+        })
+        .catch(err => console.error("Error:", err));
     });
-  }
 
-  qrInput.addEventListener("change", () => {
-    const code = qrInput.value.trim();
-    if (!code) return;
-
-    const parsed = parseQR(code);
-    const date = new Date().toISOString().split("T")[0];
-
-    const entry = {
-      ...parsed,
-      date,
-      paxAdults: parseInt(adultsInput.value),
-      paxKids: parseInt(kidsInput.value),
-      paymentMethod: paymentInput.value,
-      currencyType: currencyInput.value
-    };
-
-    db.collection("qr_entries").add(entry)
-      .then(() => qrInput.value = "")
-      .catch(err => console.error("Error:", err));
-  });
-
-  loadTodayEntries();
-</script>
+    loadTodayEntries();
+  </script>
 </body>
 </html>
