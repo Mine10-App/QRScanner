@@ -102,15 +102,16 @@
 
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
+<!-- Keep rate.js as normal script so rates is global -->
 <script src="rate.js"></script>
-<script src="fire.js" type="module"></script>
-
 <script type="module">
+// Firebase modular import
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import { app } from "./fire.js"; // make sure fire.js exports 'app'
+import { app } from "./fire.js"; // fire.js exports 'app'
 
 const db = getFirestore(app);
 
+// Elements
 const dateField = document.getElementById("date");
 const qrInput = document.getElementById("qrInput");
 const nameField = document.getElementById("name");
@@ -131,8 +132,10 @@ const gstField = document.getElementById("gstField");
 const totalField = document.getElementById("totalField");
 const outputDiv = document.getElementById("output");
 
+// Date
 dateField.value = new Date().toISOString().split('T')[0];
 
+// QR parsing function (unchanged)
 function parseQR(code){
   code = code.trim().toUpperCase().replace(/\s+/g,' ');
   const allParts = code.split(' ');
@@ -166,6 +169,7 @@ qrInput.addEventListener("change", ()=>{
   qrInput.value='';
 });
 
+// Calculate totals (works because rates is global)
 function calculate(){
   const curr = currencyType.value;
   const rate = rateType.value;
@@ -192,11 +196,13 @@ function calculate(){
   return {subtotal, gstAmount, total};
 }
 
+// Show/hide cash fields
 paymentType.addEventListener("change", ()=>{
   cashFields.classList.toggle("hidden", paymentType.value!=="Cash");
   calculate();
 });
 
+// Trigger calculation on input change
 [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
   el.addEventListener("input",calculate);
   el.addEventListener("change",calculate);
@@ -204,7 +210,7 @@ paymentType.addEventListener("change", ()=>{
 
 calculate();
 
-// === Firebase Save Button (updated only) ===
+// === Firebase Save Button ===
 document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const {subtotal, gstAmount, total} = calculate();
   if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
