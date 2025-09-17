@@ -112,6 +112,8 @@
   <div id="output" style="margin-top: 30px;"></div>
 </div>
 
+<script src="rate.js"></script> <!-- include your rate.js file -->
+
 <script>
   // Set current date input to today's date in yyyy-mm-dd format
   const currentDateInput = document.getElementById('currentDate');
@@ -128,7 +130,7 @@
   const currencyType = document.getElementById('currencyType');
   const outputDiv = document.getElementById('output');
 
-  // QR Parsing function (simple version from your previous code)
+  // QR Parsing function (same as before)
   function parseQR(code) {
     code = code.trim().toUpperCase().replace(/\s+/g, ' ');
     const allParts = code.split(' ');
@@ -165,7 +167,7 @@
     return { name: name || "", flightNo: flightNo || "", seatNo: seatNo || "" };
   }
 
-  // On QR input change, parse and fill the fields (do not overwrite if empty)
+  // On QR input change, parse and fill the fields
   qrInput.addEventListener('change', () => {
     const code = qrInput.value.trim();
     if (!code) return;
@@ -173,32 +175,53 @@
     if (parsed.name && !nameInput.value) nameInput.value = parsed.name;
     if (parsed.flightNo && !flightInput.value) flightInput.value = parsed.flightNo;
     if (parsed.seatNo && !seatInput.value) seatInput.value = parsed.seatNo;
-
-    // Clear QR input after parsing to avoid repeated parsing
     qrInput.value = '';
   });
+
+  // === Calculation function ===
+  function calculateTotal() {
+    const adults = parseInt(adultCount.value, 10) || 0;
+    const kids = parseInt(kidCount.value, 10) || 0;
+
+    // Using AdultA & KidsA rates from rate.js (you can change to AdultB/KidsB if needed)
+    const adultRate = rates.AdultA.price;
+    const kidRate = rates.KidsA.price;
+    const gstPercent = rates.AdultA.GST; // assume same GST for all
+
+    const subtotal = (adults * adultRate) + (kids * kidRate);
+    const gstAmount = subtotal * (gstPercent / 100);
+    const total = subtotal + gstAmount;
+
+    // Show calculation live
+    outputDiv.innerHTML = `
+      <h3>Calculation</h3>
+      <p><strong>Adults:</strong> ${adults} × ${adultRate} = ${(adults * adultRate).toFixed(2)}</p>
+      <p><strong>Kids:</strong> ${kids} × ${kidRate} = ${(kids * kidRate).toFixed(2)}</p>
+      <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
+      <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
+      <p><strong>Total:</strong> ${total.toFixed(2)}</p>
+    `;
+
+    return { subtotal, gstAmount, total, gstPercent };
+  }
+
+  // Recalculate when counts change
+  adultCount.addEventListener("input", calculateTotal);
+  kidCount.addEventListener("input", calculateTotal);
 
   // On Save button click
   document.getElementById('saveEntryBtn').addEventListener('click', () => {
     const name = nameInput.value.trim();
     const flightNo = flightInput.value.trim();
     const seatNo = seatInput.value.trim();
-    const adults = parseInt(adultCount.value, 10);
-    const kids = parseInt(kidCount.value, 10);
+    const adults = parseInt(adultCount.value, 10) || 0;
+    const kids = parseInt(kidCount.value, 10) || 0;
     const payment = paymentMethod.value;
     const currency = currencyType.value;
     const date = currentDateInput.value;
 
     if (!name || !flightNo || !seatNo) {
       alert("Please fill in Name, Flight No, and Seat No.");
-      return;
-    }
-    if (isNaN(adults) || adults < 0) {
-      alert("Please enter a valid number of adults.");
-      return;
-    }
-    if (isNaN(kids) || kids < 0) {
-      alert("Please enter a valid number of kids.");
       return;
     }
     if (!payment) {
@@ -210,7 +233,10 @@
       return;
     }
 
-    // Show saved data below
+    // Calculate totals before saving
+    const { subtotal, gstAmount, total, gstPercent } = calculateTotal();
+
+    // Show saved data
     outputDiv.innerHTML = `
       <h3>Saved Entry</h3>
       <p><strong>Date:</strong> ${date}</p>
@@ -221,6 +247,10 @@
       <p><strong>Kids:</strong> ${kids}</p>
       <p><strong>Payment Method:</strong> ${payment}</p>
       <p><strong>Currency Type:</strong> ${currency}</p>
+      <hr>
+      <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
+      <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
+      <p><strong>Total:</strong> ${total.toFixed(2)}</p>
     `;
 
     // Clear form except date
@@ -233,6 +263,8 @@
     currencyType.value = "";
   });
 </script>
+
 </body>
 </html>
+
 
