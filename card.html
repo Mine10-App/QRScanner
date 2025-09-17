@@ -10,10 +10,10 @@
   h2 { text-align:center; color: #333; }
   label { display: block; margin-top: 15px; font-weight: bold; }
   input, select { width: 100%; padding: 10px; margin-top: 5px; border:1px solid #ccc; border-radius:6px; }
-  table { width:100%; border-collapse: collapse; margin-top: 20px; }
-  th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-  th { background:#007bff; color:#fff; }
-  tr:nth-child(even) { background:#f9f9f9; }
+  .entry { margin-top: 20px; border:1px solid #ccc; padding:20px; border-radius:8px; background-color:#fff; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+  .entry-row { display: flex; margin-bottom: 15px; }
+  .entry-row label { font-weight: bold; width: 200px; }
+  .entry-row .value { font-weight: normal; flex-grow: 1; }
 </style>
 </head>
 <body>
@@ -22,25 +22,8 @@
     <h2>QR Boarding Pass Parser</h2>
     <label for="qrInput">Paste QR / Scan Code:</label>
     <input type="text" id="qrInput" placeholder="Paste or scan QR data here" />
-    
-    <table id="qrTable">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Flight No</th>
-          <th>Seat No</th>
-          <th>No. of Pax (Adults)</th>
-          <th>No. of Pax (Kids)</th>
-          <th>Payment Method</th>
-          <th>Currency Type</th>
-          <th>Rate Selector</th>
-          <th>Total</th>
-          <th>Paid Amount</th>
-          <th>Balance</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+    <div id="entriesContainer"></div>
   </div>
 </div>
 
@@ -62,15 +45,15 @@
   var db = firebase.firestore();
 
   var qrInput = document.getElementById("qrInput");
-  var qrTableBody = document.querySelector("#qrTable tbody");
+  var entriesContainer = document.getElementById("entriesContainer");
 
-  var allEntries = []; // keep all today's entries
+  var allEntries = []; // Keep all today's entries
 
   // --- Parse QR ---
   function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     var allParts = code.split(' ');
-    var name="", flightNo="", seatNo="", fq="", paxAdults=0, paxKids=0, paymentMethod="", currencyType="", rateSelector="", total=0, paidAmount=0, balance=0;
+    var name = "", flightNo = "", seatNo = "", fq = "", paxAdults = 0, paxKids = 0, paymentMethod = "", currencyType = "", rateSelector = "", total = 0, paidAmount = 0, balance = 0;
 
     // Add logic to extract pax, payment, and currency information (for now using placeholders)
     paxAdults = 2;  // Example: Adjust this as per QR content (Adult Pax)
@@ -83,39 +66,39 @@
     balance = total - paidAmount;  // Calculate Balance
 
     // Simple flight number parsing logic (e.g., for "TKVCPO" code)
-    if(code.startsWith("TKVCPO")){
+    if (code.startsWith("TKVCPO")) {
       var tkIndex = code.indexOf("TK0");
-      if(tkIndex !== -1){
-        flightNo = code.substring(tkIndex, tkIndex+6);
+      if (tkIndex !== -1) {
+        flightNo = code.substring(tkIndex, tkIndex + 6);
         name = code.substring(6, tkIndex);
       }
       var mlePos = code.indexOf("MLE");
-      if(mlePos !== -1){
+      if (mlePos !== -1) {
         var afterMLE = code.substring(mlePos).split(' ')[0];
-        if(afterMLE.length >= 11) seatNo = afterMLE.substring(8,11);
+        if (afterMLE.length >= 11) seatNo = afterMLE.substring(8, 11);
       }
     } else {
       name = allParts[0].substring(2);
       var mleIndex = allParts.findIndex(function(w){ return w.includes("MLE"); });
-      if(mleIndex!==-1){
+      if (mleIndex !== -1) {
         var mleWord = allParts[mleIndex];
-        var nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
-        flightNo = mleWord.slice(-2)+nextWord;
-        var partsAfterMLE = allParts.slice(mleIndex+1);
-        for(var i=0;i<partsAfterMLE.length;i++){
+        var nextWord = (mleIndex + 1 < allParts.length) ? allParts[mleIndex + 1] : "";
+        flightNo = mleWord.slice(-2) + nextWord;
+        var partsAfterMLE = allParts.slice(mleIndex + 1);
+        for (var i = 0; i < partsAfterMLE.length; i++) {
           var w = partsAfterMLE[i];
-          if(w.length>=9 && w.indexOf("QR")===-1 && w.indexOf("MLE")===-1){
-            seatNo = w.substring(5, w.length-4);
+          if (w.length >= 9 && w.indexOf("QR") === -1 && w.indexOf("MLE") === -1) {
+            seatNo = w.substring(5, w.length - 4);
             break;
           }
         }
       }
     }
 
-    return { 
-      name: name || "-", 
-      flightNo: flightNo || "-", 
-      seatNo: seatNo || "-", 
+    return {
+      name: name || "-",
+      flightNo: flightNo || "-",
+      seatNo: seatNo || "-",
       paxAdults: paxAdults,
       paxKids: paxKids,
       paymentMethod: paymentMethod,
@@ -129,33 +112,70 @@
 
   // --- Display entries ---
   function displayEntries(){
-    qrTableBody.innerHTML="";
-    allEntries.forEach(function(d){
-      var row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${d.date}</td>
-        <td>${d.flightNo}</td>
-        <td>${d.seatNo}</td>
-        <td>${d.paxAdults}</td>
-        <td>${d.paxKids}</td>
-        <td>${d.paymentMethod}</td>
-        <td>${d.currencyType}</td>
-        <td>${d.rateSelector}</td>
-        <td>${d.total}</td>
-        <td>${d.paidAmount}</td>
-        <td>${d.balance}</td>
+    entriesContainer.innerHTML = '';  // Clear previous entries
+
+    allEntries.forEach(function(d) {
+      var entryDiv = document.createElement("div");
+      entryDiv.classList.add("entry");
+
+      // Create rows for each entry data point
+      entryDiv.innerHTML = `
+        <div class="entry-row">
+          <label>Date:</label>
+          <div class="value">${d.date}</div>
+        </div>
+        <div class="entry-row">
+          <label>Flight No:</label>
+          <div class="value">${d.flightNo}</div>
+        </div>
+        <div class="entry-row">
+          <label>Seat No:</label>
+          <div class="value">${d.seatNo}</div>
+        </div>
+        <div class="entry-row">
+          <label>No. of Pax (Adults):</label>
+          <div class="value">${d.paxAdults}</div>
+        </div>
+        <div class="entry-row">
+          <label>No. of Pax (Kids):</label>
+          <div class="value">${d.paxKids}</div>
+        </div>
+        <div class="entry-row">
+          <label>Payment Method:</label>
+          <div class="value">${d.paymentMethod}</div>
+        </div>
+        <div class="entry-row">
+          <label>Currency Type:</label>
+          <div class="value">${d.currencyType}</div>
+        </div>
+        <div class="entry-row">
+          <label>Rate Selector:</label>
+          <div class="value">${d.rateSelector}</div>
+        </div>
+        <div class="entry-row">
+          <label>Total:</label>
+          <div class="value">${d.total}</div>
+        </div>
+        <div class="entry-row">
+          <label>Paid Amount:</label>
+          <div class="value">${d.paidAmount}</div>
+        </div>
+        <div class="entry-row">
+          <label>Balance:</label>
+          <div class="value">${d.balance}</div>
+        </div>
       `;
-      qrTableBody.appendChild(row);
+      entriesContainer.appendChild(entryDiv);
     });
   }
 
   // --- Load today's entries ---
-  function loadTodayEntries(){
+  function loadTodayEntries() {
     var today = new Date().toISOString().split("T")[0];
-    var q = db.collection("qr_entries").where("date","==",today);
-    q.onSnapshot(function(snapshot){
+    var q = db.collection("qr_entries").where("date", "==", today);
+    q.onSnapshot(function(snapshot) {
       allEntries = [];
-      snapshot.forEach(function(doc){
+      snapshot.forEach(function(doc) {
         var d = doc.data();
         allEntries.push(d);
       });
@@ -165,16 +185,16 @@
   }
 
   // --- On QR input ---
-  qrInput.addEventListener("input", function(){
+  qrInput.addEventListener("input", function() {
     var code = qrInput.value.trim();
-    if(!code) return;
+    if (!code) return;
 
     var parsed = parseQR(code);
     var today = new Date().toISOString().split("T")[0];
 
     db.collection("qr_entries").add({...parsed, date: today})
-      .then(function(){ qrInput.value=""; })
-      .catch(function(err){ console.error("Error saving QR:", err); });
+      .then(function() { qrInput.value = ""; })
+      .catch(function(err) { console.error("Error saving QR:", err); });
   });
 
   // --- Init ---
