@@ -2,252 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Boarding Pass & Payment Entry</title>
+  <title>Booking Form</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background: #f4f6f9;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      max-width: 650px;
-      width: 100%;
-      background: #fff;
-      padding: 25px 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 25px;
-      color: #333;
-    }
-    label {
-      display: block;
-      font-weight: bold;
-      margin-top: 15px;
-    }
-    input[type="text"],
-    input[type="date"],
-    select,
-    input[type="number"] {
-      width: 100%;
-      padding: 10px 12px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 1rem;
-      box-sizing: border-box;
-    }
-    input[type="number"] {
-      -moz-appearance: textfield;
-    }
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    button {
-      margin-top: 25px;
-      width: 100%;
-      padding: 12px;
-      font-size: 1.1rem;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    #output {
-      margin-top: 30px;
-      background: #eef;
-      padding: 15px;
-      border-radius: 8px;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 8px; }
+    input, select, button { margin-top: 5px; padding: 6px; width: 200px; }
+    .readonly-field { background: #f0f0f0; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>Boarding Pass & Payment Entry</h2>
-  
-  <label for="currentDate">Date:</label>
-  <input type="date" id="currentDate" readonly />
+  <h2>Booking Entry</h2>
 
-  <label for="nameInput">Name:</label>
-  <input type="text" id="nameInput" placeholder="Enter passenger name" />
+  <form id="bookingForm">
+    <label>Date: <input type="date" id="date"></label>
+    <label>Name: <input type="text" id="name"></label>
+    <label>Flight No: <input type="text" id="flight"></label>
+    <label>Seat No: <input type="text" id="seat"></label>
+    <label>Currency:
+      <select id="currencyType">
+        <option value="USD">USD</option>
+        <option value="MVR">MVR</option>
+      </select>
+    </label>
+    <label>Rate:
+      <select id="rateType">
+        <option value="A">Rate A</option>
+        <option value="B">Rate B</option>
+      </select>
+    </label>
+    <label>Adults: <input type="number" id="adultCount" value="0" min="0"></label>
+    <label>Kids: <input type="number" id="kidCount" value="0" min="0"></label>
+    <label>Payment Type:
+      <select id="paymentType">
+        <option value="Cash">Cash</option>
+        <option value="Card">Card</option>
+      </select>
+    </label>
 
-  <label for="flightInput">Flight No:</label>
-  <input type="text" id="flightInput" placeholder="Enter flight number" />
+    <h3>Totals</h3>
+    <label>Total Adults: <input type="text" id="totalAdults" class="readonly-field" readonly></label>
+    <label>Total Kids: <input type="text" id="totalKids" class="readonly-field" readonly></label>
+    <label>GST: <input type="text" id="gstField" class="readonly-field" readonly></label>
+    <label>Total: <input type="text" id="totalField" class="readonly-field" readonly></label>
 
-  <label for="seatInput">Seat No:</label>
-  <input type="text" id="seatInput" placeholder="Enter seat number" />
-
-  <label for="rateType">Select Rate:</label>
-  <select id="rateType">
-    <option value="A">Rate A</option>
-    <option value="B">Rate B</option>
-  </select>
-
-  <label for="currencyType">Currency Type:</label>
-  <select id="currencyType">
-    <option value="USD">USD</option>
-    <option value="MVR">MVR</option>
-  </select>
-
-  <label for="adultCount">Number of Adults:</label>
-  <input type="number" id="adultCount" min="0" value="0" />
-
-  <label for="kidCount">Number of Kids:</label>
-  <input type="number" id="kidCount" min="0" value="0" />
-
-  <label for="paymentMethod">Payment Method:</label>
-  <select id="paymentMethod">
-    <option value="">-- Select Payment --</option>
-    <option value="Cash">Cash</option>
-    <option value="Card">Card</option>
-    <option value="Amex">Amex</option>
-    <option value="Visa">Visa</option>
-    <option value="Master">Master</option>
-  </select>
-
-  <button id="saveEntryBtn">Save Entry</button>
+    <button type="button" id="saveBtn">Save Entry</button>
+  </form>
 
   <div id="output"></div>
-</div>
 
-<script>
-  // === Rates ===
-  const rates = {
-    AdultAUSD: { price: 35.00, GST: 8, WP: "Leeli" },
-    KidsAUSD: { price: 25.00, GST: 8, WP: "Leeli" },
-    AdultAMVR: { price: 539.10, GST: 8, WP: "Leeli" },
-    KidsAMVR: { price: 385.50, GST: 8, WP: "Leeli" },
-    AdultBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
-    KidsBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
-    AdultBMVR: { price: 374.80, GST: 8, WP: "Leeli" },
-    KidsBMVR: { price: 374.80, GST: 8, WP: "Leeli" }
-  };
+  <script>
+    const currencyType = document.getElementById("currencyType");
+    const rateType = document.getElementById("rateType");
+    const adultCount = document.getElementById("adultCount");
+    const kidCount = document.getElementById("kidCount");
 
-  // Set current date
-  const currentDateInput = document.getElementById('currentDate');
-  const today = new Date().toISOString().split('T')[0];
-  currentDateInput.value = today;
+    const totalAdultsField = document.getElementById("totalAdults");
+    const totalKidsField = document.getElementById("totalKids");
+    const gstField = document.getElementById("gstField");
+    const totalField = document.getElementById("totalField");
 
-  // Elements
-  const nameInput = document.getElementById('nameInput');
-  const flightInput = document.getElementById('flightInput');
-  const seatInput = document.getElementById('seatInput');
-  const rateType = document.getElementById('rateType');
-  const currencyType = document.getElementById('currencyType');
-  const adultCount = document.getElementById('adultCount');
-  const kidCount = document.getElementById('kidCount');
-  const paymentMethod = document.getElementById('paymentMethod');
-  const outputDiv = document.getElementById('output');
+    const outputDiv = document.getElementById("output");
 
-  function calculate() {
-    const adults = parseInt(adultCount.value, 10) || 0;
-    const kids = parseInt(kidCount.value, 10) || 0;
-    const selectedRate = rateType.value;
-    const selectedCurrency = currencyType.value;
+    const rates = {
+      AdultAUSD: { price: 35.00, GST: 8, WP: "Leeli" },
+      KidsAUSD: { price: 25.00, GST: 8, WP: "Leeli" },
+      AdultAMVR: { price: 539.10, GST: 8, WP: "Leeli" },
+      KidsAMVR: { price: 385.50, GST: 8, WP: "Leeli" },
+      AdultBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
+      KidsBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
+      AdultBMVR: { price: 374.80, GST: 8, WP: "Leeli" },
+      KidsBMVR: { price: 374.80, GST: 8, WP: "Leeli" }
+    };
 
-    let adultRate, kidRate, gstPercent;
+    function calculate() {
+      const curr = currencyType.value;
+      const rate = rateType.value;
+      const adults = parseInt(adultCount.value) || 0;
+      const kids = parseInt(kidCount.value) || 0;
 
-    if (selectedRate === "A") {
-      adultRate = rates["AdultA" + selectedCurrency].price;
-      kidRate = rates["KidsA" + selectedCurrency].price;
-      gstPercent = rates["AdultA" + selectedCurrency].GST;
-    } else {
-      adultRate = rates["AdultB" + selectedCurrency].price;
-      kidRate = rates["KidsB" + selectedCurrency].price;
-      gstPercent = rates["AdultB" + selectedCurrency].GST;
+      const adultKey = `Adult${rate}${curr}`;
+      const kidKey = `Kids${rate}${curr}`;
+
+      const adultRate = rates[adultKey].price;
+      const kidRate = rates[kidKey].price;
+      const gstPercent = rates[adultKey].GST;
+
+      const totalAdults = adults * adultRate;
+      const totalKids = kids * kidRate;
+      const subtotal = totalAdults + totalKids;
+      const gstAmount = subtotal * (gstPercent / 100);
+      const total = subtotal + gstAmount;
+
+      // update readonly fields
+      totalAdultsField.value = totalAdults.toFixed(2);
+      totalKidsField.value = totalKids.toFixed(2);
+      gstField.value = gstAmount.toFixed(2);
+      totalField.value = total.toFixed(2);
+
+      return { subtotal, gstAmount, total, adultRate, kidRate, gstPercent };
     }
 
-    const subtotal = (adults * adultRate) + (kids * kidRate);
-    const gstAmount = subtotal * (gstPercent / 100);
-    const total = subtotal + gstAmount;
+    // Attach live update
+    [currencyType, rateType, adultCount, kidCount].forEach(el => {
+      el.addEventListener("input", calculate);
+      el.addEventListener("change", calculate);
+    });
 
-    return { subtotal, gstAmount, total, adultRate, kidRate, gstPercent };
-  }
+    // Initialize totals
+    calculate();
 
-  // Save entry
-  document.getElementById('saveEntryBtn').addEventListener('click', () => {
-    const date = currentDateInput.value;
-    const name = nameInput.value.trim();
-    const flight = flightInput.value.trim();
-    const seat = seatInput.value.trim();
-    const adults = parseInt(adultCount.value, 10) || 0;
-    const kids = parseInt(kidCount.value, 10) || 0;
-    const payment = paymentMethod.value;
-    const currency = currencyType.value;
-    const rate = rateType.value;
-
-    if (!name || !flight || !seat) {
-      alert("Please fill in Name, Flight No, and Seat No.");
-      return;
-    }
-    if (!payment) {
-      alert("Please select a payment method.");
-      return;
-    }
-    if (!currency) {
-      alert("Please select a currency type.");
-      return;
-    }
-
-    const { subtotal, gstAmount, total, adultRate, kidRate, gstPercent } = calculate();
-
-    outputDiv.innerHTML = `
-      <h3>Saved Entry</h3>
-      <p><strong>Date:</strong> ${date}</p>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Flight No:</strong> ${flight}</p>
-      <p><strong>Seat No:</strong> ${seat}</p>
-      <p><strong>Rate Plan:</strong> Rate ${rate}</p>
-      <p><strong>Currency:</strong> ${currency}</p>
-      <p><strong>Adults:</strong> ${adults} × ${adultRate.toFixed(2)} = ${(adults * adultRate).toFixed(2)} ${currency}</p>
-      <p><strong>Kids:</strong> ${kids} × ${kidRate.toFixed(2)} = ${(kids * kidRate).toFixed(2)} ${currency}</p>
-      <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} ${currency}</p>
-      <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)} ${currency}</p>
-      <p><strong>Total:</strong> ${total.toFixed(2)} ${currency}</p>
-      <p><strong>Payment Method:</strong> ${payment}</p>
-    `;
-
-    // Reset form except date
-    nameInput.value = "";
-    flightInput.value = "";
-    seatInput.value = "";
-    adultCount.value = 0;
-    kidCount.value = 0;
-    paymentMethod.value = "";
-    rateType.value = "A";
-    currencyType.value = "USD";
-  });
-
-  // Update totals live
-adultCount.addEventListener("input", () => {
-  const { subtotal, gstAmount, total, adultRate, kidRate, gstPercent } = calculate();
-  outputDiv.innerHTML = `
-    <h3>Live Calculation</h3>
-    <p><strong>Adults:</strong> ${adultCount.value} × ${adultRate.toFixed(2)}</p>
-    <p><strong>Kids:</strong> ${kidCount.value} × ${kidRate.toFixed(2)}</p>
-    <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
-    <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
-    <p><strong>Total:</strong> ${total.toFixed(2)}</p>
-  `;
-});
-rateType.addEventListener("change", adultCount.dispatchEvent.bind(adultCount, new Event("input")));
-currencyType.addEventListener("change", adultCount.dispatchEvent.bind(adultCount, new Event("input")));
-kidCount.addEventListener("input", adultCount.dispatchEvent.bind(adultCount, new Event("input")));
-
-// Initialize preview once
-adultCount.dispatchEvent(new Event("input"));
-
-</script>
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const { subtotal, gstAmount, total, adultRate, kidRate, gstPercent } = calculate();
+      outputDiv.innerHTML = `
+        <h3>Saved Entry</h3>
+        <p><strong>Date:</strong> ${document.getElementById("date").value}</p>
+        <p><strong>Name:</strong> ${document.getElementById("name").value}</p>
+        <p><strong>Flight No:</strong> ${document.getElementById("flight").value}</p>
+        <p><strong>Seat No:</strong> ${document.getElementById("seat").value}</p>
+        <p><strong>Adults:</strong> ${adultCount.value} × ${adultRate.toFixed(2)}</p>
+        <p><strong>Kids:</strong> ${kidCount.value} × ${kidRate.toFixed(2)}</p>
+        <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
+        <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
+        <p><strong>Total:</strong> ${total.toFixed(2)}</p>
+        <p><strong>Payment Type:</strong> ${document.getElementById("paymentType").value}</p>
+      `;
+    });
+  </script>
 </body>
 </html>
-
