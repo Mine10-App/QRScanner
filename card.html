@@ -1,76 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Boarding Pass & Payment Form</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 40px;
-    background: #f4f6f9;
-    display: flex;
-    justify-content: center;
-  }
-  .container {
-    max-width: 600px;
-    width: 100%;
-    background: #fff;
-    padding: 25px 30px;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
-  }
-  h2 {
-    text-align: center;
-    margin-bottom: 25px;
-    color: #333;
-  }
-  label {
-    display: block;
-    font-weight: bold;
-    margin-top: 15px;
-  }
-  input[type="text"],
-  input[type="date"],
-  select,
-  input[type="number"] {
-    width: 100%;
-    padding: 10px 12px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1rem;
-    box-sizing: border-box;
-  }
-  input[type="number"] {
-    -moz-appearance: textfield;
-  }
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  button {
-    margin-top: 25px;
-    width: 100%;
-    padding: 12px;
-    font-size: 1.1rem;
-    background-color: #007bff;
-    border: none;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  button:hover {
-    background-color: #0056b3;
-  }
-  #output {
-    margin-top: 30px;
-    background: #fafafa;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Boarding Pass & Payment Entry</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f4f6f9;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 650px;
+      width: 100%;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #333;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    input[type="text"],
+    input[type="date"],
+    select,
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    button {
+      margin-top: 25px;
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #output {
+      margin-top: 30px;
+      background: #eef;
+      padding: 15px;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
 <div class="container">
@@ -78,9 +77,6 @@
   
   <label for="currentDate">Date:</label>
   <input type="date" id="currentDate" readonly />
-
-  <label for="qrInput">Paste QR / Scan Code (optional):</label>
-  <input type="text" id="qrInput" placeholder="Paste or scan QR data here" />
 
   <label for="nameInput">Name:</label>
   <input type="text" id="nameInput" placeholder="Enter passenger name" />
@@ -91,11 +87,23 @@
   <label for="seatInput">Seat No:</label>
   <input type="text" id="seatInput" placeholder="Enter seat number" />
 
+  <label for="rateType">Select Rate:</label>
+  <select id="rateType">
+    <option value="A">Rate A</option>
+    <option value="B">Rate B</option>
+  </select>
+
+  <label for="currencyType">Currency Type:</label>
+  <select id="currencyType">
+    <option value="USD">USD</option>
+    <option value="MVR">MVR</option>
+  </select>
+
   <label for="adultCount">Number of Adults:</label>
-  <input type="number" id="adultCount" min="0" max="10" value="0" />
+  <input type="number" id="adultCount" min="0" value="0" />
 
   <label for="kidCount">Number of Kids:</label>
-  <input type="number" id="kidCount" min="0" max="10" value="0" />
+  <input type="number" id="kidCount" min="0" value="0" />
 
   <label for="paymentMethod">Payment Method:</label>
   <select id="paymentMethod">
@@ -107,121 +115,78 @@
     <option value="Master">Master</option>
   </select>
 
-  <label for="currencyType">Currency Type:</label>
-  <select id="currencyType">
-    <option value="">-- Select Currency --</option>
-    <option value="USD">USD</option>
-    <option value="MVR">MVR</option>
-  </select>
-
   <button id="saveEntryBtn">Save Entry</button>
 
   <div id="output"></div>
 </div>
 
-<!-- link to rate.js -->
-<script src="rate.js"></script>
-
 <script>
+  // === Rates ===
+  const rates = {
+    AdultAUSD: { price: 35.00, GST: 8, WP: "Leeli" },
+    KidsAUSD: { price: 25.00, GST: 8, WP: "Leeli" },
+    AdultAMVR: { price: 539.10, GST: 8, WP: "Leeli" },
+    KidsAMVR: { price: 385.50, GST: 8, WP: "Leeli" },
+    AdultBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
+    KidsBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
+    AdultBMVR: { price: 374.80, GST: 8, WP: "Leeli" },
+    KidsBMVR: { price: 374.80, GST: 8, WP: "Leeli" }
+  };
+
   // Set current date
   const currentDateInput = document.getElementById('currentDate');
   const today = new Date().toISOString().split('T')[0];
   currentDateInput.value = today;
 
-  const qrInput = document.getElementById('qrInput');
+  // Elements
   const nameInput = document.getElementById('nameInput');
   const flightInput = document.getElementById('flightInput');
   const seatInput = document.getElementById('seatInput');
+  const rateType = document.getElementById('rateType');
+  const currencyType = document.getElementById('currencyType');
   const adultCount = document.getElementById('adultCount');
   const kidCount = document.getElementById('kidCount');
   const paymentMethod = document.getElementById('paymentMethod');
-  const currencyType = document.getElementById('currencyType');
   const outputDiv = document.getElementById('output');
 
-  // QR Parsing function
-  function parseQR(code) {
-    code = code.trim().toUpperCase().replace(/\s+/g, ' ');
-    const allParts = code.split(' ');
-    let name = "", flightNo = "", seatNo = "";
-
-    if (code.startsWith("TKVCPO")) {
-      const tkIndex = code.indexOf("TK0");
-      if (tkIndex !== -1) {
-        flightNo = code.substring(tkIndex, tkIndex + 6);
-        name = code.substring(6, tkIndex);
-      }
-      const mlePos = code.indexOf("MLE");
-      if (mlePos !== -1) {
-        const afterMLE = code.substring(mlePos).split(' ')[0];
-        if (afterMLE.length >= 11) seatNo = afterMLE.substring(8, 11);
-      }
-    } else {
-      name = allParts[0].substring(2);
-      const mleIndex = allParts.findIndex(w => w.includes("MLE"));
-      if (mleIndex !== -1) {
-        const mleWord = allParts[mleIndex];
-        const nextWord = (mleIndex + 1 < allParts.length) ? allParts[mleIndex + 1] : "";
-        flightNo = mleWord.slice(-2) + nextWord;
-        const partsAfterMLE = allParts.slice(mleIndex + 1);
-        for (let w of partsAfterMLE) {
-          if (w.length >= 9 && !w.includes("QR") && !w.includes("MLE")) {
-            seatNo = w.substring(5, w.length - 4);
-            break;
-          }
-        }
-      }
-    }
-    return { name: name || "", flightNo: flightNo || "", seatNo: seatNo || "" };
-  }
-
-  qrInput.addEventListener('change', () => {
-    const code = qrInput.value.trim();
-    if (!code) return;
-    const parsed = parseQR(code);
-    if (parsed.name && !nameInput.value) nameInput.value = parsed.name;
-    if (parsed.flightNo && !flightInput.value) flightInput.value = parsed.flightNo;
-    if (parsed.seatNo && !seatInput.value) seatInput.value = parsed.seatNo;
-    qrInput.value = '';
-  });
-
-  // Calculation function
-  function calculateTotal() {
+  function calculate() {
     const adults = parseInt(adultCount.value, 10) || 0;
     const kids = parseInt(kidCount.value, 10) || 0;
+    const selectedRate = rateType.value;
+    const selectedCurrency = currencyType.value;
 
-    const adultRate = rates.AdultA.price;
-    const kidRate = rates.KidsA.price;
-    const gstPercent = rates.AdultA.GST;
+    let adultRate, kidRate, gstPercent;
+
+    if (selectedRate === "A") {
+      adultRate = rates["AdultA" + selectedCurrency].price;
+      kidRate = rates["KidsA" + selectedCurrency].price;
+      gstPercent = rates["AdultA" + selectedCurrency].GST;
+    } else {
+      adultRate = rates["AdultB" + selectedCurrency].price;
+      kidRate = rates["KidsB" + selectedCurrency].price;
+      gstPercent = rates["AdultB" + selectedCurrency].GST;
+    }
 
     const subtotal = (adults * adultRate) + (kids * kidRate);
     const gstAmount = subtotal * (gstPercent / 100);
     const total = subtotal + gstAmount;
 
-    outputDiv.innerHTML = `
-      <h3>Calculation</h3>
-      <p><strong>Adults:</strong> ${adults} × ${adultRate} = ${(adults * adultRate).toFixed(2)}</p>
-      <p><strong>Kids:</strong> ${kids} × ${kidRate} = ${(kids * kidRate).toFixed(2)}</p>
-      <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
-      <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
-      <p><strong>Total:</strong> ${total.toFixed(2)}</p>
-    `;
-    return { subtotal, gstAmount, total, gstPercent };
+    return { subtotal, gstAmount, total, adultRate, kidRate, gstPercent };
   }
 
-  adultCount.addEventListener("input", calculateTotal);
-  kidCount.addEventListener("input", calculateTotal);
-
+  // Save entry
   document.getElementById('saveEntryBtn').addEventListener('click', () => {
+    const date = currentDateInput.value;
     const name = nameInput.value.trim();
-    const flightNo = flightInput.value.trim();
-    const seatNo = seatInput.value.trim();
+    const flight = flightInput.value.trim();
+    const seat = seatInput.value.trim();
     const adults = parseInt(adultCount.value, 10) || 0;
     const kids = parseInt(kidCount.value, 10) || 0;
     const payment = paymentMethod.value;
     const currency = currencyType.value;
-    const date = currentDateInput.value;
+    const rate = rateType.value;
 
-    if (!name || !flightNo || !seatNo) {
+    if (!name || !flight || !seat) {
       alert("Please fill in Name, Flight No, and Seat No.");
       return;
     }
@@ -234,31 +199,33 @@
       return;
     }
 
-    const { subtotal, gstAmount, total, gstPercent } = calculateTotal();
+    const { subtotal, gstAmount, total, adultRate, kidRate, gstPercent } = calculate();
 
     outputDiv.innerHTML = `
       <h3>Saved Entry</h3>
       <p><strong>Date:</strong> ${date}</p>
       <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Flight No:</strong> ${flightNo}</p>
-      <p><strong>Seat No:</strong> ${seatNo}</p>
-      <p><strong>Adults:</strong> ${adults}</p>
-      <p><strong>Kids:</strong> ${kids}</p>
+      <p><strong>Flight No:</strong> ${flight}</p>
+      <p><strong>Seat No:</strong> ${seat}</p>
+      <p><strong>Rate Plan:</strong> Rate ${rate}</p>
+      <p><strong>Currency:</strong> ${currency}</p>
+      <p><strong>Adults:</strong> ${adults} × ${adultRate.toFixed(2)} = ${(adults * adultRate).toFixed(2)} ${currency}</p>
+      <p><strong>Kids:</strong> ${kids} × ${kidRate.toFixed(2)} = ${(kids * kidRate).toFixed(2)} ${currency}</p>
+      <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} ${currency}</p>
+      <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)} ${currency}</p>
+      <p><strong>Total:</strong> ${total.toFixed(2)} ${currency}</p>
       <p><strong>Payment Method:</strong> ${payment}</p>
-      <p><strong>Currency Type:</strong> ${currency}</p>
-      <hr>
-      <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
-      <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
-      <p><strong>Total:</strong> ${total.toFixed(2)}</p>
     `;
 
+    // Reset form except date
     nameInput.value = "";
     flightInput.value = "";
     seatInput.value = "";
     adultCount.value = 0;
     kidCount.value = 0;
     paymentMethod.value = "";
-    currencyType.value = "";
+    rateType.value = "A";
+    currencyType.value = "USD";
   });
 </script>
 </body>
