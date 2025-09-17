@@ -73,7 +73,7 @@
       </div>
 
       <label>Receipt No:</label>
-      <input type="text" id="receiptNo">
+      <input type="text" id="receiptNo" class="readonly-field" readonly>
     </div>
   </div>
 
@@ -128,9 +128,7 @@ const totalField = document.getElementById("totalField");
 const outputDiv = document.getElementById("output");
 
 dateField.value = new Date().toISOString().split('T')[0];
-
-// Hide cash fields initially
-cashFields.style.display = "none";
+cashFields.style.display = "none"; // hide cash fields initially
 
 // QR code parser
 function parseQR(code){
@@ -166,7 +164,7 @@ qrInput.addEventListener("change", ()=>{
   qrInput.value='';
 });
 
-// Calculate totals and balance
+// calculate totals and balance
 function calculate(){
   const curr = currencyType.value;
   const rate = rateType.value;
@@ -198,7 +196,7 @@ function calculate(){
   return {subtotal, gstAmount, total};
 }
 
-// Toggle cash fields
+// toggle cash fields
 function toggleCashFields() {
   if(paymentType.value==="Cash"){
     cashFields.style.display = "grid";
@@ -209,7 +207,30 @@ function toggleCashFields() {
   }
 }
 
-// Event listeners
+// get next receipt number safely with transaction
+async function getNextReceiptNo() {
+  const counterRef = db.collection("counters").doc("receiptCounter");
+  try {
+    const nextReceiptNo = await db.runTransaction(async (transaction)=>{
+      const doc = await transaction.get(counterRef);
+      let current = 0;
+      if(!doc.exists){
+        transaction.set(counterRef, {current: 1});
+        current = 1;
+      } else {
+        current = doc.data().current + 1;
+        transaction.update(counterRef, {current: current});
+      }
+      return current;
+    });
+    return nextReceiptNo;
+  } catch(err){
+    console.error("Error getting next receipt number:", err);
+    return 1;
+  }
+}
+
+// event listeners
 paymentType.addEventListener("change", ()=>{
   toggleCashFields();
   calculate();
@@ -226,8 +247,10 @@ window.addEventListener("DOMContentLoaded", ()=>{
 });
 
 // Save to Firebase
-document.getElementById("saveBtn").addEventListener("click", async () => {
+document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const totals = calculate();
+  const nextReceiptNo = await getNextReceiptNo();
+  receiptNo.value = nextReceiptNo;
 
   const data = {
     date: dateField.value,
@@ -242,7 +265,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     paymentType: paymentType.value,
     givenAmount: paymentType.value==="Cash"?parseFloat(givenAmount.value)||0:null,
     balance: paymentType.value==="Cash"?parseFloat(balanceField.value)||0:null,
-    receiptNo: receiptNo.value,
+    receiptNo: nextReceiptNo,
     totalAdults: parseFloat(totalAdultsField.value),
     totalKids: parseFloat(totalKidsField.value),
     gst: parseFloat(gstField.value),
@@ -252,12 +275,12 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
 
   try {
     await db.collection("bookings").add(data);
-    outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully!</p>`;
+    outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully! Receipt No: ${nextReceiptNo}</p>`;
     document.getElementById("bookingForm").reset();
     dateField.value = new Date().toISOString().split('T')[0];
     toggleCashFields();
     calculate();
-  } catch(err) {
+  } catch(err){
     console.error("Error saving booking:", err);
     outputDiv.innerHTML = `<p style="color:red;">Error saving booking: ${err.message}</p>`;
   }
