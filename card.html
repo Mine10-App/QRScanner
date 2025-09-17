@@ -10,7 +10,6 @@
   label { display: block; margin-top: 10px; font-weight: bold; }
   input, select, button { padding: 8px; width: 100%; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
   .readonly-field { background: #f0f0f0; }
-  .hidden { display: none; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
   .full-width { grid-column: 1 / -1; }
   .totals, .cash-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
@@ -58,11 +57,11 @@
     <div class="full-width">
       <label>Payment Type:</label>
       <select id="paymentType">
-        <option value="Card">Card</option>
+        <option value="Card" selected>Card</option>
         <option value="Cash">Cash</option>
       </select>
 
-      <div id="cashFields" class="cash-section hidden">
+      <div id="cashFields" class="cash-section">
         <div>
           <label>Given Amount:</label>
           <input type="number" id="givenAmount" min="0" step="0.01">
@@ -130,6 +129,9 @@ const outputDiv = document.getElementById("output");
 
 dateField.value = new Date().toISOString().split('T')[0];
 
+// Hide cash fields initially
+cashFields.style.display = "none";
+
 // QR code parser
 function parseQR(code){
   code = code.trim().toUpperCase().replace(/\s+/g,' ');
@@ -186,7 +188,7 @@ function calculate(){
   gstField.value = gstAmount.toFixed(2);
   totalField.value = total.toFixed(2);
 
-  if(paymentType.value==="Cash" && !cashFields.classList.contains("hidden")){
+  if(paymentType.value==="Cash"){
     const given = parseFloat(givenAmount.value)||0;
     balanceField.value = (given-total).toFixed(2);
   } else {
@@ -199,16 +201,13 @@ function calculate(){
 // Toggle cash fields
 function toggleCashFields() {
   if(paymentType.value==="Cash"){
-    cashFields.classList.remove("hidden");
+    cashFields.style.display = "grid";
   } else {
-    cashFields.classList.add("hidden");
+    cashFields.style.display = "none";
     givenAmount.value = "";
     balanceField.value = "";
   }
 }
-
-// Run toggle on page load
-toggleCashFields();
 
 // Event listeners
 paymentType.addEventListener("change", ()=>{
@@ -221,15 +220,15 @@ paymentType.addEventListener("change", ()=>{
   el.addEventListener("change", calculate);
 });
 
-// Live balance while typing
-givenAmount.addEventListener("input", calculate);
+window.addEventListener("DOMContentLoaded", ()=>{
+  toggleCashFields();
+  calculate();
+});
 
-// Initial calculation
-calculate();
-
-// Save booking to Firebase
+// Save to Firebase
 document.getElementById("saveBtn").addEventListener("click", async () => {
   const totals = calculate();
+
   const data = {
     date: dateField.value,
     qrCode: qrInput.value || null,
@@ -238,11 +237,11 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     seat: seatField.value,
     currency: currencyType.value,
     rate: rateType.value,
-    adults: parseInt(adultCount.value)||0,
-    kids: parseInt(kidCount.value)||0,
+    adults: parseInt(adultCount.value) || 0,
+    kids: parseInt(kidCount.value) || 0,
     paymentType: paymentType.value,
-    givenAmount: paymentType.value==="Cash"? parseFloat(givenAmount.value)||0 : null,
-    balance: paymentType.value==="Cash"? parseFloat(balanceField.value)||0 : null,
+    givenAmount: paymentType.value==="Cash"?parseFloat(givenAmount.value)||0:null,
+    balance: paymentType.value==="Cash"?parseFloat(balanceField.value)||0:null,
     receiptNo: receiptNo.value,
     totalAdults: parseFloat(totalAdultsField.value),
     totalKids: parseFloat(totalKidsField.value),
