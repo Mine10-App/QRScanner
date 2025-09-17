@@ -70,8 +70,8 @@ fetchBtn.addEventListener("click", async () => {
 
     // Build receipt
     let html = `<h2>${companyInfo.name}</h2>`;
-    html += `<h2>${companyInfo.address}</h2>`;
-    html += `<h2>${companyInfo.phone}</h2>`;
+    html += `<P>${companyInfo.address}</P>`;
+    html += `<P>${companyInfo.phone}</P>`;
 
     // Show VOID if applicable
     if(data.voided){
