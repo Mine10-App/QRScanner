@@ -109,7 +109,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import { firebaseConfig } from "./fire.js"; // your config file
+import { firebaseConfig } from "./fire.js"; // your Firebase config
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -135,6 +135,7 @@ const gstField = document.getElementById("gstField");
 const totalField = document.getElementById("totalField");
 const outputDiv = document.getElementById("output");
 
+// Set today
 dateField.value = new Date().toISOString().split('T')[0];
 
 // QR Parsing
