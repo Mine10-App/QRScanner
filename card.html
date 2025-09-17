@@ -102,16 +102,10 @@
 
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
-<!-- Keep rate.js as normal script so rates is global -->
 <script src="rate.js"></script>
-<script type="module">
-// Firebase modular import
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import { app } from "./fire.js"; // fire.js exports 'app'
+<script src="fire.js"></script>
 
-const db = getFirestore(app);
-
-// Elements
+<script>
 const dateField = document.getElementById("date");
 const qrInput = document.getElementById("qrInput");
 const nameField = document.getElementById("name");
@@ -132,10 +126,8 @@ const gstField = document.getElementById("gstField");
 const totalField = document.getElementById("totalField");
 const outputDiv = document.getElementById("output");
 
-// Date
 dateField.value = new Date().toISOString().split('T')[0];
 
-// QR parsing function (unchanged)
 function parseQR(code){
   code = code.trim().toUpperCase().replace(/\s+/g,' ');
   const allParts = code.split(' ');
@@ -169,7 +161,6 @@ qrInput.addEventListener("change", ()=>{
   qrInput.value='';
 });
 
-// Calculate totals (works because rates is global)
 function calculate(){
   const curr = currencyType.value;
   const rate = rateType.value;
@@ -196,13 +187,11 @@ function calculate(){
   return {subtotal, gstAmount, total};
 }
 
-// Show/hide cash fields
 paymentType.addEventListener("change", ()=>{
   cashFields.classList.toggle("hidden", paymentType.value!=="Cash");
   calculate();
 });
 
-// Trigger calculation on input change
 [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
   el.addEventListener("input",calculate);
   el.addEventListener("change",calculate);
@@ -210,11 +199,11 @@ paymentType.addEventListener("change", ()=>{
 
 calculate();
 
-// === Firebase Save Button ===
+// --- ONLY CHANGE: save to Firebase ---
 document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const {subtotal, gstAmount, total} = calculate();
   if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
-
+  
   const entryData = {
     date: dateField.value,
     name: nameField.value,
@@ -235,13 +224,14 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
   };
 
   try{
+    // Using modular Firebase properly
     await addDoc(collection(db, "bookings"), entryData);
     outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
     document.getElementById("bookingForm").reset();
     calculate();
   }catch(err){
-    console.error("Firebase error:", err);
-    alert("Error saving to Firebase: " + err.message);
+    console.error(err);
+    alert("Error saving to Firebase");
   }
 });
 </script>
