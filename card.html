@@ -102,10 +102,19 @@
 
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
+<!-- External rates -->
 <script src="rate.js"></script>
-<script src="fire.js"></script>
 
-<script>
+<!-- Firebase Modular SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import { firebaseConfig } from "./fire.js"; // your config file
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Elements
 const dateField = document.getElementById("date");
 const qrInput = document.getElementById("qrInput");
 const nameField = document.getElementById("name");
@@ -128,6 +137,7 @@ const outputDiv = document.getElementById("output");
 
 dateField.value = new Date().toISOString().split('T')[0];
 
+// QR Parsing
 function parseQR(code){
   code = code.trim().toUpperCase().replace(/\s+/g,' ');
   const allParts = code.split(' ');
@@ -161,6 +171,7 @@ qrInput.addEventListener("change", ()=>{
   qrInput.value='';
 });
 
+// Calculate totals
 function calculate(){
   const curr = currencyType.value;
   const rate = rateType.value;
@@ -199,9 +210,11 @@ paymentType.addEventListener("change", ()=>{
 
 calculate();
 
+// Save to Firebase
 document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const {subtotal, gstAmount, total} = calculate();
   if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
+
   const entryData = {
     date: dateField.value,
     name: nameField.value,
@@ -220,8 +233,9 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
     balance: paymentType.value==="Cash"?balanceField.value:null,
     receiptNo: receiptNo.value.trim()
   };
+
   try{
-    await db.collection("bookings").add(entryData);
+    await addDoc(collection(db, "bookings"), entryData);
     outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
     document.getElementById("bookingForm").reset();
     calculate();
@@ -231,50 +245,6 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
   }
 });
 </script>
-  <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import { firebaseConfig } from "./fire.js";
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// Then your existing calculate() and saveBtn code
-document.getElementById("saveBtn").addEventListener("click", async ()=>{
-    const {subtotal, gstAmount, total} = calculate();
-    if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
-
-    const entryData = {
-      date: dateField.value,
-      name: nameField.value,
-      flightNo: flightField.value,
-      seatNo: seatField.value,
-      currency: currencyType.value,
-      rateType: rateType.value,
-      adults: adultCount.value,
-      kids: kidCount.value,
-      totalAdults: totalAdultsField.value,
-      totalKids: totalKidsField.value,
-      gst: gstField.value,
-      total: totalField.value,
-      paymentType: paymentType.value,
-      givenAmount: paymentType.value==="Cash"?givenAmount.value:null,
-      balance: paymentType.value==="Cash"?balanceField.value:null,
-      receiptNo: receiptNo.value.trim()
-    };
-
-    try{
-      await addDoc(collection(db, "bookings"), entryData); // ✅ Modular SDK
-      outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
-      document.getElementById("bookingForm").reset();
-      calculate();
-    }catch(err){
-      console.error(err);
-      alert("Error saving to Firebase");
-    }
-});
-</script>
 
 </body>
 </html>
-
