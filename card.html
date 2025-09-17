@@ -58,8 +58,8 @@
     <div class="full-width">
       <label>Payment Type:</label>
       <select id="paymentType">
-        <option value="Cash">Cash</option>
         <option value="Card">Card</option>
+        <option value="Cash">Cash</option>
       </select>
 
       <div id="cashFields" class="cash-section hidden">
@@ -104,8 +104,9 @@
 
 <script src="rate.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="fire1.js"></script>
+
 <script>
 const dateField = document.getElementById("date");
 const qrInput = document.getElementById("qrInput");
@@ -181,15 +182,26 @@ function calculate(){
   totalKidsField.value = totalKids.toFixed(2);
   gstField.value = gstAmount.toFixed(2);
   totalField.value = total.toFixed(2);
-  if(paymentType.value==="Cash"){
+
+  if(paymentType.value==="Cash" && !cashFields.classList.contains("hidden")){
     const given = parseFloat(givenAmount.value)||0;
     balanceField.value = (given-total).toFixed(2);
-  } else balanceField.value="";
+  } else {
+    balanceField.value = "";
+  }
+
   return {subtotal, gstAmount, total};
 }
 
+// Toggle cash fields
 paymentType.addEventListener("change", ()=>{
-  cashFields.classList.toggle("hidden", paymentType.value!=="Cash");
+  if(paymentType.value==="Cash"){
+    cashFields.classList.remove("hidden");
+  } else {
+    cashFields.classList.add("hidden");
+    givenAmount.value = "";
+    balanceField.value = "";
+  }
   calculate();
 });
 
@@ -200,11 +212,9 @@ paymentType.addEventListener("change", ()=>{
 
 calculate();
 
+// Save booking
 document.getElementById("saveBtn").addEventListener("click", async () => {
-  // Get calculated totals
   const totals = calculate();
-
-  // Prepare data to save
   const data = {
     date: dateField.value,
     qrCode: qrInput.value || null,
@@ -213,11 +223,11 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     seat: seatField.value,
     currency: currencyType.value,
     rate: rateType.value,
-    adults: parseInt(adultCount.value) || 0,
-    kids: parseInt(kidCount.value) || 0,
+    adults: parseInt(adultCount.value)||0,
+    kids: parseInt(kidCount.value)||0,
     paymentType: paymentType.value,
-    givenAmount: paymentType.value === "Cash" ? parseFloat(givenAmount.value) || 0 : null,
-    balance: paymentType.value === "Cash" ? parseFloat(balanceField.value) || 0 : null,
+    givenAmount: paymentType.value==="Cash"? parseFloat(givenAmount.value)||0 : null,
+    balance: paymentType.value==="Cash"? parseFloat(balanceField.value)||0 : null,
     receiptNo: receiptNo.value,
     totalAdults: parseFloat(totalAdultsField.value),
     totalKids: parseFloat(totalKidsField.value),
@@ -226,24 +236,17 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     timestamp: new Date()
   };
 
-  try {
-    // Save to Firestore collection "bookings"
+  try{
     await db.collection("bookings").add(data);
     outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully!</p>`;
-    // Optionally, reset the form
     document.getElementById("bookingForm").reset();
     dateField.value = new Date().toISOString().split('T')[0];
     calculate();
-  } catch (err) {
+  } catch(err){
     console.error("Error saving booking:", err);
     outputDiv.innerHTML = `<p style="color:red;">Error saving booking: ${err.message}</p>`;
   }
-});  
-
+});
 </script>
 </body>
 </html>
-
-
-
-
