@@ -14,6 +14,12 @@
   .entry-row { display: flex; margin-bottom: 15px; }
   .entry-row label { font-weight: bold; width: 200px; }
   .entry-row .value { font-weight: normal; flex-grow: 1; }
+  select.payment-dropdown {
+    padding: 6px;
+    width: 100%;
+    border: 1px solid #999;
+    border-radius: 6px;
+  }
 </style>
 </head>
 <body>
@@ -27,7 +33,7 @@
   </div>
 </div>
 
-<!-- Firebase Compat Scripts for IE / MS Access -->
+<!-- Firebase Compat Scripts -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
@@ -47,25 +53,16 @@
   var qrInput = document.getElementById("qrInput");
   var entriesContainer = document.getElementById("entriesContainer");
 
-  var allEntries = []; // Keep all today's entries
+  var allEntries = []; // Keep today's entries
 
   // --- Parse QR ---
   function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     var allParts = code.split(' ');
-    var name = "", flightNo = "", seatNo = "", fq = "", paxAdults = 0, paxKids = 0, paymentMethod = "", currencyType = "", rateSelector = "", total = 0, paidAmount = 0, balance = 0;
+    var name = "", flightNo = "", seatNo = "", fq = "", paxAdults = 2, paxKids = 1;
+    var paymentMethod = "Cash", currencyType = "USD", rateSelector = "Standard";
+    var total = 500, paidAmount = 300, balance = total - paidAmount;
 
-    // Add logic to extract pax, payment, and currency information (for now using placeholders)
-    paxAdults = 2;  // Example: Adjust this as per QR content (Adult Pax)
-    paxKids = 1;    // Example: Adjust this as per QR content (Kid Pax)
-    paymentMethod = "Credit Card";  // Placeholder for Payment Method
-    currencyType = "USD";  // Placeholder for Currency Type
-    rateSelector = "Standard"; // Placeholder for Rate Selector
-    total = 500;   // Placeholder for Total
-    paidAmount = 300;  // Placeholder for Paid Amount
-    balance = total - paidAmount;  // Calculate Balance
-
-    // Simple flight number parsing logic (e.g., for "TKVCPO" code)
     if (code.startsWith("TKVCPO")) {
       var tkIndex = code.indexOf("TK0");
       if (tkIndex !== -1) {
@@ -79,15 +76,14 @@
       }
     } else {
       name = allParts[0].substring(2);
-      var mleIndex = allParts.findIndex(function(w){ return w.includes("MLE"); });
+      var mleIndex = allParts.findIndex(w => w.includes("MLE"));
       if (mleIndex !== -1) {
         var mleWord = allParts[mleIndex];
         var nextWord = (mleIndex + 1 < allParts.length) ? allParts[mleIndex + 1] : "";
         flightNo = mleWord.slice(-2) + nextWord;
         var partsAfterMLE = allParts.slice(mleIndex + 1);
-        for (var i = 0; i < partsAfterMLE.length; i++) {
-          var w = partsAfterMLE[i];
-          if (w.length >= 9 && w.indexOf("QR") === -1 && w.indexOf("MLE") === -1) {
+        for (let w of partsAfterMLE) {
+          if (w.length >= 9 && !w.includes("QR") && !w.includes("MLE")) {
             seatNo = w.substring(5, w.length - 4);
             break;
           }
@@ -99,89 +95,78 @@
       name: name || "-",
       flightNo: flightNo || "-",
       seatNo: seatNo || "-",
-      paxAdults: paxAdults,
-      paxKids: paxKids,
-      paymentMethod: paymentMethod,
-      currencyType: currencyType,
-      rateSelector: rateSelector,
-      total: total,
-      paidAmount: paidAmount,
-      balance: balance
+      paxAdults,
+      paxKids,
+      paymentMethod,
+      currencyType,
+      rateSelector,
+      total,
+      paidAmount,
+      balance
     };
   }
 
   // --- Display entries ---
   function displayEntries(){
-    entriesContainer.innerHTML = '';  // Clear previous entries
-
-    allEntries.forEach(function(d) {
+    entriesContainer.innerHTML = '';
+    allEntries.forEach(function(d, index) {
       var entryDiv = document.createElement("div");
       entryDiv.classList.add("entry");
 
-      // Create rows for each entry data point
+      const dropdownId = `payment-method-${index}`;
       entryDiv.innerHTML = `
-        <div class="entry-row">
-          <label>Date:</label>
-          <div class="value">${d.date}</div>
-        </div>
-        <div class="entry-row">
-          <label>Flight No:</label>
-          <div class="value">${d.flightNo}</div>
-        </div>
-        <div class="entry-row">
-          <label>Seat No:</label>
-          <div class="value">${d.seatNo}</div>
-        </div>
-        <div class="entry-row">
-          <label>No. of Pax (Adults):</label>
-          <div class="value">${d.paxAdults}</div>
-        </div>
-        <div class="entry-row">
-          <label>No. of Pax (Kids):</label>
-          <div class="value">${d.paxKids}</div>
-        </div>
+        <div class="entry-row"><label>Name:</label><div class="value">${d.name}</div></div>
+        <div class="entry-row"><label>Date:</label><div class="value">${d.date}</div></div>
+        <div class="entry-row"><label>Flight No:</label><div class="value">${d.flightNo}</div></div>
+        <div class="entry-row"><label>Seat No:</label><div class="value">${d.seatNo}</div></div>
+        <div class="entry-row"><label>No. of Pax (Adults):</label><div class="value">${d.paxAdults}</div></div>
+        <div class="entry-row"><label>No. of Pax (Kids):</label><div class="value">${d.paxKids}</div></div>
         <div class="entry-row">
           <label>Payment Method:</label>
-          <div class="value">${d.paymentMethod}</div>
+          <div class="value">
+            <select class="payment-dropdown" id="${dropdownId}">
+              <option ${d.paymentMethod === 'Cash' ? 'selected' : ''}>Cash</option>
+              <option ${d.paymentMethod === 'Card' ? 'selected' : ''}>Card</option>
+              <option ${d.paymentMethod === 'Amex' ? 'selected' : ''}>Amex</option>
+              <option ${d.paymentMethod === 'Visa' ? 'selected' : ''}>Visa</option>
+              <option ${d.paymentMethod === 'Master' ? 'selected' : ''}>Master</option>
+            </select>
+          </div>
         </div>
-        <div class="entry-row">
-          <label>Currency Type:</label>
-          <div class="value">${d.currencyType}</div>
-        </div>
-        <div class="entry-row">
-          <label>Rate Selector:</label>
-          <div class="value">${d.rateSelector}</div>
-        </div>
-        <div class="entry-row">
-          <label>Total:</label>
-          <div class="value">${d.total}</div>
-        </div>
-        <div class="entry-row">
-          <label>Paid Amount:</label>
-          <div class="value">${d.paidAmount}</div>
-        </div>
-        <div class="entry-row">
-          <label>Balance:</label>
-          <div class="value">${d.balance}</div>
-        </div>
+        <div class="entry-row"><label>Currency Type:</label><div class="value">${d.currencyType}</div></div>
+        <div class="entry-row"><label>Rate Selector:</label><div class="value">${d.rateSelector}</div></div>
+        <div class="entry-row"><label>Total:</label><div class="value">${d.total}</div></div>
+        <div class="entry-row"><label>Paid Amount:</label><div class="value">${d.paidAmount}</div></div>
+        <div class="entry-row"><label>Balance:</label><div class="value">${d.balance}</div></div>
       `;
+
       entriesContainer.appendChild(entryDiv);
+
+      // Optional: Update Firestore on dropdown change
+      const selectEl = entryDiv.querySelector(`#${dropdownId}`);
+      selectEl.addEventListener("change", () => {
+        const newMethod = selectEl.value;
+        const docRef = d._docRef;
+        if (docRef) {
+          docRef.update({ paymentMethod: newMethod });
+        }
+      });
     });
   }
 
   // --- Load today's entries ---
   function loadTodayEntries() {
     var today = new Date().toISOString().split("T")[0];
-    var q = db.collection("qr_entries").where("date", "==", today);
-    q.onSnapshot(function(snapshot) {
-      allEntries = [];
-      snapshot.forEach(function(doc) {
-        var d = doc.data();
-        allEntries.push(d);
+    db.collection("qr_entries").where("date", "==", today)
+      .onSnapshot(function(snapshot) {
+        allEntries = [];
+        snapshot.forEach(function(doc) {
+          var d = doc.data();
+          d._docRef = doc.ref; // So we can update later
+          allEntries.push(d);
+        });
+        displayEntries();
       });
-
-      displayEntries(); // show all entries initially
-    });
   }
 
   // --- On QR input ---
@@ -192,9 +177,9 @@
     var parsed = parseQR(code);
     var today = new Date().toISOString().split("T")[0];
 
-    db.collection("qr_entries").add({...parsed, date: today})
-      .then(function() { qrInput.value = ""; })
-      .catch(function(err) { console.error("Error saving QR:", err); });
+    db.collection("qr_entries").add({ ...parsed, date: today })
+      .then(() => { qrInput.value = ""; })
+      .catch(err => console.error("Error saving QR:", err));
   });
 
   // --- Init ---
