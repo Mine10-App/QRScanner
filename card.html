@@ -8,6 +8,7 @@
     label { display: block; margin-top: 8px; }
     input, select, button { margin-top: 5px; padding: 6px; width: 200px; }
     .readonly-field { background: #f0f0f0; border: 1px solid #ccc; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -39,6 +40,12 @@
       </select>
     </label>
 
+    <!-- Cash payment extra fields -->
+    <div id="cashFields" class="hidden">
+      <label>Given Amount: <input type="number" id="givenAmount" min="0" step="0.01"></label>
+      <label>Balance: <input type="text" id="balanceField" class="readonly-field" readonly></label>
+    </div>
+
     <h3>Totals</h3>
     <label>Total Adults: <input type="text" id="totalAdults" class="readonly-field" readonly></label>
     <label>Total Kids: <input type="text" id="totalKids" class="readonly-field" readonly></label>
@@ -50,29 +57,29 @@
 
   <div id="output"></div>
 
+  <!-- Link external rate.js -->
+  <script src="rate.js"></script>
+
   <script>
+    // Elements
+    const dateField = document.getElementById("date");
     const currencyType = document.getElementById("currencyType");
     const rateType = document.getElementById("rateType");
     const adultCount = document.getElementById("adultCount");
     const kidCount = document.getElementById("kidCount");
+    const paymentType = document.getElementById("paymentType");
+    const givenAmount = document.getElementById("givenAmount");
+    const balanceField = document.getElementById("balanceField");
+    const cashFields = document.getElementById("cashFields");
 
     const totalAdultsField = document.getElementById("totalAdults");
     const totalKidsField = document.getElementById("totalKids");
     const gstField = document.getElementById("gstField");
     const totalField = document.getElementById("totalField");
-
     const outputDiv = document.getElementById("output");
 
-    const rates = {
-      AdultAUSD: { price: 35.00, GST: 8, WP: "Leeli" },
-      KidsAUSD: { price: 25.00, GST: 8, WP: "Leeli" },
-      AdultAMVR: { price: 539.10, GST: 8, WP: "Leeli" },
-      KidsAMVR: { price: 385.50, GST: 8, WP: "Leeli" },
-      AdultBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
-      KidsBUSD: { price: 24.31, GST: 8, WP: "Leeli" },
-      AdultBMVR: { price: 374.80, GST: 8, WP: "Leeli" },
-      KidsBMVR: { price: 374.80, GST: 8, WP: "Leeli" }
-    };
+    // Set today’s date
+    dateField.value = new Date().toISOString().split('T')[0];
 
     function calculate() {
       const curr = currencyType.value;
@@ -93,29 +100,45 @@
       const gstAmount = subtotal * (gstPercent / 100);
       const total = subtotal + gstAmount;
 
-      // update readonly fields
       totalAdultsField.value = totalAdults.toFixed(2);
       totalKidsField.value = totalKids.toFixed(2);
       gstField.value = gstAmount.toFixed(2);
       totalField.value = total.toFixed(2);
 
+      // Calculate balance if cash
+      if (paymentType.value === "Cash") {
+        const given = parseFloat(givenAmount.value) || 0;
+        balanceField.value = (given - total).toFixed(2);
+      } else {
+        balanceField.value = "";
+      }
+
       return { subtotal, gstAmount, total, adultRate, kidRate, gstPercent };
     }
 
-    // Attach live update
-    [currencyType, rateType, adultCount, kidCount].forEach(el => {
+    // Show/hide cash fields
+    paymentType.addEventListener("change", () => {
+      if (paymentType.value === "Cash") {
+        cashFields.classList.remove("hidden");
+      } else {
+        cashFields.classList.add("hidden");
+      }
+      calculate();
+    });
+
+    // Live update totals
+    [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el => {
       el.addEventListener("input", calculate);
       el.addEventListener("change", calculate);
     });
 
-    // Initialize totals
-    calculate();
+    calculate(); // initialize
 
     document.getElementById("saveBtn").addEventListener("click", () => {
       const { subtotal, gstAmount, total, adultRate, kidRate, gstPercent } = calculate();
       outputDiv.innerHTML = `
         <h3>Saved Entry</h3>
-        <p><strong>Date:</strong> ${document.getElementById("date").value}</p>
+        <p><strong>Date:</strong> ${dateField.value}</p>
         <p><strong>Name:</strong> ${document.getElementById("name").value}</p>
         <p><strong>Flight No:</strong> ${document.getElementById("flight").value}</p>
         <p><strong>Seat No:</strong> ${document.getElementById("seat").value}</p>
@@ -124,7 +147,11 @@
         <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
         <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
         <p><strong>Total:</strong> ${total.toFixed(2)}</p>
-        <p><strong>Payment Type:</strong> ${document.getElementById("paymentType").value}</p>
+        <p><strong>Payment Type:</strong> ${paymentType.value}</p>
+        ${paymentType.value === "Cash" ? `
+          <p><strong>Given Amount:</strong> ${givenAmount.value}</p>
+          <p><strong>Balance:</strong> ${balanceField.value}</p>
+        ` : ""}
       `;
     });
   </script>
