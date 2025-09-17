@@ -15,6 +15,7 @@
   h2, h3 { text-align: center; margin: 5px 0; }
   .line { border-top: 1px dashed #000; margin: 5px 0; }
   .row { display: flex; justify-content: space-between; }
+  .message { text-align: center; margin-top: 10px; font-weight: bold; }
   button { margin-top: 10px; width: 100%; padding: 8px; cursor: pointer; }
   input { width: 100%; padding: 5px; margin-bottom: 10px; }
 </style>
@@ -65,9 +66,11 @@ fetchBtn.addEventListener("click", async () => {
       <div class="row"><span>Name:</span><span>${data.name}</span></div>
       <div class="row"><span>Flight:</span><span>${data.flight}</span></div>
       <div class="row"><span>Seat:</span><span>${data.seat}</span></div>
+      <div class="row"><span>Payment:</span><span>${data.paymentType}</span></div>
+      <div class="row"><span>Currency:</span><span>${data.currency}</span></div>
       <div class="line"></div>
-      <div class="row"><span>Adults:</span><span>${data.adults} x ${data.currency}</span></div>
-      <div class="row"><span>Kids:</span><span>${data.kids} x ${data.currency}</span></div>
+      <div class="row"><span>Adults:</span><span>${data.adults}</span></div>
+      <div class="row"><span>Kids:</span><span>${data.kids}</span></div>
       <div class="row"><span>GST:</span><span>${data.gst.toFixed(2)}</span></div>
       <div class="row"><span>Total:</span><span>${data.total.toFixed(2)}</span></div>
     `;
@@ -79,8 +82,11 @@ fetchBtn.addEventListener("click", async () => {
       `;
     }
 
-    html += `<div class="line"></div>
-             <p style="text-align:center;">Thank you for your payment!</p>`;
+    html += `
+      <div class="line"></div>
+      <p class="message">This package is valid for 3 hours</p>
+      <p style="text-align:center;">Thank you for your payment!</p>
+    `;
 
     receiptContainer.style.display = "block";
     receiptContainer.innerHTML = html;
