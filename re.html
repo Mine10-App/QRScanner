@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>View Bookings</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 20px; }
+  h2 { text-align: center; color: #333; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  th { background-color: #007bff; color: white; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+</style>
+</head>
+<body>
+
+<h2>Saved Bookings</h2>
+
+<table id="bookingsTable">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Name</th>
+      <th>Flight</th>
+      <th>Seat</th>
+      <th>Adults</th>
+      <th>Kids</th>
+      <th>Total</th>
+      <th>Payment Type</th>
+      <th>Balance</th>
+      <th>Receipt No</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Data will be inserted here -->
+  </tbody>
+</table>
+
+<script src="fire.js"></script>
+<script>
+async function fetchBookings() {
+  const tbody = document.querySelector("#bookingsTable tbody");
+  tbody.innerHTML = "<tr><td colspan='10'>Loading...</td></tr>";
+
+  try {
+    const snapshot = await db.collection("bookings").orderBy("timestamp", "desc").get();
+    tbody.innerHTML = "";
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${data.date || ''}</td>
+        <td>${data.name || ''}</td>
+        <td>${data.flight || ''}</td>
+        <td>${data.seat || ''}</td>
+        <td>${data.adults || 0}</td>
+        <td>${data.kids || 0}</td>
+        <td>${data.total.toFixed(2) || 0}</td>
+        <td>${data.paymentType || ''}</td>
+        <td>${data.balance != null ? data.balance.toFixed(2) : ''}</td>
+        <td>${data.receiptNo || ''}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="10" style="color:red;">Error fetching bookings: ${err.message}</td></tr>`;
+    console.error(err);
+  }
+}
+
+fetchBookings();
+</script>
+</body>
+</html>
