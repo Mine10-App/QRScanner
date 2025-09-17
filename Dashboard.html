@@ -48,11 +48,17 @@
     margin-top: 40px;
     font-size: 0.9rem;
   }
+  #welcome {
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
 
 <header>Booking System Dashboard</header>
+<div id="welcome"></div>
 
 <main>
   <button id="newBookingBtn">New Booking</button>
@@ -60,29 +66,41 @@
   <button id="dailyReportBtn">Daily Report</button>
   <button id="editBookingBtn">Edit / Delete Booking</button>
   <button id="voidPaymentBtn">Void Payment</button>
+  <button id="logoutBtn" style="background:red;">Logout</button>
 </main>
 
-<footer>&copy; 2025 Your Company Name</footer>
+<footer>&copy; 2025 Booking System</footer>
 
 <script>
+const welcomeDiv = document.getElementById("welcome");
+
+// Check if user is logged in
+const name = sessionStorage.getItem("name");
+if(!name){
+  window.location.href = "login.html";
+} else {
+  welcomeDiv.textContent = `Welcome, ${name}`;
+}
+
+// Button redirects
 document.getElementById("newBookingBtn").addEventListener("click", ()=>{
-  window.location.href = "booking.html"; // redirect to booking page
+  window.location.href = "booking.html";
 });
-
 document.getElementById("printReceiptBtn").addEventListener("click", ()=>{
-  window.location.href = "receipt.html"; // redirect to receipt print page
+  window.location.href = "receipt.html";
 });
-
 document.getElementById("dailyReportBtn").addEventListener("click", ()=>{
-  window.location.href = "daily_report.html"; // redirect to daily report
+  window.location.href = "daily_report.html";
 });
-
 document.getElementById("editBookingBtn").addEventListener("click", ()=>{
-  window.location.href = "edit_booking.html"; // redirect to edit/delete page
+  window.location.href = "edit_booking.html";
 });
-
 document.getElementById("voidPaymentBtn").addEventListener("click", ()=>{
-  window.location.href = "void_payment.html"; // redirect to void payment page
+  window.location.href = "void_payment.html";
+});
+document.getElementById("logoutBtn").addEventListener("click", ()=>{
+  sessionStorage.clear();
+  window.location.href = "login.html";
 });
 </script>
 
