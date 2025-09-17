@@ -10,7 +10,6 @@
   label { display: block; margin-top: 10px; font-weight: bold; }
   input, select, button { padding: 8px; width: 100%; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
   .readonly-field { background: #f0f0f0; }
-  .hidden { display: none; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
   .full-width { grid-column: 1 / -1; }
   .totals, .cash-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
@@ -58,11 +57,11 @@
     <div class="full-width">
       <label>Payment Type:</label>
       <select id="paymentType">
+        <option value="Card" selected>Card</option>
         <option value="Cash">Cash</option>
-        <option value="Card">Card</option>
       </select>
 
-      <div id="cashFields" class="cash-section hidden">
+      <div id="cashFields" class="cash-section">
         <div>
           <label>Given Amount:</label>
           <input type="number" id="givenAmount" min="0" step="0.01">
@@ -74,7 +73,7 @@
       </div>
 
       <label>Receipt No:</label>
-      <input type="text" id="receiptNo" readonly>
+      <input type="text" id="receiptNo" class="readonly-field" readonly>
     </div>
   </div>
 
@@ -129,11 +128,43 @@ const totalField = document.getElementById("totalField");
 const outputDiv = document.getElementById("output");
 
 dateField.value = new Date().toISOString().split('T')[0];
+cashFields.style.display = "none"; // hide cash fields initially
 
-function toggleCashFields(){
-  cashFields.style.display = paymentType.value === "Cash" ? "grid" : "none";
+// QR code parser
+function parseQR(code){
+  code = code.trim().toUpperCase().replace(/\s+/g,' ');
+  const allParts = code.split(' ');
+  let name="", flightNo="", seatNo="";
+  if(code.startsWith("TKVCPO")){
+    const tkIndex = code.indexOf("TK0");
+    if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex);}
+    const mlePos = code.indexOf("MLE");
+    if(mlePos!=-1){ const afterMLE = code.substring(mlePos).split(' ')[0]; if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);}
+  } else {
+    name = allParts[0].substring(2);
+    const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+    if(mleIndex!=-1){
+      const mleWord = allParts[mleIndex];
+      const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+      flightNo = mleWord.slice(-2)+nextWord;
+      const partsAfterMLE = allParts.slice(mleIndex+1);
+      for(let w of partsAfterMLE){
+        if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ seatNo = w.substring(5,w.length-4); break; }
+      }
+    }
+  }
+  return {name, flightNo, seatNo};
 }
 
+qrInput.addEventListener("change", ()=>{
+  const parsed = parseQR(qrInput.value);
+  if(parsed.name) nameField.value = parsed.name;
+  if(parsed.flightNo) flightField.value = parsed.flightNo;
+  if(parsed.seatNo) seatField.value = parsed.seatNo;
+  qrInput.value='';
+});
+
+// calculate totals and balance
 function calculate(){
   const curr = currencyType.value;
   const rate = rateType.value;
@@ -149,36 +180,37 @@ function calculate(){
   const subtotal = totalAdults+totalKids;
   const gstAmount = subtotal*(gstPercent/100);
   const total = subtotal+gstAmount;
+
   totalAdultsField.value = totalAdults.toFixed(2);
   totalKidsField.value = totalKids.toFixed(2);
   gstField.value = gstAmount.toFixed(2);
   totalField.value = total.toFixed(2);
+
   if(paymentType.value==="Cash"){
     const given = parseFloat(givenAmount.value)||0;
     balanceField.value = (given-total).toFixed(2);
-  } else balanceField.value="";
+  } else {
+    balanceField.value = "";
+  }
+
   return {subtotal, gstAmount, total};
 }
 
-paymentType.addEventListener("change", ()=>{
-  toggleCashFields();
-  calculate();
-});
+// toggle cash fields
+function toggleCashFields() {
+  if(paymentType.value==="Cash"){
+    cashFields.style.display = "grid";
+  } else {
+    cashFields.style.display = "none";
+    givenAmount.value = "";
+    balanceField.value = "";
+  }
+}
 
-[currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
-  el.addEventListener("input",calculate);
-  el.addEventListener("change",calculate);
-});
-
-window.addEventListener("DOMContentLoaded",()=>{
-  toggleCashFields();
-  calculate();
-});
-
-// Get next receipt number safely
-async function getNextReceiptNo(){
-  const counterRef = db.collection("counters").doc("receiptNo");
-  try{
+// get next receipt number safely with transaction
+async function getNextReceiptNo() {
+  const counterRef = db.collection("counters").doc("receiptCounter");
+  try {
     const nextReceiptNo = await db.runTransaction(async (transaction)=>{
       const doc = await transaction.get(counterRef);
       let current = 0;
@@ -198,43 +230,27 @@ async function getNextReceiptNo(){
   }
 }
 
-// Function to generate receipt HTML
-function generateReceiptHTML(data){
-  let html = `
-    <h2>Company Name</h2>
-    <h3>Cash Receipt</h3>
-    <div style="border-top:1px dashed #000;margin:5px 0;"></div>
-    <div style="display:flex;justify-content:space-between;"><span>Receipt No:</span><span>${data.receiptNo}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Date:</span><span>${data.date}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Name:</span><span>${data.name}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Flight:</span><span>${data.flight}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Seat:</span><span>${data.seat}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Payment:</span><span>${data.paymentType}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Currency:</span><span>${data.currency}</span></div>
-    <div style="border-top:1px dashed #000;margin:5px 0;"></div>
-    <div style="display:flex;justify-content:space-between;"><span>Adults:</span><span>${data.adults}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Kids:</span><span>${data.kids}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>GST:</span><span>${data.gst.toFixed(2)}</span></div>
-    <div style="display:flex;justify-content:space-between;"><span>Total:</span><span>${data.total.toFixed(2)}</span></div>
-  `;
-  if(data.paymentType === "Cash"){
-    html += `
-      <div style="display:flex;justify-content:space-between;"><span>Given:</span><span>${data.givenAmount.toFixed(2)}</span></div>
-      <div style="display:flex;justify-content:space-between;"><span>Balance:</span><span>${data.balance.toFixed(2)}</span></div>
-    `;
-  }
-  html += `
-    <div style="border-top:1px dashed #000;margin:5px 0;"></div>
-    <p style="text-align:center;font-weight:bold;">This package is valid for 3 hours</p>
-    <p style="text-align:center;">Thank you for your payment!</p>
-  `;
-  return html;
-}
+// event listeners
+paymentType.addEventListener("change", ()=>{
+  toggleCashFields();
+  calculate();
+});
 
+[currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
+  el.addEventListener("input", calculate);
+  el.addEventListener("change", calculate);
+});
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  toggleCashFields();
+  calculate();
+});
+
+// Save to Firebase
 document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const totals = calculate();
-  const newReceiptNo = await getNextReceiptNo();
-  receiptNo.value = newReceiptNo;
+  const nextReceiptNo = await getNextReceiptNo();
+  receiptNo.value = nextReceiptNo;
 
   const data = {
     date: dateField.value,
@@ -247,9 +263,9 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
     adults: parseInt(adultCount.value) || 0,
     kids: parseInt(kidCount.value) || 0,
     paymentType: paymentType.value,
-    givenAmount: paymentType.value === "Cash" ? parseFloat(givenAmount.value) || 0 : null,
-    balance: paymentType.value === "Cash" ? parseFloat(balanceField.value) || 0 : null,
-    receiptNo: newReceiptNo,
+    givenAmount: paymentType.value==="Cash"?parseFloat(givenAmount.value)||0:null,
+    balance: paymentType.value==="Cash"?parseFloat(balanceField.value)||0:null,
+    receiptNo: nextReceiptNo,
     totalAdults: parseFloat(totalAdultsField.value),
     totalKids: parseFloat(totalKidsField.value),
     gst: parseFloat(gstField.value),
@@ -257,27 +273,13 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
     timestamp: new Date()
   };
 
-  try{
+  try {
     await db.collection("bookings").add(data);
-    outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully!</p>`;
-
-    // Ask how many copies to print
-    let copies = prompt("How many receipts to print?", "1");
-    copies = parseInt(copies) || 1;
-
-    const receiptHTML = generateReceiptHTML(data);
-    for(let i=0;i<copies;i++){
-      const printWindow = window.open('','_blank');
-      printWindow.document.write(receiptHTML);
-      printWindow.document.close();
-      printWindow.print();
-    }
-
+    outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully! Receipt No: ${nextReceiptNo}</p>`;
     document.getElementById("bookingForm").reset();
     dateField.value = new Date().toISOString().split('T')[0];
     toggleCashFields();
     calculate();
-
   } catch(err){
     console.error("Error saving booking:", err);
     outputDiv.innerHTML = `<p style="color:red;">Error saving booking: ${err.message}</p>`;
