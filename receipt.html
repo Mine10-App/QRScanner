@@ -6,7 +6,7 @@
 <style>
   body { font-family: monospace; background: #f4f6f9; padding: 20px; }
   #receiptContainer { 
-    width: 300px; /* typical thermal receipt width */
+    width: 300px;
     margin: auto;
     background: #fff; 
     padding: 10px; 
@@ -38,14 +38,14 @@
 <script src="fire1.js"></script>
 
 <script>
-let companyInfo = null; // will be loaded from Firestore
+let companyInfo = null;
 
 const receiptInput = document.getElementById("receiptInput");
 const fetchBtn = document.getElementById("fetchBtn");
 const printBtn = document.getElementById("printBtn");
 const receiptContainer = document.getElementById("receiptContainer");
 
-// Load company info once at page load
+// Load company info once
 async function loadCompanyInfo() {
   try {
     const snapshot = await db.collection("company").doc("info").get();
@@ -56,12 +56,16 @@ async function loadCompanyInfo() {
     }
   } catch(err){
     console.error("Error loading company info:", err);
-    companyInfo = { name: "Error Loading Company", address: "-", phone: "-" };
+    companyInfo = { name: "Error Company", address: "-", phone: "-" };
   }
 }
-loadCompanyInfo();
 
+// Ensure company info is ready before clicking
 fetchBtn.addEventListener("click", async () => {
+  if(!companyInfo){
+    await loadCompanyInfo();
+  }
+
   const receiptNo = parseInt(receiptInput.value);
   if(!receiptNo) return alert("Enter a valid receipt number");
 
@@ -80,16 +84,18 @@ fetchBtn.addEventListener("click", async () => {
 
     const data = snapshot.docs[0].data();
 
-    // Format date (if Firestore Timestamp)
-    const receiptDate = data.date?.toDate 
-      ? data.date.toDate().toLocaleDateString()
-      : data.date;
+    // Handle date (Firestore timestamp or plain string)
+    let receiptDate = "";
+    if(data.date?.toDate){
+      receiptDate = data.date.toDate().toLocaleDateString();
+    } else {
+      receiptDate = data.date ?? "";
+    }
 
     // Build receipt
     let html = `<h2>${companyInfo?.name ?? ""}</h2>`;
     html += `<div style="text-align:center;">${companyInfo?.address ?? ""}<br>${companyInfo?.phone ?? ""}</div>`;
 
-    // Show VOID if applicable
     if(data.voided){
       html += `<div class="void">VOID</div>`;
       if(data.voidReason){
@@ -101,7 +107,7 @@ fetchBtn.addEventListener("click", async () => {
       <h3>Cash Receipt</h3>
       <div class="line"></div>
       <div class="row"><span>Receipt No:</span><span>${data.receiptNo}</span></div>
-      <div class="row"><span>Date:</span><span>${receiptDate ?? ""}</span></div>
+      <div class="row"><span>Date:</span><span>${receiptDate}</span></div>
       <div class="row"><span>Name:</span><span>${data.name ?? ""}</span></div>
       <div class="row"><span>Flight:</span><span>${data.flight ?? ""}</span></div>
       <div class="row"><span>Seat:</span><span>${data.seat ?? ""}</span></div>
@@ -139,7 +145,6 @@ fetchBtn.addEventListener("click", async () => {
   }
 });
 
-// Print button
 printBtn.addEventListener("click", () => {
   window.print();
 });
