@@ -2,80 +2,98 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Saved Bookings</title>
+<title>Cash Receipt</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f9; }
-  h2 { text-align: center; }
-  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-  th, td { padding: 8px 12px; border: 1px solid #ccc; text-align: left; }
-  th { background: #007bff; color: white; }
-  tr:nth-child(even) { background: #f9f9f9; }
+  body { font-family: monospace; background: #f4f6f9; padding: 20px; }
+  #receiptContainer { 
+    width: 300px; /* typical thermal receipt width */
+    margin: auto;
+    background: #fff; 
+    padding: 10px; 
+    border: 1px solid #000; 
+  }
+  h2, h3 { text-align: center; margin: 5px 0; }
+  .line { border-top: 1px dashed #000; margin: 5px 0; }
+  .row { display: flex; justify-content: space-between; }
+  button { margin-top: 10px; width: 100%; padding: 8px; cursor: pointer; }
+  input { width: 100%; padding: 5px; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 
-<h2>Saved Bookings</h2>
-<table id="bookingsTable">
-  <thead>
-    <tr>
-      <th>Receipt No</th>
-      <th>Date</th>
-      <th>Name</th>
-      <th>Flight</th>
-      <th>Seat</th>
-      <th>Adults</th>
-      <th>Kids</th>
-      <th>Payment Type</th>
-      <th>Total</th>
-    </tr>
-  </thead>
-  <tbody id="tableBody">
-    <tr><td colspan="9" style="text-align:center;">Loading...</td></tr>
-  </tbody>
-</table>
+<h2>Print Cash Receipt</h2>
+
+<input type="number" id="receiptInput" placeholder="Enter Receipt No">
+<button id="fetchBtn">Generate Receipt</button>
+
+<div id="receiptContainer" style="display:none;"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="fire1.js"></script>
 
 <script>
-const tableBody = document.getElementById("tableBody");
+const receiptInput = document.getElementById("receiptInput");
+const fetchBtn = document.getElementById("fetchBtn");
+const receiptContainer = document.getElementById("receiptContainer");
 
-async function fetchBookings() {
+fetchBtn.addEventListener("click", async () => {
+  const receiptNo = parseInt(receiptInput.value);
+  if(!receiptNo) return alert("Enter a valid receipt number");
+
   try {
     const snapshot = await db.collection("bookings")
-      .orderBy("receiptNo", "asc")
+      .where("receiptNo", "==", receiptNo)
+      .limit(1)
       .get();
 
-    if(snapshot.empty) {
-      tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No bookings found</td></tr>';
+    if(snapshot.empty){
+      receiptContainer.style.display = "block";
+      receiptContainer.innerHTML = "<p style='text-align:center;'>Receipt not found</p>";
       return;
     }
 
-    tableBody.innerHTML = '';
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${data.receiptNo}</td>
-        <td>${data.date}</td>
-        <td>${data.name}</td>
-        <td>${data.flight}</td>
-        <td>${data.seat}</td>
-        <td>${data.adults}</td>
-        <td>${data.kids}</td>
-        <td>${data.paymentType}</td>
-        <td>${data.total.toFixed(2)}</td>
-      `;
-      tableBody.appendChild(row);
-    });
-  } catch(err) {
-    console.error("Error fetching bookings:", err);
-    tableBody.innerHTML = `<tr><td colspan="9" style="color:red;text-align:center;">Error fetching bookings: ${err.message}</td></tr>`;
-  }
-}
+    const data = snapshot.docs[0].data();
 
-window.addEventListener("DOMContentLoaded", fetchBookings);
+    // Build receipt
+    let html = `
+      <h2>Company Name</h2>
+      <h3>Cash Receipt</h3>
+      <div class="line"></div>
+      <div class="row"><span>Receipt No:</span><span>${data.receiptNo}</span></div>
+      <div class="row"><span>Date:</span><span>${data.date}</span></div>
+      <div class="row"><span>Name:</span><span>${data.name}</span></div>
+      <div class="row"><span>Flight:</span><span>${data.flight}</span></div>
+      <div class="row"><span>Seat:</span><span>${data.seat}</span></div>
+      <div class="line"></div>
+      <div class="row"><span>Adults:</span><span>${data.adults} x ${data.currency}</span></div>
+      <div class="row"><span>Kids:</span><span>${data.kids} x ${data.currency}</span></div>
+      <div class="row"><span>GST:</span><span>${data.gst.toFixed(2)}</span></div>
+      <div class="row"><span>Total:</span><span>${data.total.toFixed(2)}</span></div>
+    `;
+
+    if(data.paymentType === "Cash"){
+      html += `
+        <div class="row"><span>Given:</span><span>${data.givenAmount.toFixed(2)}</span></div>
+        <div class="row"><span>Balance:</span><span>${data.balance.toFixed(2)}</span></div>
+      `;
+    }
+
+    html += `<div class="line"></div>
+             <p style="text-align:center;">Thank you for your payment!</p>`;
+
+    receiptContainer.style.display = "block";
+    receiptContainer.innerHTML = html;
+
+    // Optional: auto print
+    window.print();
+
+  } catch(err){
+    console.error("Error fetching receipt:", err);
+    receiptContainer.style.display = "block";
+    receiptContainer.innerHTML = "<p style='text-align:center;color:red;'>Error fetching receipt</p>";
+  }
+});
 </script>
 
 </body>
