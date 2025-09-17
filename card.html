@@ -103,11 +103,10 @@
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
 <script type="module">
-  // --- Import rates and Firestore DB ---
   import { rates } from './rate.js';
   import { db, collection, addDoc } from './fire.js';
 
-  // --- DOM Elements ---
+  // --- DOM elements ---
   const dateField = document.getElementById("date");
   const qrInput = document.getElementById("qrInput");
   const nameField = document.getElementById("name");
@@ -130,6 +129,7 @@
 
   dateField.value = new Date().toISOString().split('T')[0];
 
+  // --- QR parse function ---
   function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     const allParts = code.split(' ');
@@ -163,6 +163,7 @@
     qrInput.value='';
   });
 
+  // --- Calculate totals & GST ---
   function calculate(){
     const curr = currencyType.value;
     const rate = rateType.value;
@@ -189,19 +190,20 @@
     return {subtotal, gstAmount, total};
   }
 
+  // --- Event listeners ---
   paymentType.addEventListener("change", ()=>{
     cashFields.classList.toggle("hidden", paymentType.value!=="Cash");
     calculate();
   });
 
   [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
-    el.addEventListener("input",calculate);
-    el.addEventListener("change",calculate);
+    el.addEventListener("input", calculate);
+    el.addEventListener("change", calculate);
   });
 
   calculate();
 
-  // --- Save Entry ---
+  // --- Save entry to Firebase ---
   document.getElementById("saveBtn").addEventListener("click", async ()=>{
     const {subtotal, gstAmount, total} = calculate();
     if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
