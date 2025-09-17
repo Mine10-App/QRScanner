@@ -102,140 +102,166 @@
 
 <div id="output" style="max-width:900px;margin:20px auto;"></div>
 
-<script src="rate.js"></script>
-<script type="module" src="fire.js"></script>
+<!-- Firebase + Main Script -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-<script>
-const dateField = document.getElementById("date");
-const qrInput = document.getElementById("qrInput");
-const nameField = document.getElementById("name");
-const flightField = document.getElementById("flight");
-const seatField = document.getElementById("seat");
-const currencyType = document.getElementById("currencyType");
-const rateType = document.getElementById("rateType");
-const adultCount = document.getElementById("adultCount");
-const kidCount = document.getElementById("kidCount");
-const paymentType = document.getElementById("paymentType");
-const givenAmount = document.getElementById("givenAmount");
-const balanceField = document.getElementById("balanceField");
-const cashFields = document.getElementById("cashFields");
-const receiptNo = document.getElementById("receiptNo");
-const totalAdultsField = document.getElementById("totalAdults");
-const totalKidsField = document.getElementById("totalKids");
-const gstField = document.getElementById("gstField");
-const totalField = document.getElementById("totalField");
-const outputDiv = document.getElementById("output");
-
-dateField.value = new Date().toISOString().split('T')[0];
-
-function parseQR(code){
-  code = code.trim().toUpperCase().replace(/\s+/g,' ');
-  const allParts = code.split(' ');
-  let name="", flightNo="", seatNo="";
-  if(code.startsWith("TKVCPO")){
-    const tkIndex = code.indexOf("TK0");
-    if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex);}
-    const mlePos = code.indexOf("MLE");
-    if(mlePos!=-1){ const afterMLE = code.substring(mlePos).split(' ')[0]; if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);}
-  } else {
-    name = allParts[0].substring(2);
-    const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
-    if(mleIndex!=-1){
-      const mleWord = allParts[mleIndex];
-      const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
-      flightNo = mleWord.slice(-2)+nextWord;
-      const partsAfterMLE = allParts.slice(mleIndex+1);
-      for(let w of partsAfterMLE){
-        if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ seatNo = w.substring(5,w.length-4); break; }
-      }
-    }
-  }
-  return {name, flightNo, seatNo};
-}
-
-qrInput.addEventListener("change", ()=>{
-  const parsed = parseQR(qrInput.value);
-  if(parsed.name) nameField.value = parsed.name;
-  if(parsed.flightNo) flightField.value = parsed.flightNo;
-  if(parsed.seatNo) seatField.value = parsed.seatNo;
-  qrInput.value='';
-});
-
-function calculate(){
-  const curr = currencyType.value;
-  const rate = rateType.value;
-  const adults = parseInt(adultCount.value)||0;
-  const kids = parseInt(kidCount.value)||0;
-  const adultKey = `Adult${rate}${curr}`;
-  const kidKey = `Kids${rate}${curr}`;
-  const adultRate = rates[adultKey].price;
-  const kidRate = rates[kidKey].price;
-  const gstPercent = rates[adultKey].GST;
-  const totalAdults = adults*adultRate;
-  const totalKids = kids*kidRate;
-  const subtotal = totalAdults+totalKids;
-  const gstAmount = subtotal*(gstPercent/100);
-  const total = subtotal+gstAmount;
-  totalAdultsField.value = totalAdults.toFixed(2);
-  totalKidsField.value = totalKids.toFixed(2);
-  gstField.value = gstAmount.toFixed(2);
-  totalField.value = total.toFixed(2);
-  if(paymentType.value==="Cash"){
-    const given = parseFloat(givenAmount.value)||0;
-    balanceField.value = (given-total).toFixed(2);
-  } else balanceField.value="";
-  return {subtotal, gstAmount, total};
-}
-
-paymentType.addEventListener("change", ()=>{
-  cashFields.classList.toggle("hidden", paymentType.value!=="Cash");
-  calculate();
-});
-
-[currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
-  el.addEventListener("input",calculate);
-  el.addEventListener("change",calculate);
-});
-
-calculate();
-
-// --- ONLY CHANGE: save to Firebase ---
-document.getElementById("saveBtn").addEventListener("click", async ()=>{
-  const {subtotal, gstAmount, total} = calculate();
-  if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
-  
-  const entryData = {
-    date: dateField.value,
-    name: nameField.value,
-    flightNo: flightField.value,
-    seatNo: seatField.value,
-    currency: currencyType.value,
-    rateType: rateType.value,
-    adults: adultCount.value,
-    kids: kidCount.value,
-    totalAdults: totalAdultsField.value,
-    totalKids: totalKidsField.value,
-    gst: gstField.value,
-    total: totalField.value,
-    paymentType: paymentType.value,
-    givenAmount: paymentType.value==="Cash"?givenAmount.value:null,
-    balance: paymentType.value==="Cash"?balanceField.value:null,
-    receiptNo: receiptNo.value.trim()
+  // --- Firebase Config ---
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
 
-  try{
-    // Using modular Firebase properly
-    await addDoc(collection(db, "bookings"), entryData);
-    outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
-    document.getElementById("bookingForm").reset();
-    calculate();
-  }catch(err){
-    console.error(err);
-    alert("Error saving to Firebase");
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- Sample rates object ---
+  const rates = {
+    "AdultAUSD": {price: 100, GST: 12},
+    "AdultBUSD": {price: 90, GST: 12},
+    "KidsAUSD": {price: 50, GST: 12},
+    "KidsBUSD": {price: 45, GST: 12},
+    "AdultAMVR": {price: 1500, GST: 12},
+    "AdultBMVR": {price: 1400, GST: 12},
+    "KidsAMVR": {price: 750, GST: 12},
+    "KidsBMVR": {price: 700, GST: 12}
+  };
+
+  // --- DOM Elements ---
+  const dateField = document.getElementById("date");
+  const qrInput = document.getElementById("qrInput");
+  const nameField = document.getElementById("name");
+  const flightField = document.getElementById("flight");
+  const seatField = document.getElementById("seat");
+  const currencyType = document.getElementById("currencyType");
+  const rateType = document.getElementById("rateType");
+  const adultCount = document.getElementById("adultCount");
+  const kidCount = document.getElementById("kidCount");
+  const paymentType = document.getElementById("paymentType");
+  const givenAmount = document.getElementById("givenAmount");
+  const balanceField = document.getElementById("balanceField");
+  const cashFields = document.getElementById("cashFields");
+  const receiptNo = document.getElementById("receiptNo");
+  const totalAdultsField = document.getElementById("totalAdults");
+  const totalKidsField = document.getElementById("totalKids");
+  const gstField = document.getElementById("gstField");
+  const totalField = document.getElementById("totalField");
+  const outputDiv = document.getElementById("output");
+
+  dateField.value = new Date().toISOString().split('T')[0];
+
+  function parseQR(code){
+    code = code.trim().toUpperCase().replace(/\s+/g,' ');
+    const allParts = code.split(' ');
+    let name="", flightNo="", seatNo="";
+    if(code.startsWith("TKVCPO")){
+      const tkIndex = code.indexOf("TK0");
+      if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex);}
+      const mlePos = code.indexOf("MLE");
+      if(mlePos!=-1){ const afterMLE = code.substring(mlePos).split(' ')[0]; if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);}
+    } else {
+      name = allParts[0].substring(2);
+      const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+      if(mleIndex!=-1){
+        const mleWord = allParts[mleIndex];
+        const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+        flightNo = mleWord.slice(-2)+nextWord;
+        const partsAfterMLE = allParts.slice(mleIndex+1);
+        for(let w of partsAfterMLE){
+          if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ seatNo = w.substring(5,w.length-4); break; }
+        }
+      }
+    }
+    return {name, flightNo, seatNo};
   }
-});
+
+  qrInput.addEventListener("change", ()=>{
+    const parsed = parseQR(qrInput.value);
+    if(parsed.name) nameField.value = parsed.name;
+    if(parsed.flightNo) flightField.value = parsed.flightNo;
+    if(parsed.seatNo) seatField.value = parsed.seatNo;
+    qrInput.value='';
+  });
+
+  function calculate(){
+    const curr = currencyType.value;
+    const rate = rateType.value;
+    const adults = parseInt(adultCount.value)||0;
+    const kids = parseInt(kidCount.value)||0;
+    const adultKey = `Adult${rate}${curr}`;
+    const kidKey = `Kids${rate}${curr}`;
+    const adultRate = rates[adultKey].price;
+    const kidRate = rates[kidKey].price;
+    const gstPercent = rates[adultKey].GST;
+    const totalAdults = adults*adultRate;
+    const totalKids = kids*kidRate;
+    const subtotal = totalAdults+totalKids;
+    const gstAmount = subtotal*(gstPercent/100);
+    const total = subtotal+gstAmount;
+    totalAdultsField.value = totalAdults.toFixed(2);
+    totalKidsField.value = totalKids.toFixed(2);
+    gstField.value = gstAmount.toFixed(2);
+    totalField.value = total.toFixed(2);
+    if(paymentType.value==="Cash"){
+      const given = parseFloat(givenAmount.value)||0;
+      balanceField.value = (given-total).toFixed(2);
+    } else balanceField.value="";
+    return {subtotal, gstAmount, total};
+  }
+
+  paymentType.addEventListener("change", ()=>{
+    cashFields.classList.toggle("hidden", paymentType.value!=="Cash");
+    calculate();
+  });
+
+  [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
+    el.addEventListener("input",calculate);
+    el.addEventListener("change",calculate);
+  });
+
+  calculate();
+
+  // --- Save Entry to Firebase ---
+  document.getElementById("saveBtn").addEventListener("click", async ()=>{
+    const {subtotal, gstAmount, total} = calculate();
+    if(!receiptNo.value.trim()){ alert("Please enter Receipt No."); return; }
+    
+    const entryData = {
+      date: dateField.value,
+      name: nameField.value,
+      flightNo: flightField.value,
+      seatNo: seatField.value,
+      currency: currencyType.value,
+      rateType: rateType.value,
+      adults: adultCount.value,
+      kids: kidCount.value,
+      totalAdults: totalAdultsField.value,
+      totalKids: totalKidsField.value,
+      gst: gstField.value,
+      total: totalField.value,
+      paymentType: paymentType.value,
+      givenAmount: paymentType.value==="Cash"?givenAmount.value:null,
+      balance: paymentType.value==="Cash"?balanceField.value:null,
+      receiptNo: receiptNo.value.trim()
+    };
+
+    try{
+      await addDoc(collection(db, "bookings"), entryData);
+      outputDiv.innerHTML = `<p style="color:green;">Entry saved successfully! Receipt No: ${entryData.receiptNo}</p>`;
+      document.getElementById("bookingForm").reset();
+      calculate();
+    }catch(err){
+      console.error(err);
+      alert("Error saving to Firebase. Check console for details.");
+    }
+  });
+
 </script>
 
 </body>
 </html>
-
