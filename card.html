@@ -227,6 +227,27 @@
     rateType.value = "A";
     currencyType.value = "USD";
   });
+
+  // Update totals live
+adultCount.addEventListener("input", () => {
+  const { subtotal, gstAmount, total, adultRate, kidRate, gstPercent } = calculate();
+  outputDiv.innerHTML = `
+    <h3>Live Calculation</h3>
+    <p><strong>Adults:</strong> ${adultCount.value} × ${adultRate.toFixed(2)}</p>
+    <p><strong>Kids:</strong> ${kidCount.value} × ${kidRate.toFixed(2)}</p>
+    <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)}</p>
+    <p><strong>GST (${gstPercent}%):</strong> ${gstAmount.toFixed(2)}</p>
+    <p><strong>Total:</strong> ${total.toFixed(2)}</p>
+  `;
+});
+rateType.addEventListener("change", adultCount.dispatchEvent.bind(adultCount, new Event("input")));
+currencyType.addEventListener("change", adultCount.dispatchEvent.bind(adultCount, new Event("input")));
+kidCount.addEventListener("input", adultCount.dispatchEvent.bind(adultCount, new Event("input")));
+
+// Initialize preview once
+adultCount.dispatchEvent(new Event("input"));
+
 </script>
 </body>
 </html>
+
