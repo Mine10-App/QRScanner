@@ -130,6 +130,7 @@ const outputDiv = document.getElementById("output");
 
 dateField.value = new Date().toISOString().split('T')[0];
 
+// QR code parser
 function parseQR(code){
   code = code.trim().toUpperCase().replace(/\s+/g,' ');
   const allParts = code.split(' ');
@@ -163,6 +164,7 @@ qrInput.addEventListener("change", ()=>{
   qrInput.value='';
 });
 
+// Calculate totals and balance
 function calculate(){
   const curr = currencyType.value;
   const rate = rateType.value;
@@ -178,6 +180,7 @@ function calculate(){
   const subtotal = totalAdults+totalKids;
   const gstAmount = subtotal*(gstPercent/100);
   const total = subtotal+gstAmount;
+
   totalAdultsField.value = totalAdults.toFixed(2);
   totalKidsField.value = totalKids.toFixed(2);
   gstField.value = gstAmount.toFixed(2);
@@ -194,7 +197,7 @@ function calculate(){
 }
 
 // Toggle cash fields
-paymentType.addEventListener("change", ()=>{
+function toggleCashFields() {
   if(paymentType.value==="Cash"){
     cashFields.classList.remove("hidden");
   } else {
@@ -202,17 +205,29 @@ paymentType.addEventListener("change", ()=>{
     givenAmount.value = "";
     balanceField.value = "";
   }
+}
+
+// Run toggle on page load
+toggleCashFields();
+
+// Event listeners
+paymentType.addEventListener("change", ()=>{
+  toggleCashFields();
   calculate();
 });
 
 [currencyType, rateType, adultCount, kidCount, givenAmount].forEach(el=>{
-  el.addEventListener("input",calculate);
-  el.addEventListener("change",calculate);
+  el.addEventListener("input", calculate);
+  el.addEventListener("change", calculate);
 });
 
+// Live balance while typing
+givenAmount.addEventListener("input", calculate);
+
+// Initial calculation
 calculate();
 
-// Save booking
+// Save booking to Firebase
 document.getElementById("saveBtn").addEventListener("click", async () => {
   const totals = calculate();
   const data = {
@@ -236,13 +251,14 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     timestamp: new Date()
   };
 
-  try{
+  try {
     await db.collection("bookings").add(data);
     outputDiv.innerHTML = `<p style="color:green;">Booking saved successfully!</p>`;
     document.getElementById("bookingForm").reset();
     dateField.value = new Date().toISOString().split('T')[0];
+    toggleCashFields();
     calculate();
-  } catch(err){
+  } catch(err) {
     console.error("Error saving booking:", err);
     outputDiv.innerHTML = `<p style="color:red;">Error saving booking: ${err.message}</p>`;
   }
