@@ -29,7 +29,7 @@
 <button id="fetchBtn">Generate Receipt</button>
 
 <div id="receiptContainer" style="display:none;"></div>
-
+<script src="Co.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="fire1.js"></script>
@@ -58,7 +58,7 @@ fetchBtn.addEventListener("click", async () => {
     const data = snapshot.docs[0].data();
 
     // Build receipt
-    let html = `<h2>Company Name</h2>`;
+    let html = `<h2>${companyInfo.name}</h2>`;
 
     // Show VOID if applicable
     if(data.voided){
