@@ -9,11 +9,6 @@
     measurementId: "G-WQEEHEPWG3"
   };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-
-// Initialize Firestore
 const db = firebase.firestore();
-
-// Make db globally accessible
-window.db = db;
+window.db = db; // important!
