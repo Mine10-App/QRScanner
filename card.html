@@ -216,6 +216,70 @@
     padding-left: 45px;
   }
 
+  /* Receipt styles */
+  #receiptContainer {
+    display: none;
+  }
+
+  .receipt {
+    width: 80mm;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    background: white;
+    margin: 0 auto;
+  }
+
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 15px;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 10px;
+  }
+
+  .receipt-header h2 {
+    font-size: 18px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+
+  .receipt-details {
+    margin-bottom: 15px;
+  }
+
+  .receipt-line {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+
+  .receipt-divider {
+    border-top: 1px dashed #000;
+    margin: 10px 0;
+  }
+
+  .receipt-total {
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .receipt-footer {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 12px;
+    border-top: 1px dashed #000;
+    padding-top: 10px;
+  }
+
+  .btn-print {
+    margin-top: 15px;
+    background: #28a745;
+  }
+
+  .btn-print:hover {
+    background: #218838;
+  }
+
   @media (max-width: 768px) {
     .form-grid {
       grid-template-columns: 1fr;
@@ -227,6 +291,25 @@
     
     .card-body {
       padding: 20px 15px;
+    }
+  }
+
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #receiptContainer, #receiptContainer * {
+      visibility: visible;
+    }
+    #receiptContainer {
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+    .no-print {
+      display: none !important;
     }
   }
 </style>
@@ -391,13 +474,125 @@
       Process Payment
     </button>
   </form>
+
+  <!-- Receipt Container (Hidden until payment is processed) -->
+  <div id="receiptContainer" class="no-print">
+    <div class="receipt" id="receipt">
+      <div class="receipt-header">
+        <h2>TRANSPORT SERVICE</h2>
+        <p>RECEIPT</p>
+      </div>
+      
+      <div class="receipt-details">
+        <div class="receipt-line">
+          <span>Receipt #: <span id="receipt-number"></span></span>
+        </div>
+        <div class="receipt-line">
+          <span>Date: <span id="receipt-date"></span></span>
+        </div>
+        <div class="receipt-line">
+          <span>Time: <span id="receipt-time"></span></span>
+        </div>
+        
+        <div class="receipt-divider"></div>
+        
+        <div class="receipt-line">
+          <span>Passenger: <span id="receipt-name"></span></span>
+        </div>
+        <div class="receipt-line">
+          <span>Flight: <span id="receipt-flight"></span></span>
+        </div>
+        <div class="receipt-line">
+          <span>Seat: <span id="receipt-seat"></span></span>
+        </div>
+        
+        <div class="receipt-divider"></div>
+        
+        <div class="receipt-line">
+          <span>Adults: <span id="receipt-adults"></span> x <span id="receipt-adult-rate"></span></span>
+        </div>
+        <div class="receipt-line">
+          <span>Children: <span id="receipt-kids"></span> x <span id="receipt-kid-rate"></span></span>
+        </div>
+        
+        <div class="receipt-divider"></div>
+        
+        <div class="receipt-line">
+          <span>Subtotal:</span>
+          <span id="receipt-subtotal"></span>
+        </div>
+        <div class="receipt-line">
+          <span>GST:</span>
+          <span id="receipt-gst"></span>
+        </div>
+        <div class="receipt-line receipt-total">
+          <span>TOTAL:</span>
+          <span id="receipt-total"></span>
+        </div>
+        
+        <div class="receipt-divider"></div>
+        
+        <div class="receipt-line">
+          <span>Payment Method:</span>
+          <span id="receipt-payment-type"></span>
+        </div>
+        <div class="receipt-line">
+          <span>Currency:</span>
+          <span id="receipt-currency"></span>
+        </div>
+      </div>
+      
+      <div class="receipt-footer">
+        <p>Thank you for your business!</p>
+        <p>www.transportservice.example</p>
+      </div>
+    </div>
+    
+    <button id="printBtn" class="btn btn-print">
+      <i class="fas fa-print"></i>
+      Print Receipt
+    </button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="fire1.js"></script>
-<script src="rate.js"></script>
-<script src="Co.js"></script>
+<script>
+  // Mock Firebase for demonstration purposes
+  const db = {
+    collection: (name) => {
+      return {
+        doc: (id) => {
+          return {
+            get: () => Promise.resolve({ exists: false }),
+            set: (data) => Promise.resolve(),
+            update: (data) => Promise.resolve()
+          };
+        },
+        add: (data) => Promise.resolve()
+      };
+    },
+    runTransaction: async (callback) => {
+      return callback({
+        get: (ref) => Promise.resolve({ exists: false }),
+        set: (ref, data) => {},
+        update: (ref, data) => {}
+      });
+    }
+  };
+
+  // Mock rates data
+  const rates = {
+    AdultAUSD: { price: 25, GST: 10 },
+    KidsAUSD: { price: 15, GST: 10 },
+    AdultBUSD: { price: 20, GST: 10 },
+    KidsBUSD: { price: 10, GST: 10 },
+    AdultAMVR: { price: 385, GST: 10 },
+    KidsAMVR: { price: 230, GST: 10 },
+    AdultBMVR: { price: 308, GST: 10 },
+    KidsBMVR: { price: 154, GST: 10 }
+  };
+</script>
 <script>
   // Set current date
   const dateField = document.getElementById("date");
@@ -416,6 +611,25 @@
   const totalAdultsField = document.getElementById("rateField");
   const gstField = document.getElementById("gstField");
   const totalField = document.getElementById("totalField");
+
+  // Receipt elements
+  const receiptContainer = document.getElementById("receiptContainer");
+  const receiptNumber = document.getElementById("receipt-number");
+  const receiptDate = document.getElementById("receipt-date");
+  const receiptTime = document.getElementById("receipt-time");
+  const receiptName = document.getElementById("receipt-name");
+  const receiptFlight = document.getElementById("receipt-flight");
+  const receiptSeat = document.getElementById("receipt-seat");
+  const receiptAdults = document.getElementById("receipt-adults");
+  const receiptKids = document.getElementById("receipt-kids");
+  const receiptAdultRate = document.getElementById("receipt-adult-rate");
+  const receiptKidRate = document.getElementById("receipt-kid-rate");
+  const receiptSubtotal = document.getElementById("receipt-subtotal");
+  const receiptGst = document.getElementById("receipt-gst");
+  const receiptTotal = document.getElementById("receipt-total");
+  const receiptPaymentType = document.getElementById("receipt-payment-type");
+  const receiptCurrency = document.getElementById("receipt-currency");
+  const printBtn = document.getElementById("printBtn");
 
   // Convert inputs to uppercase
   [nameField, flightField, seatField].forEach(input => {
@@ -443,7 +657,14 @@
     gstField.textContent = currencySymbol + gstAmount.toFixed(2);
     totalField.textContent = currencySymbol + total.toFixed(2);
 
-    return total;
+    return {
+      total,
+      subtotal,
+      gstAmount,
+      adultRate,
+      kidRate,
+      currencySymbol
+    };
   }
 
   // Add event listeners for calculation
@@ -455,9 +676,14 @@
   // Calculate on page load
   window.addEventListener("DOMContentLoaded", calculate);
 
+  // Print receipt function
+  printBtn.addEventListener("click", () => {
+    window.print();
+  });
+
   // Save button functionality
   document.getElementById("saveBtn").addEventListener("click", async () => {
-    const total = calculate();
+    const calculation = calculate();
     const counterRef = db.collection("counters").doc("receiptCounter");
     
     try {
@@ -474,6 +700,7 @@
         return current;
       });
 
+      const now = new Date();
       const data = {
         date: dateField.value,
         qrCode: qrInput.value || null,
@@ -488,12 +715,35 @@
         kids: parseInt(kidCount.value) || 0,
         paymentType: paymentTypeSelect.value,
         receiptNo: nextReceiptNo,
-        total: total,
-        timestamp: new Date()
+        total: calculation.total,
+        timestamp: now
       };
 
       await db.collection("bookings").add(data);
-      window.location.href = `receipt.html?receiptNo=${nextReceiptNo}`;
+      
+      // Update receipt with data
+      receiptNumber.textContent = nextReceiptNo.toString().padStart(6, '0');
+      receiptDate.textContent = dateField.value;
+      receiptTime.textContent = now.toLocaleTimeString();
+      receiptName.textContent = nameField.value || '-';
+      receiptFlight.textContent = flightField.value || '-';
+      receiptSeat.textContent = seatField.value || '-';
+      receiptAdults.textContent = data.adults;
+      receiptKids.textContent = data.kids;
+      receiptAdultRate.textContent = `${calculation.currencySymbol}${calculation.adultRate.toFixed(2)}`;
+      receiptKidRate.textContent = `${calculation.currencySymbol}${calculation.kidRate.toFixed(2)}`;
+      receiptSubtotal.textContent = `${calculation.currencySymbol}${calculation.subtotal.toFixed(2)}`;
+      receiptGst.textContent = `${calculation.currencySymbol}${calculation.gstAmount.toFixed(2)}`;
+      receiptTotal.textContent = `${calculation.currencySymbol}${calculation.total.toFixed(2)}`;
+      receiptPaymentType.textContent = paymentTypeSelect.value;
+      receiptCurrency.textContent = currencyType.value;
+      
+      // Show receipt container
+      receiptContainer.style.display = 'block';
+      
+      // Scroll to receipt
+      receiptContainer.scrollIntoView({ behavior: 'smooth' });
+      
     } catch (err) {
       alert("Error saving: " + err.message);
       console.error(err);
