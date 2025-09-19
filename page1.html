@@ -1,123 +1,491 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Shift Management</title>
-  <style>
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:20px;background:#f4f6fb}
-    .container{max-width:900px;margin:0 auto}
-    h1{margin-bottom:8px}
-    .row{display:flex;gap:16px;flex-wrap:wrap}
-    .card{background:white;padding:20px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);flex:1;min-width:260px}
-    .status{font-weight:700;margin:6px 0}
-    .meta{color:#666;font-size:13px}
-    button{padding:10px 14px;border-radius:8px;border:0;cursor:pointer}
-    .open{background:#16a34a;color:white}
-    .close{background:#ef4444;color:white}
-    .disabled{opacity:.45;cursor:not-allowed}
-    .controls{margin-top:12px}
-    #msg{margin-top:12px;color:#333}
-    .small{font-size:13px;color:#555}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .date-display {
+            font-size: 1.2rem;
+            margin-top: 5px;
+            color: #ecf0f1;
+        }
+        
+        .shifts-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .shift-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .shift-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .shift-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .shift-status {
+            font-size: 1.1rem;
+            margin: 15px 0;
+            padding: 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status-open {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-closed {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .shift-times {
+            text-align: left;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .time-entry {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn-open {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-open:hover {
+            background: #388E3C;
+        }
+        
+        .btn-close {
+            background: #F44336;
+            color: white;
+        }
+        
+        .btn-close:hover {
+            background: #D32F2F;
+        }
+        
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .modal-title {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .btn-submit {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-submit:hover {
+            background: #2980b9;
+        }
+        
+        .btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #7f8c8d;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #2ecc71;
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .notification.error {
+            background: #e74c3c;
+        }
+        
+        @media (max-width: 768px) {
+            .shifts-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .shift-card {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Shift Management</h1>
-    <div class="small">Date: <span id="today"></span></div>
-
-
-    <div class="row" style="margin-top:16px">
-      <div class="card" id="shift1-card">
-        <h2>Shift 1</h2>
-        <div class="status">Status: <span id="s1-status">—</span></div>
-        <div class="meta">Opened at: <span id="s1-open">—</span></div>
-        <div class="meta">Closed at: <span id="s1-close">—</span></div>
-        <div class="controls">
-          <button id="s1-open-btn" class="open">Open Shift 1</button>
-          <button id="s1-close-btn" class="close">Close Shift 1</button>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-calendar-alt"></i> Shift Management System</h1>
+            <div class="date-display" id="currentDate">Loading date...</div>
+        </header>
+        
+        <div class="shifts-container">
+            <div class="shift-card">
+                <h2 class="shift-title">Shift 1</h2>
+                <div class="shift-status status-closed" id="shift1Status">CLOSED</div>
+                
+                <div class="shift-times">
+                    <div class="time-entry">
+                        <span>Open Time:</span>
+                        <span id="shift1OpenTime">--:--</span>
+                    </div>
+                    <div class="time-entry">
+                        <span>Close Time:</span>
+                        <span id="shift1CloseTime">--:--</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-open" id="openShift1">Open Shift 1</button>
+                <button class="btn btn-close" id="closeShift1" disabled>Close Shift 1</button>
+            </div>
+            
+            <div class="shift-card">
+                <h2 class="shift-title">Shift 2</h2>
+                <div class="shift-status status-closed" id="shift2Status">CLOSED</div>
+                
+                <div class="shift-times">
+                    <div class="time-entry">
+                        <span>Open Time:</span>
+                        <span id="shift2OpenTime">--:--</span>
+                    </div>
+                    <div class="time-entry">
+                        <span>Close Time:</span>
+                        <span id="shift2CloseTime">--:--</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-open" id="openShift2" disabled>Open Shift 2</button>
+                <button class="btn btn-close" id="closeShift2" disabled>Close Shift 2</button>
+            </div>
         </div>
-      </div>
-
-
-      <div class="card" id="shift2-card">
-        <h2>Shift 2</h2>
-        <div class="status">Status: <span id="s2-status">—</span></div>
-        <div class="meta">Opened at: <span id="s2-open">—</span></div>
-        <div class="meta">Closed at: <span id="s2-close">—</span></div>
-        <div class="controls">
-          <button id="s2-open-btn" class="open">Open Shift 2</button>
-          <button id="s2-close-btn" class="close">Close Shift 2</button>
-        </div>
-      </div>
     </div>
+    
+    <div class="password-modal" id="passwordModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Password Required</h2>
+            <p>Both shifts are closed. Enter password to reopen a shift.</p>
+            <input type="password" class="password-input" id="passwordInput" placeholder="Enter password">
+            <div>
+                <button class="btn btn-submit" id="submitPassword">Submit</button>
+                <button class="btn btn-cancel" id="cancelPassword">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">Operation successful!</div>
 
-
-    <div id="msg"></div>
-  </div>
-
-      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-      <script>
-  <!--
-    IMPORTANT: You must provide your Firebase setup & initialization in `fire1.js`.
-    fire1.js should load Firebase SDK and initialize firebase app (either compat or namespaced firebase object).
-    This page expects the "compat" API (firebase.firestore(), firebase.auth() etc.).
-
-
-    Example fire1.js (very simple):
-      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-      <script>
-        const firebaseConfig = { /* your config */ };
+    <!-- Firebase App (core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script>
+        // Firebase configuration - Replace with your actual config from fire1.js
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project-id.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+        
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-      </script>
-  -->
-
-
-  <!-- user-provided firebase initialization file (fire1.js) -->
-  <script src="fire1.js"></script>
-
-
-  <script>
-    // ---------- Config / easy changes ----------
-      if (!confirm('Close Shift 1 now?')) return;
+        const db = firebase.firestore();
+        
+        // DOM elements
+        const currentDateElement = document.getElementById('currentDate');
+        const shift1Status = document.getElementById('shift1Status');
+        const shift2Status = document.getElementById('shift2Status');
+        const shift1OpenTime = document.getElementById('shift1OpenTime');
+        const shift1CloseTime = document.getElementById('shift1CloseTime');
+        const shift2OpenTime = document.getElementById('shift2OpenTime');
+        const shift2CloseTime = document.getElementById('shift2CloseTime');
+        const openShift1Btn = document.getElementById('openShift1');
+        const closeShift1Btn = document.getElementById('closeShift1');
+        const openShift2Btn = document.getElementById('openShift2');
+        const closeShift2Btn = document.getElementById('closeShift2');
+        const passwordModal = document.getElementById('passwordModal');
+        const passwordInput = document.getElementById('passwordInput');
+        const submitPasswordBtn = document.getElementById('submitPassword');
+        const cancelPasswordBtn = document.getElementById('cancelPassword');
+        const notification = document.getElementById('notification');
+        
+        // Current date
+        const today = new Date();
+        const dateString = today.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        currentDateElement.textContent = dateString;
+        
+        // Format time for display
+        function formatTime(date) {
+            if (!date) return '--:--';
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        }
+        
+        // Show notification
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = isError ? 'notification error' : 'notification';
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Simulated shift data (in a real app, this would come from Firebase)
+        let shiftData = {
+            shift1: {
+                open: false,
+                openTime: null,
+                closeTime: null
+            },
+            shift2: {
+                open: false,
+                openTime: null,
+                closeTime: null
+            }
+        };
+        
+        // Update UI based on shift data
+        function updateUI() {
+            // Shift 1
+            if (shiftData.shift1.open) {
+                shift1Status.textContent = 'OPEN';
+                shift1Status.className = 'shift-status status-open';
+                openShift1Btn.disabled = true;
+                closeShift1Btn.disabled = false;
+            } else {
+                shift1Status.textContent = 'CLOSED';
+                shift1Status.className = 'shift-status status-closed';
+                openShift1Btn.disabled = shiftData.shift2.open ? false : true;
+                closeShift1Btn.disabled = true;
+            }
+            
+            shift1OpenTime.textContent = formatTime(shiftData.shift1.openTime);
+            shift1CloseTime.textContent = formatTime(shiftData.shift1.closeTime);
+            
+            // Shift 2
+            if (shiftData.shift2.open) {
+                shift2Status.textContent = 'OPEN';
+                shift2Status.className = 'shift-status status-open';
+                openShift2Btn.disabled = true;
+                closeShift2Btn.disabled = false;
+            } else {
+                shift2Status.textContent = 'CLOSED';
+                shift2Status.className = 'shift-status status-closed';
+                openShift2Btn.disabled = shiftData.shift1.closeTime ? false : true;
+                closeShift2Btn.disabled = true;
+            }
+            
+            shift2OpenTime.textContent = formatTime(shiftData.shift2.openTime);
+            shift2CloseTime.textContent = formatTime(shiftData.shift2.closeTime);
+        }
+        
+        // Open shift 1
+        openShift1Btn.addEventListener('click', () => {
+            // In a real app, this would save to Firebase
+            shiftData.shift1.open = true;
+            shiftData.shift1.openTime = new Date();
+            shiftData.shift1.closeTime = null;
+            
+            // Enable shift 2 open button if shift 1 is closed
+            openShift2Btn.disabled = false;
+            
+            updateUI();
+            showNotification('Shift 1 opened successfully!');
+            
+            // Here you would save to Firebase
+            // saveShiftDataToFirebase();
+        });
+        
+        // Close shift 1
+        closeShift1Btn.addEventListener('click', () => {
+            shiftData.shift1.open = false;
+            shiftData.shift1.closeTime = new Date();
+            
+            updateUI();
+            showNotification('Shift 1 closed successfully!');
+            
+            // Here you would save to Firebase
+            // saveShiftDataToFirebase();
+        });
+        
+        // Open shift 2
+        openShift2Btn.addEventListener('click', () => {
+            shiftData.shift2.open = true;
+            shiftData.shift2.openTime = new Date();
+            shiftData.shift2.closeTime = null;
+            
+            updateUI();
+            showNotification('Shift 2 opened successfully!');
+            
+            // Here you would save to Firebase
+            // saveShiftDataToFirebase();
+        });
+        
+        // Close shift 2
+        closeShift2Btn.addEventListener('click', () => {
+            shiftData.shift2.open = false;
+            shiftData.shift2.closeTime = new Date();
+            
+            updateUI();
+            showNotification('Shift 2 closed successfully!');
+            
+            // Here you would save to Firebase
+            // saveShiftDataToFirebase();
+        });
+        
+        // Password modal handlers
+        function openPasswordModal() {
+            passwordModal.style.display = 'flex';
+            passwordInput.value = '';
+        }
+        
+        function closePasswordModal() {
+            passwordModal.style.display = 'none';
+        }
+        
+        submitPasswordBtn.addEventListener('click', () => {
+            // Check password (in a real app, this would be more secure)
+            if (passwordInput.value === 'admin123') {
+                openShift1Btn.disabled = false;
+                closePasswordModal();
+                showNotification('Password accepted. You can now open a shift.');
+            } else {
+                showNotification('Incorrect password. Please try again.', true);
+            }
+        });
+        
+        cancelPasswordBtn.addEventListener('click', closePasswordModal);
+        
+        // Initialize the UI
+        updateUI();
+        
+        // In a real app, you would load initial data from Firebase
+        // loadShiftDataFromFirebase();
+    </script>
+</body>
 </html>
-
-
-
-Done — I created a single-file webpage named Shift Management (opened as shift_management.html on the canvas). It contains a complete HTML+JS implementation that:
-
-Shows two shift cards with live status, opened/closed timestamps.
-
-Saves shift open/close events to Firestore under a document keyed by today's YYYY-MM-DD date.
-
-Enforces the workflow: open/close Shift 1, then open/close Shift 2; after both shifts have been closed once the page will require a password to re-open either shift.
-
-Uses a bothClosedOnce flag to track that both shifts were closed (so reopen requires password).
-
-Uses a simple hard-coded reopen password Reopen123 (change in the code).
-
-Expects your fire1.js to include Firebase SDK + initialization (the code uses the firebase compat API and firebase.firestore()).
-
-How to use
-
-Open the Shift Management document on the canvas and copy/save it as shift_management.html.
-
-Add your fire1.js file (loaded before this script). fire1.js should initialize the Firebase app (example in the file comments shows using the compat scripts).
-
-Edit REOPEN_PASSWORD inside the script to a secure password you want.
-
-Open the HTML in a browser. Actions (open/close) are saved to Firestore and the UI updates in real time.
-
-If you want, I can:
-
-Change the code to use the modular Firebase SDK (import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore') instead of compat style.
-
-Add a modal password UI instead of prompt().
-
-Add auditing (which user opened/closed) using Firebase Authentication.
-
-Tell me which of the above (if any) you want next and I’ll update the file directly.
-
-ChatG
