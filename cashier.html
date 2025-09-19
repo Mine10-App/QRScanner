@@ -10,8 +10,10 @@
             --secondary: #3498db;
             --success: #2ecc71;
             --danger: #e74c3c;
+            --warning: #f39c12;
             --light: #ecf0f1;
             --dark: #34495e;
+            --gray: #95a5a6;
         }
         
         * {
@@ -25,356 +27,509 @@
             background-color: #f5f7fa;
             color: #333;
             line-height: 1.6;
+            padding: 20px;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
         }
         
         header {
-            background-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
             color: white;
-            padding: 1rem;
+            padding: 1.5rem;
             text-align: center;
-            border-radius: 8px 8px 0 0;
-            margin-bottom: 20px;
+        }
+        
+        .app-title {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .app-subtitle {
+            font-weight: 300;
+            opacity: 0.9;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--dark);
+            color: white;
+            padding: 0.8rem 1.5rem;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--danger);
+        }
+        
+        .status-dot.open {
+            background-color: var(--success);
+        }
+        
+        .content {
+            padding: 2rem;
         }
         
         .card {
             background: white;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--secondary);
         }
         
-        h1, h2, h3 {
-            margin-bottom: 15px;
+        h2 {
             color: var(--primary);
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--light);
         }
         
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 1.2rem;
         }
         
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 0.5rem;
             font-weight: 600;
+            color: var(--dark);
         }
         
         input[type="number"],
         input[type="text"],
         input[type="password"] {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        input:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
         
         button {
-            padding: 12px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
             transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .btn-primary {
-            background-color: var(--secondary);
+            background: linear-gradient(to right, var(--secondary), var(--primary));
             color: white;
         }
         
         .btn-primary:hover {
-            background-color: #2980b9;
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         
         .btn-success {
-            background-color: var(--success);
+            background: linear-gradient(to right, var(--success), #27ae60);
             color: white;
         }
         
         .btn-success:hover {
-            background-color: #27ae60;
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
         }
         
         .btn-danger {
-            background-color: var(--danger);
+            background: linear-gradient(to right, var(--danger), #c0392b);
             color: white;
         }
         
         .btn-danger:hover {
-            background-color: #c0392b;
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
         }
         
         .denomination-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
         
         .denomination-table th,
         .denomination-table td {
-            padding: 12px;
+            padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #eaeaea;
         }
         
         .denomination-table th {
-            background-color: var(--light);
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
+            background-color: #f8f9fa;
             font-weight: 600;
+            color: var(--dark);
         }
         
-        .status-open {
-            background-color: #e7f7ef;
+        .denomination-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .denom-input {
+            width: 80px;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .summary-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--success);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .summary-item {
+            background: white;
+            padding: 1.2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .summary-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 0.5rem;
+        }
+        
+        .difference-positive {
             color: var(--success);
         }
         
-        .status-closed {
-            background-color: #fbeeee;
+        .difference-negative {
             color: var(--danger);
         }
         
-        .flex-container {
+        .action-buttons {
             display: flex;
-            gap: 20px;
+            gap: 15px;
+            margin-top: 1.5rem;
             flex-wrap: wrap;
         }
         
-        .flex-item {
-            flex: 1;
-            min-width: 300px;
+        .auth-container {
+            max-width: 450px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
-        .result-box {
-            background-color: var(--light);
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 10px;
+        .auth-title {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
         }
         
         .hidden {
             display: none;
         }
         
-        .auth-form {
-            max-width: 400px;
-            margin: 0 auto;
+        .cashier-info {
+            background: linear-gradient(135deg, #4a6572 0%, #34495e 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
         }
         
         @media (max-width: 768px) {
-            .flex-container {
+            .content {
+                padding: 1rem;
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
                 flex-direction: column;
             }
+            
+            button {
+                width: 100%;
+            }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            background-color: var(--success);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background-color: var(--danger);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Cashier Management System</h1>
-            <div id="cashierStatus">
-                <span class="status-indicator status-closed">Cashier Closed</span>
-            </div>
+            <h1 class="app-title">Cashier Management System</h1>
+            <p class="app-subtitle">Secure cash handling with denomination tracking</p>
         </header>
         
-        <div class="card">
-            <h2>Cashier Authentication</h2>
-            <div class="auth-form">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Enter your username">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="Enter your password">
-                </div>
-                <button id="loginBtn" class="btn-primary">Login</button>
-                <button id="logoutBtn" class="btn-danger hidden">Logout</button>
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Cashier Closed</span>
             </div>
+            <div id="currentCashier">Not logged in</div>
         </div>
         
-        <div id="cashierSection" class="hidden">
-            <div class="flex-container">
-                <div class="flex-item card">
+        <div class="content">
+            <!-- Authentication Section -->
+            <div id="authSection">
+                <div class="auth-container">
+                    <h2 class="auth-title">Cashier Login</h2>
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Enter your username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password">
+                    </div>
+                    <button id="loginBtn" class="btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Cashier Section (initially hidden) -->
+            <div id="cashierSection" class="hidden">
+                <div class="card">
                     <h2>Sales Cash Denomination</h2>
                     <table class="denomination-table">
                         <thead>
                             <tr>
                                 <th>Denomination</th>
                                 <th>Quantity</th>
-                                <th>Amount</th>
+                                <th>Amount (₦)</th>
                             </tr>
                         </thead>
                         <tbody id="salesDenomination">
                             <!-- Will be populated by JavaScript -->
                         </tbody>
                     </table>
-                    <div class="form-group">
-                        <label>Total Sales Cash: <span id="salesTotal">0.00</span></label>
-                    </div>
                 </div>
                 
-                <div class="flex-item card">
+                <div class="card">
                     <h2>Petty Cash Denomination</h2>
                     <table class="denomination-table">
                         <thead>
                             <tr>
                                 <th>Denomination</th>
                                 <th>Quantity</th>
-                                <th>Amount</th>
+                                <th>Amount (₦)</th>
                             </tr>
                         </thead>
                         <tbody id="pettyDenomination">
                             <!-- Will be populated by JavaScript -->
                         </tbody>
                     </table>
-                    <div class="form-group">
-                        <label>Expected Petty Cash: <span id="expectedPettyTotal">0.00</span></label>
+                </div>
+                
+                <div class="card summary-card">
+                    <h2>Cashier Summary</h2>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div>Total Sales Cash</div>
+                            <div class="summary-value" id="salesTotal">0.00</div>
+                        </div>
+                        <div class="summary-item">
+                            <div>Total Petty Cash</div>
+                            <div class="summary-value" id="pettyTotal">0.00</div>
+                        </div>
+                        <div class="summary-item">
+                            <div>Total Counted</div>
+                            <div class="summary-value" id="totalCounted">0.00</div>
+                        </div>
+                        <div class="summary-item">
+                            <div>Difference</div>
+                            <div class="summary-value" id="difference">0.00</div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Actual Petty Cash: <span id="actualPettyTotal">0.00</span></label>
+                    
+                    <div class="action-buttons">
+                        <button id="calculateBtn" class="btn-primary">
+                            <i class="fas fa-calculator"></i> Calculate Totals
+                        </button>
+                        <button id="openCashierBtn" class="btn-success">
+                            <i class="fas fa-lock-open"></i> Open Cashier
+                        </button>
+                        <button id="closeCashierBtn" class="btn-danger">
+                            <i class="fas fa-lock"></i> Close Cashier
+                        </button>
+                        <button id="logoutBtn" class="btn-primary">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
                     </div>
                 </div>
-            </div>
-            
-            <div class="card">
-                <h2>Cashier Summary</h2>
-                <div class="form-group">
-                    <label>Total Cash Counted: <span id="totalCounted">0.00</span></label>
-                </div>
-                <div class="form-group">
-                    <label>Expected Total: <span id="expectedTotal">0.00</span></label>
-                </div>
-                <div class="form-group">
-                    <label>Difference: <span id="difference">0.00</span></label>
-                </div>
-                <div class="form-group">
-                    <button id="calculateBtn" class="btn-primary">Calculate Totals</button>
-                    <button id="openCashierBtn" class="btn-success hidden">Open Cashier</button>
-                    <button id="closeCashierBtn" class="btn-danger hidden">Close Cashier</button>
+                
+                <div class="cashier-info">
+                    <h3>Current Cashier: <span id="loggedInUser"></span></h3>
+                    <p>Cashier status: <span id="detailedStatus">Closed</span></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Include Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
-    <!-- Your Firebase config file -->
+    <!-- Include your Firebase config file -->
     <script src="fire1.js"></script>
     
+    <!-- Include your users data -->
+    <script src="users.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    
     <script>
-        // Initialize Firebase with your config
-        // Your fire1.js should contain something like:
-        // const firebaseConfig = { ... };
-        // firebase.initializeApp(firebaseConfig);
-        // const db = firebase.firestore();
-        // const auth = firebase.auth();
-        
-        // Assuming fire1.js initializes Firebase, we'll just reference it here
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        
         // DOM elements
-        const cashierStatus = document.getElementById('cashierStatus');
+        const authSection = document.getElementById('authSection');
+        const cashierSection = document.getElementById('cashierSection');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const loginBtn = document.getElementById('loginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
-        const cashierSection = document.getElementById('cashierSection');
-        const salesDenomination = document.getElementById('salesDenomination');
-        const pettyDenomination = document.getElementById('pettyDenomination');
-        const salesTotal = document.getElementById('salesTotal');
-        const expectedPettyTotal = document.getElementById('expectedPettyTotal');
-        const actualPettyTotal = document.getElementById('actualPettyTotal');
-        const totalCounted = document.getElementById('totalCounted');
-        const expectedTotal = document.getElementById('expectedTotal');
-        const difference = document.getElementById('difference');
         const calculateBtn = document.getElementById('calculateBtn');
         const openCashierBtn = document.getElementById('openCashierBtn');
         const closeCashierBtn = document.getElementById('closeCashierBtn');
-        
-        // Denominations (adjust based on your currency)
+        const salesDenomination = document.getElementById('salesDenomination');
+        const pettyDenomination = document.getElementById('pettyDenomination');
+        const salesTotal = document.getElementById('salesTotal');
+        const pettyTotal = document.getElementById('pettyTotal');
+        const totalCounted = document.getElementById('totalCounted');
+        const difference = document.getElementById('difference');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const currentCashier = document.getElementById('currentCashier');
+        const loggedInUser = document.getElementById('loggedInUser');
+        const detailedStatus = document.getElementById('detailedStatus');
+        const notification = document.getElementById('notification');
+
+        // Denominations for Nigerian Naira
         const denominations = [
-            { value: 100, name: "100 Bill" },
-            { value: 50, name: "50 Bill" },
-            { value: 20, name: "20 Bill" },
-            { value: 10, name: "10 Bill" },
-            { value: 5, name: "5 Bill" },
-            { value: 1, name: "1 Coin" },
-            { value: 0.5, name: "50 Cent" },
-            { value: 0.25, name: "25 Cent" },
-            { value: 0.1, name: "10 Cent" },
-            { value: 0.05, name: "5 Cent" }
+            { value: 1000, name: "₦1000 Bill" },
+            { value: 500, name: "₦500 Bill" },
+            { value: 200, name: "₦200 Bill" },
+            { value: 100, name: "₦100 Bill" },
+            { value: 50, name: "₦50 Bill" },
+            { value: 20, name: "₦20 Bill" },
+            { value: 10, name: "₦10 Coin" },
+            { value: 5, name: "₦5 Coin" }
         ];
-        
+
+        // Petty cash setup (would typically come from database)
+        const pettyCashSetup = [
+            { value: 1000, quantity: 0 },
+            { value: 500, quantity: 5 },
+            { value: 200, quantity: 10 },
+            { value: 100, quantity: 10 },
+            { value: 50, quantity: 10 },
+            { value: 20, quantity: 20 },
+            { value: 10, quantity: 20 },
+            { value: 5, quantity: 20 }
+        ];
+
         // Current user and cashier state
         let currentUser = null;
-        let pettyCashSetup = {};
         let cashierState = {
             isOpen: false,
             currentCashier: null,
             openingTime: null,
             closingTime: null
         };
-        
+
         // Initialize the page
         function init() {
-            loadPettyCashSetup();
             checkCashierState();
             populateDenominationTables();
             setupEventListeners();
         }
-        
-        // Load petty cash setup from Firestore
-        function loadPettyCashSetup() {
-            db.collection('config').doc('pettyCash').get()
-                .then(doc => {
-                    if (doc.exists) {
-                        pettyCashSetup = doc.data();
-                        document.getElementById('expectedPettyTotal').textContent = 
-                            pettyCashSetup.expectedTotal.toFixed(2);
-                    } else {
-                        // Set default if not configured
-                        pettyCashSetup = {
-                            denominations: denominations.map(d => ({ value: d.value, quantity: 0 })),
-                            expectedTotal: 0
-                        };
-                    }
-                })
-                .catch(error => {
-                    console.error("Error loading petty cash setup:", error);
-                });
-        }
-        
-        // Check current cashier state
+
+        // Check current cashier state from Firestore
         function checkCashierState() {
-            db.collection('cashierState').doc('current').get()
-                .then(doc => {
-                    if (doc.exists) {
-                        cashierState = doc.data();
-                        updateCashierStatusUI();
-                    }
-                })
-                .catch(error => {
-                    console.error("Error checking cashier state:", error);
-                });
+            // In a real app, you would get this from Firestore
+            // For demo purposes, we'll use a mock function
+            console.log("Checking cashier state...");
+            
+            // Simulate Firestore call
+            setTimeout(() => {
+                // This would come from Firestore in a real app
+                const state = {
+                    isOpen: false,
+                    currentCashier: null,
+                    openingTime: null
+                };
+                
+                cashierState = state;
+                updateCashierStatusUI();
+            }, 500);
         }
-        
+
         // Populate denomination tables
         function populateDenominationTables() {
             // Sales denomination table
@@ -392,12 +547,12 @@
             // Petty cash denomination table
             pettyDenomination.innerHTML = '';
             denominations.forEach(denom => {
+                const preset = pettyCashSetup.find(d => d.value === denom.value);
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${denom.name}</td>
-                    <td><input type="number" min="0" data-value="${denom.value}" class="petty-quantity" value="0" 
-                        ${currentUser && currentUser.isSupervisor ? '' : 'disabled'}></td>
-                    <td class="petty-amount">0.00</td>
+                    <td><input type="number" min="0" data-value="${denom.value}" class="petty-quantity" value="${preset ? preset.quantity : 0}" readonly></td>
+                    <td class="petty-amount">${preset ? (preset.quantity * denom.value).toFixed(2) : "0.00"}</td>
                 `;
                 pettyDenomination.appendChild(row);
             });
@@ -406,12 +561,8 @@
             document.querySelectorAll('.sales-quantity').forEach(input => {
                 input.addEventListener('input', calculateSalesTotal);
             });
-            
-            document.querySelectorAll('.petty-quantity').forEach(input => {
-                input.addEventListener('input', calculatePettyTotal);
-            });
         }
-        
+
         // Set up event listeners
         function setupEventListeners() {
             loginBtn.addEventListener('click', handleLogin);
@@ -420,85 +571,63 @@
             openCashierBtn.addEventListener('click', openCashier);
             closeCashierBtn.addEventListener('click', closeCashier);
         }
-        
+
         // Handle login
         function handleLogin() {
             const username = usernameInput.value;
             const password = passwordInput.value;
             
             if (!username || !password) {
-                alert('Please enter both username and password');
+                showNotification('Please enter both username and password', true);
                 return;
             }
             
-            // In a real app, you would use Firebase Auth
-            // This is a simplified version for demonstration
-            db.collection('users').where('username', '==', username).get()
-                .then(snapshot => {
-                    if (snapshot.empty) {
-                        alert('User not found');
-                        return;
-                    }
-                    
-                    let userData;
-                    snapshot.forEach(doc => {
-                        userData = { id: doc.id, ...doc.data() };
-                    });
-                    
-                    // In a real app, you would use proper password hashing
-                    if (userData.password === password) {
-                        currentUser = userData;
-                        updateUIAfterLogin();
-                    } else {
-                        alert('Invalid password');
-                    }
-                })
-                .catch(error => {
-                    console.error("Login error:", error);
-                    alert('Login failed');
-                });
+            // Check against user data (in a real app, this would be Firebase Auth)
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                updateUIAfterLogin();
+                showNotification(`Welcome, ${user.name}!`);
+            } else {
+                showNotification('Invalid username or password', true);
+            }
         }
-        
+
         // Handle logout
         function handleLogout() {
             currentUser = null;
             usernameInput.value = '';
             passwordInput.value = '';
             cashierSection.classList.add('hidden');
-            loginBtn.classList.remove('hidden');
-            logoutBtn.classList.add('hidden');
+            authSection.classList.remove('hidden');
+            currentCashier.textContent = 'Not logged in';
+            showNotification('You have been logged out');
         }
-        
+
         // Update UI after login
         function updateUIAfterLogin() {
             usernameInput.value = '';
             passwordInput.value = '';
             cashierSection.classList.remove('hidden');
-            loginBtn.classList.add('hidden');
-            logoutBtn.classList.remove('hidden');
-            
-            // Enable/disable petty cash editing based on user role
-            document.querySelectorAll('.petty-quantity').forEach(input => {
-                input.disabled = !currentUser.isSupervisor;
-            });
+            authSection.classList.add('hidden');
+            loggedInUser.textContent = currentUser.name;
+            currentCashier.textContent = `Current: ${currentUser.name}`;
             
             updateActionButtons();
         }
-        
+
         // Update action buttons based on cashier state
         function updateActionButtons() {
-            openCashierBtn.classList.add('hidden');
-            closeCashierBtn.classList.add('hidden');
-            
             if (cashierState.isOpen) {
-                if (cashierState.currentCashier === currentUser.id) {
-                    closeCashierBtn.classList.remove('hidden');
-                }
+                openCashierBtn.classList.add('hidden');
+                closeCashierBtn.classList.remove('hidden');
             } else {
                 openCashierBtn.classList.remove('hidden');
+                closeCashierBtn.classList.add('hidden');
             }
         }
-        
+
         // Calculate sales total
         function calculateSalesTotal() {
             let total = 0;
@@ -512,7 +641,7 @@
             salesTotal.textContent = total.toFixed(2);
             return total;
         }
-        
+
         // Calculate petty cash total
         function calculatePettyTotal() {
             let total = 0;
@@ -523,10 +652,10 @@
                 input.parentElement.nextElementSibling.textContent = amount.toFixed(2);
                 total += amount;
             });
-            actualPettyTotal.textContent = total.toFixed(2);
+            pettyTotal.textContent = total.toFixed(2);
             return total;
         }
-        
+
         // Calculate all totals
         function calculateAllTotals() {
             const sales = calculateSalesTotal();
@@ -534,136 +663,106 @@
             const total = sales + petty;
             
             totalCounted.textContent = total.toFixed(2);
-            expectedTotal.textContent = (cashierState.expectedTotal || 0).toFixed(2);
             
-            const diff = total - (cashierState.expectedTotal || 0);
-            difference.textContent = diff.toFixed(2);
+            // In a real app, you would get the expected total from Firestore
+            const expectedTotal = 10000; // Example expected total
             
-            if (Math.abs(diff) < 0.05) { // Allow for small rounding errors
-                difference.style.color = 'green';
-                if (currentUser) {
-                    if (cashierState.isOpen) {
-                        closeCashierBtn.disabled = false;
-                    } else {
-                        openCashierBtn.disabled = false;
-                    }
-                }
+            const diff = total - expectedTotal;
+            difference.textContent = Math.abs(diff).toFixed(2);
+            
+            if (diff >= 0) {
+                difference.className = 'summary-value difference-positive';
             } else {
-                difference.style.color = 'red';
-                if (cashierState.isOpen) {
-                    closeCashierBtn.disabled = true;
-                } else {
-                    openCashierBtn.disabled = true;
-                }
+                difference.className = 'summary-value difference-negative';
+            }
+            
+            // Enable/disable cashier buttons based on whether totals match
+            if (Math.abs(diff) < 0.01) { // Allow for small rounding errors
+                openCashierBtn.disabled = false;
+                closeCashierBtn.disabled = false;
+                showNotification('Totals match! You can proceed.');
+            } else {
+                openCashierBtn.disabled = true;
+                closeCashierBtn.disabled = true;
+                showNotification('Totals do not match. Please recount.', true);
             }
         }
-        
+
         // Open cashier
         function openCashier() {
-            const salesData = getSalesData();
-            const pettyData = getPettyData();
+            if (!currentUser) {
+                showNotification('Please login first', true);
+                return;
+            }
             
+            // In a real app, this would update Firestore
             cashierState = {
                 isOpen: true,
-                currentCashier: currentUser.id,
+                currentCashier: currentUser.username,
                 currentCashierName: currentUser.name,
-                openingTime: new Date(),
-                salesData: salesData,
-                pettyData: pettyData,
-                expectedTotal: parseFloat(expectedTotal.textContent)
+                openingTime: new Date()
             };
             
-            db.collection('cashierState').doc('current').set(cashierState)
-                .then(() => {
-                    updateCashierStatusUI();
-                    updateActionButtons();
-                    alert('Cashier opened successfully');
-                })
-                .catch(error => {
-                    console.error("Error opening cashier:", error);
-                    alert('Failed to open cashier');
-                });
+            // Simulate Firestore update
+            setTimeout(() => {
+                updateCashierStatusUI();
+                updateActionButtons();
+                showNotification('Cashier opened successfully');
+            }, 500);
         }
-        
+
         // Close cashier
         function closeCashier() {
-            const salesData = getSalesData();
-            const pettyData = getPettyData();
+            if (!currentUser) {
+                showNotification('Please login first', true);
+                return;
+            }
             
-            const cashierSession = {
-                ...cashierState,
+            // In a real app, this would update Firestore
+            cashierState = {
                 isOpen: false,
-                closingTime: new Date(),
-                salesData: salesData,
-                pettyData: pettyData,
-                actualTotal: parseFloat(totalCounted.textContent)
+                currentCashier: null,
+                openingTime: null,
+                closingTime: new Date()
             };
             
-            // Save to history
-            db.collection('cashierHistory').add(cashierSession)
-                .then(() => {
-                    // Reset current state
-                    cashierState = {
-                        isOpen: false,
-                        currentCashier: null,
-                        openingTime: null
-                    };
-                    
-                    return db.collection('cashierState').doc('current').set(cashierState);
-                })
-                .then(() => {
-                    updateCashierStatusUI();
-                    updateActionButtons();
-                    alert('Cashier closed successfully');
-                })
-                .catch(error => {
-                    console.error("Error closing cashier:", error);
-                    alert('Failed to close cashier');
-                });
+            // Simulate Firestore update
+            setTimeout(() => {
+                updateCashierStatusUI();
+                updateActionButtons();
+                showNotification('Cashier closed successfully');
+            }, 500);
         }
-        
-        // Get sales data from form
-        function getSalesData() {
-            const data = [];
-            document.querySelectorAll('.sales-quantity').forEach(input => {
-                const quantity = parseInt(input.value) || 0;
-                if (quantity > 0) {
-                    data.push({
-                        value: parseFloat(input.dataset.value),
-                        quantity: quantity
-                    });
-                }
-            });
-            return data;
-        }
-        
-        // Get petty cash data from form
-        function getPettyData() {
-            const data = [];
-            document.querySelectorAll('.petty-quantity').forEach(input => {
-                const quantity = parseInt(input.value) || 0;
-                if (quantity > 0) {
-                    data.push({
-                        value: parseFloat(input.dataset.value),
-                        quantity: quantity
-                    });
-                }
-            });
-            return data;
-        }
-        
+
         // Update cashier status UI
         function updateCashierStatusUI() {
             if (cashierState.isOpen) {
-                cashierStatus.innerHTML = `
-                    <span class="status-indicator status-open">Cashier Open</span>
-                    <span>Current Cashier: ${cashierState.currentCashierName}</span>
-                `;
+                statusDot.className = 'status-dot open';
+                statusText.textContent = 'Cashier Open';
+                detailedStatus.textContent = 'Open';
             } else {
-                cashierStatus.innerHTML = `<span class="status-indicator status-closed">Cashier Closed</span>`;
+                statusDot.className = 'status-dot';
+                statusText.textContent = 'Cashier Closed';
+                detailedStatus.textContent = 'Closed';
             }
         }
-        
+
+        // Show notification
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = 'notification';
+            
+            if (isError) {
+                notification.classList.add('error');
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
         // Initialize the application
         init();
     </script>
