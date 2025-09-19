@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cashier Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary: #2c3e50;
@@ -24,18 +25,22 @@
         }
         
         body {
-            background-color: #f5f7fa;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             line-height: 1.6;
+            min-height: 100vh;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         .container {
+            width: 100%;
             max-width: 1200px;
-            margin: 0 auto;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             overflow: hidden;
         }
         
@@ -44,6 +49,7 @@
             color: white;
             padding: 1.5rem;
             text-align: center;
+            position: relative;
         }
         
         .app-title {
@@ -80,6 +86,7 @@
         
         .status-dot.open {
             background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
         }
         
         .content {
@@ -88,18 +95,30 @@
         
         .card {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
             border-left: 4px solid var(--secondary);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
         }
         
         h2 {
             color: var(--primary);
             margin-bottom: 1.2rem;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--light);
+            border-bottom: 2px solid var(--light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2 i {
+            color: var(--secondary);
         }
         
         .form-group {
@@ -117,11 +136,11 @@
         input[type="text"],
         input[type="password"] {
             width: 100%;
-            padding: 12px;
+            padding: 12px 15px;
             border: 1px solid #ddd;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 16px;
-            transition: border 0.3s;
+            transition: all 0.3s;
         }
         
         input:focus {
@@ -133,7 +152,7 @@
         button {
             padding: 12px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
@@ -145,14 +164,14 @@
         }
         
         .btn-primary {
-            background: linear-gradient(to right, var(--secondary), var(--primary));
+            background: linear-gradient(to right, var(--secondary), #2980b9);
             color: white;
         }
         
         .btn-primary:hover {
             opacity: 0.9;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
         }
         
         .btn-success {
@@ -163,7 +182,7 @@
         .btn-success:hover {
             opacity: 0.9;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
         }
         
         .btn-danger {
@@ -174,7 +193,7 @@
         .btn-danger:hover {
             opacity: 0.9;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
         }
         
         .denomination-table {
@@ -205,11 +224,12 @@
             text-align: center;
             padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 5px;
+            font-weight: 600;
         }
         
         .summary-card {
-            background-color: #f8f9fa;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
             border-left: 4px solid var(--success);
         }
         
@@ -224,7 +244,8 @@
             background: white;
             padding: 1.2rem;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            text-align: center;
         }
         
         .summary-value {
@@ -254,8 +275,8 @@
             margin: 2rem auto;
             padding: 2rem;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
         
         .auth-title {
@@ -271,9 +292,9 @@
         .cashier-info {
             background: linear-gradient(135deg, #4a6572 0%, #34495e 100%);
             color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-top: 1.5rem;
         }
         
         @media (max-width: 768px) {
@@ -299,13 +320,16 @@
             top: 20px;
             right: 20px;
             padding: 15px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             color: white;
             background-color: var(--success);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             transform: translateX(100%);
             transition: transform 0.3s ease;
             z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .notification.show {
@@ -315,12 +339,38 @@
         .notification.error {
             background-color: var(--danger);
         }
+        
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1 class="app-title">Cashier Management System</h1>
+            <div class="logo">
+                <i class="fas fa-cash-register logo-icon"></i>
+                <h1 class="app-title">Cashier Management System</h1>
+            </div>
             <p class="app-subtitle">Secure cash handling with denomination tracking</p>
         </header>
         
@@ -336,25 +386,31 @@
             <!-- Authentication Section -->
             <div id="authSection">
                 <div class="auth-container">
-                    <h2 class="auth-title">Cashier Login</h2>
+                    <h2 class="auth-title"><i class="fas fa-user-lock"></i> Cashier Login</h2>
                     <div class="form-group">
-                        <label for="username">Username</label>
+                        <label for="username"><i class="fas fa-user"></i> Username</label>
                         <input type="text" id="username" placeholder="Enter your username">
                     </div>
                     <div class="form-group">
-                        <label for="password">Password</label>
+                        <label for="password"><i class="fas fa-key"></i> Password</label>
                         <input type="password" id="password" placeholder="Enter your password">
                     </div>
                     <button id="loginBtn" class="btn-primary">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
+                    <div class="demo-users">
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: var(--gray);">
+                            <strong>Demo Users:</strong><br>
+                            Leeli/12345 or Koveli/12345
+                        </p>
+                    </div>
                 </div>
             </div>
             
             <!-- Cashier Section (initially hidden) -->
             <div id="cashierSection" class="hidden">
                 <div class="card">
-                    <h2>Sales Cash Denomination</h2>
+                    <h2><i class="fas fa-money-bill-wave"></i> Sales Cash Denomination</h2>
                     <table class="denomination-table">
                         <thead>
                             <tr>
@@ -370,7 +426,7 @@
                 </div>
                 
                 <div class="card">
-                    <h2>Petty Cash Denomination</h2>
+                    <h2><i class="fas fa-coins"></i> Petty Cash Denomination</h2>
                     <table class="denomination-table">
                         <thead>
                             <tr>
@@ -386,7 +442,7 @@
                 </div>
                 
                 <div class="card summary-card">
-                    <h2>Cashier Summary</h2>
+                    <h2><i class="fas fa-calculator"></i> Cashier Summary</h2>
                     <div class="summary-grid">
                         <div class="summary-item">
                             <div>Total Sales Cash</div>
@@ -423,28 +479,32 @@
                 </div>
                 
                 <div class="cashier-info">
-                    <h3>Current Cashier: <span id="loggedInUser"></span></h3>
+                    <h3><i class="fas fa-user-tie"></i> Current Cashier: <span id="loggedInUser"></span></h3>
                     <p>Cashier status: <span id="detailedStatus">Closed</span></p>
+                    <p>Last updated: <span id="lastUpdated"></span></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="notification" id="notification"></div>
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notificationText"></span>
+    </div>
 
-    <!-- Include Firebase SDK -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
-    <!-- Include your Firebase config file -->
-    <script src="fire1.js"></script>
-    
-    <!-- Include your users data -->
-    <script src="users.js"></script>
-    
-    <!-- Font Awesome for icons -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <!-- Your users data -->
+    <script>
+        // Your user data from users.js
+        const users = [
+            { username: "Leeli", name: "Leeli Lounge", password: "12345", rcNo: "1", WP: "Leeli" },
+            { username: "Koveli", name: "Koveli Lounge", password: "12345", rcNo: "2", WP: "Koveli" }
+        ];
+    </script>
     
     <script>
         // DOM elements
@@ -469,6 +529,8 @@
         const loggedInUser = document.getElementById('loggedInUser');
         const detailedStatus = document.getElementById('detailedStatus');
         const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+        const lastUpdated = document.getElementById('lastUpdated');
 
         // Denominations for Nigerian Naira
         const denominations = [
@@ -508,12 +570,12 @@
             checkCashierState();
             populateDenominationTables();
             setupEventListeners();
+            updateLastUpdated();
         }
 
-        // Check current cashier state from Firestore
+        // Check current cashier state
         function checkCashierState() {
             // In a real app, you would get this from Firestore
-            // For demo purposes, we'll use a mock function
             console.log("Checking cashier state...");
             
             // Simulate Firestore call
@@ -570,9 +632,16 @@
             calculateBtn.addEventListener('click', calculateAllTotals);
             openCashierBtn.addEventListener('click', openCashier);
             closeCashierBtn.addEventListener('click', closeCashier);
+            
+            // Add Enter key support for login
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleLogin();
+                }
+            });
         }
 
-        // Handle login
+        // Handle login - FIXED VERSION
         function handleLogin() {
             const username = usernameInput.value;
             const password = passwordInput.value;
@@ -582,7 +651,7 @@
                 return;
             }
             
-            // Check against user data (in a real app, this would be Firebase Auth)
+            // Check against user data
             const user = users.find(u => u.username === username && u.password === password);
             
             if (user) {
@@ -707,6 +776,7 @@
             setTimeout(() => {
                 updateCashierStatusUI();
                 updateActionButtons();
+                updateLastUpdated();
                 showNotification('Cashier opened successfully');
             }, 500);
         }
@@ -730,6 +800,7 @@
             setTimeout(() => {
                 updateCashierStatusUI();
                 updateActionButtons();
+                updateLastUpdated();
                 showNotification('Cashier closed successfully');
             }, 500);
         }
@@ -749,11 +820,14 @@
 
         // Show notification
         function showNotification(message, isError = false) {
-            notification.textContent = message;
-            notification.className = 'notification';
+            notificationText.textContent = message;
             
             if (isError) {
-                notification.classList.add('error');
+                notification.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + message;
+                notification.className = 'notification error';
+            } else {
+                notification.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+                notification.className = 'notification';
             }
             
             notification.classList.add('show');
@@ -761,6 +835,12 @@
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 3000);
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated() {
+            const now = new Date();
+            lastUpdated.textContent = now.toLocaleTimeString();
         }
 
         // Initialize the application
