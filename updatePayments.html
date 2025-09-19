@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Update Payments</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root {
+    --primary: #4361ee;
+    --secondary: #3f37c9;
+    --success: #4cc9f0;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --gray: #6c757d;
+    --border: #dee2e6;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 8px;
+    --transition: all 0.3s ease;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    color: var(--dark);
+    line-height: 1.6;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  .header h1 {
+    color: var(--primary);
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 28px;
+  }
+
+  .header p {
+    color: var(--gray);
+    font-size: 16px;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 15px;
+  }
+
+  .search-box {
+    flex: 1;
+    max-width: 400px;
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 15px;
+    transition: var(--transition);
+  }
+
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  }
+
+  .search-box i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray);
+  }
+
+  .filter-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+  }
+
+  .filter-controls select {
+    padding: 12px 15px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 15px;
+    background: white;
+  }
+
+  .refresh-btn {
+    padding: 12px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .refresh-btn:hover {
+    background: var(--secondary);
+  }
+
+  .table-container {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 30px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+  }
+
+  th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  th {
+    background: #f8f9fc;
+    font-weight: 600;
+    color: var(--dark);
+    position: sticky;
+    top: 0;
+  }
+
+  tr:hover {
+    background: #f8f9fc;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    transition: var(--transition);
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .btn-update {
+    background: var(--primary);
+    color: white;
+  }
+
+  .btn-update:hover {
+    background: var(--secondary);
+  }
+
+  .btn-print {
+    background: #28a745;
+    color: white;
+  }
+
+  .btn-print:hover {
+    background: #218838;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .status-complete {
+    background: #e8f5e8;
+    color: #2e7d32;
+  }
+
+  .status-pending {
+    background: #fff3e0;
+    color: #ef6c00;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 30px;
+    color: var(--gray);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--gray);
+  }
+
+  .empty-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #dee2e6;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 10px;
+  }
+
+  .pagination button {
+    padding: 8px 15px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .pagination button:hover {
+    background: #f8f9fc;
+  }
+
+  .pagination button.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  @media (max-width: 768px) {
+    .controls {
+      flex-direction: column;
+    }
+    
+    .search-box {
+      max-width: 100%;
+    }
+    
+    .filter-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Update Payments</h1>
+    <p>Manage and update payment details for completed transactions</p>
+  </div>
+
+  <div class="controls">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" placeholder="Search by receipt no, name, or flight...">
+    </div>
+    
+    <div class="filter-controls">
+      <select id="paymentTypeFilter">
+        <option value="">All Payment Types</option>
+        <option value="Cash">Cash</option>
+        <option value="Visa">Visa</option>
+        <option value="MasterCard">MasterCard</option>
+        <option value="Amex">Amex</option>
+        <option value="UnionPay">UnionPay</option>
+        <option value="Other">Other</option>
+      </select>
+      
+      <select id="statusFilter">
+        <option value="">All Statuses</option>
+        <option value="complete">Complete</option>
+        <option value="pending">Pending</option>
+      </select>
+      
+      <button class="refresh-btn" id="refreshBtn">
+        <i class="fas fa-sync-alt"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table id="paymentsTable">
+      <thead>
+        <tr>
+          <th>Receipt No</th>
+          <th>Name</th>
+          <th>Flight</th>
+          <th>Total Amount</th>
+          <th>Payment Type</th>
+          <th>Batch No</th>
+          <th>Approval Code</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="9" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Loading payments...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="pagination">
+    <button id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+    <button class="active">1</button>
+    <button id="nextBtn"><i class="fas fa-chevron-right"></i></button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="fire1.js"></script>
+
+<script>
+const tableBody = document.querySelector("#paymentsTable tbody");
+const searchInput = document.getElementById("searchInput");
+const paymentTypeFilter = document.getElementById("paymentTypeFilter");
+const statusFilter = document.getElementById("statusFilter");
+const refreshBtn = document.getElementById("refreshBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+let allPayments = [];
+let filteredPayments = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+
+// Load payments needing refinement
+async function loadPayments() {
+  tableBody.innerHTML = `<tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading payments...</td></tr>`;
+  
+  try {
+    let results = [];
+
+    // Query 1: Card (generic quick entries)
+    const cardSnap = await db.collection("bookings")
+      .where("paymentType", "==", "Card")
+      .get();
+    cardSnap.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+
+    // Query 2: Non-cash but incomplete
+    const nonCashSnap = await db.collection("bookings")
+      .where("paymentType", "!=", "Cash")
+      .get();
+    nonCashSnap.forEach(doc => {
+      const d = doc.data();
+      if (!d.batchNo || !d.approvalCode) {
+        results.push({ id: doc.id, ...d });
+      }
+    });
+
+    // Deduplicate by receiptNo
+    const unique = {};
+    results.forEach(r => unique[r.receiptNo] = r);
+    allPayments = Object.values(unique);
+    
+    filterPayments();
+    
+  } catch (error) {
+    console.error("Error loading payments:", error);
+    tableBody.innerHTML = `<tr><td colspan="9" style="color: #dc3545; text-align: center;">Error loading payments: ${error.message}</td></tr>`;
+  }
+}
+
+// Filter payments based on search and filters
+function filterPayments() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const paymentType = paymentTypeFilter.value;
+  const status = statusFilter.value;
+  
+  filteredPayments = allPayments.filter(payment => {
+    // Search filter
+    const matchesSearch = !searchTerm || 
+      payment.receiptNo.toString().includes(searchTerm) ||
+      (payment.name && payment.name.toLowerCase().includes(searchTerm)) ||
+      (payment.flight && payment.flight.toLowerCase().includes(searchTerm));
+    
+    // Payment type filter
+    const matchesPaymentType = !paymentType || payment.paymentType === paymentType;
+    
+    // Status filter
+    let matchesStatus = true;
+    if (status === "complete") {
+      matchesStatus = payment.batchNo && payment.approvalCode;
+    } else if (status === "pending") {
+      matchesStatus = !payment.batchNo || !payment.approvalCode;
+    }
+    
+    return matchesSearch && matchesPaymentType && matchesStatus;
+  });
+  
+  renderPayments();
+}
+
+// Render payments to the table
+function renderPayments() {
+  if (filteredPayments.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="9" class="empty-state">
+          <i class="fas fa-receipt"></i>
+          <p>No payments found</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  // Calculate pagination
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, filteredPayments.length);
+  const pagePayments = filteredPayments.slice(startIndex, endIndex);
+  
+  // Update pagination buttons
+  updatePagination();
+  
+  tableBody.innerHTML = "";
+  pagePayments.forEach(data => {
+    const isComplete = data.batchNo && data.approvalCode;
+    const statusClass = isComplete ? "status-complete" : "status-pending";
+    const statusText = isComplete ? "Complete" : "Pending";
+    
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${data.receiptNo}</td>
+      <td>${data.name || "-"}</td>
+      <td>${data.flight || "-"}</td>
+      <td>${Number(data.total || 0).toFixed(2)} ${data.currency || ""}</td>
+      <td>
+        <select class="payType">
+          <option value="Cash" ${data.paymentType==="Cash"?"selected":""}>Cash</option>
+          <option value="Visa" ${data.paymentType==="Visa"?"selected":""}>Visa</option>
+          <option value="MasterCard" ${data.paymentType==="MasterCard"?"selected":""}>MasterCard</option>
+          <option value="Amex" ${data.paymentType==="Amex"?"selected":""}>Amex</option>
+          <option value="UnionPay" ${data.paymentType==="UnionPay"?"selected":""}>UnionPay</option>
+          <option value="Other" ${data.paymentType==="Other"?"selected":""}>Other</option>
+        </select>
+      </td>
+      <td><input type="text" class="batchNo" value="${data.batchNo || ""}" placeholder="Enter batch no"></td>
+      <td><input type="text" class="approvalCode" value="${data.approvalCode || ""}" placeholder="Enter approval code"></td>
+      <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+      <td>
+        <div class="action-buttons">
+          <button class="btn btn-update" title="Update payment">
+            <i class="fas fa-save"></i> Update
+          </button>
+          <button class="btn btn-print" title="Print receipt">
+            <i class="fas fa-print"></i> Print
+          </button>
+        </div>
+      </td>
+    `;
+
+    // Update handler
+    row.querySelector(".btn-update").addEventListener("click", async () => {
+      const newPayType = row.querySelector(".payType").value;
+      const batchNo = row.querySelector(".batchNo").value.trim();
+      const approvalCode = row.querySelector(".approvalCode").value.trim();
+
+      if (newPayType === "Cash") {
+        if (batchNo || approvalCode) {
+          alert("Cash payments must not have Batch No or Approval Code.");
+          return;
+        }
+      } else {
+        if (!batchNo || !approvalCode) {
+          alert("Non-cash payments require Batch No and Approval Code.");
+          return;
+        }
+      }
+
+      try {
+        await db.collection("bookings").doc(data.id).update({
+          paymentType: newPayType,
+          batchNo: newPayType === "Cash" ? null : batchNo,
+          approvalCode: newPayType === "Cash" ? null : approvalCode
+        });
+        
+        // Update status badge
+        const statusBadge = row.querySelector(".status-badge");
+        statusBadge.textContent = "Complete";
+        statusBadge.className = "status-badge status-complete";
+        
+        alert("Payment updated successfully!");
+      } catch (error) {
+        alert("Error updating payment: " + error.message);
+      }
+    });
+
+    // Print handler -> opens Receipt Viewer page
+    row.querySelector(".btn-print").addEventListener("click", () => {
+      const updated = {
+        ...data,
+        paymentType: row.querySelector(".payType").value,
+        batchNo: row.querySelector(".batchNo").value.trim(),
+        approvalCode: row.querySelector(".approvalCode").value.trim()
+      };
+
+      // Save booking data to localStorage
+      localStorage.setItem("printBooking", JSON.stringify(updated));
+
+      // Open receipt viewer page
+      window.open("receipt.html", "_blank");
+    });
+
+    tableBody.appendChild(row);
+  });
+}
+
+// Update pagination controls
+function updatePagination() {
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+  const paginationContainer = document.getElementById("pagination");
+  
+  // Clear existing pagination buttons (except prev/next)
+  paginationContainer.innerHTML = `
+    <button id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+    <button id="nextBtn"><i class="fas fa-chevron-right"></i></button>
+  `;
+  
+  // Add page number buttons
+  for (let i = 1; i <= totalPages; i++) {
+    const pageBtn = document.createElement("button");
+    pageBtn.textContent = i;
+    pageBtn.className = i === currentPage ? "active" : "";
+    pageBtn.addEventListener("click", () => {
+      currentPage = i;
+      renderPayments();
+    });
+    paginationContainer.insertBefore(pageBtn, nextBtn);
+  }
+  
+  // Add event listeners to prev/next buttons
+  document.getElementById("prevBtn").addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPayments();
+    }
+  });
+  
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderPayments();
+    }
+  });
+}
+
+// Event listeners
+searchInput.addEventListener("input", filterPayments);
+paymentTypeFilter.addEventListener("change", filterPayments);
+statusFilter.addEventListener("change", filterPayments);
+refreshBtn.addEventListener("click", loadPayments);
+
+// Initialize
+loadPayments();
+</script>
+
+</body>
+</html>
