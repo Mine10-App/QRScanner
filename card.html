@@ -742,6 +742,9 @@
   const printBtn = document.getElementById("printBtn");
   const newPaymentBtn = document.getElementById("newPaymentBtn");
 
+  // Receipt counter using localStorage for persistence
+  let receiptCounter = parseInt(localStorage.getItem('receiptCounter')) || 1000;
+
   // Convert inputs to uppercase
   [nameField, flightField, seatField].forEach(input => {
     input.addEventListener("input", () => {
@@ -926,7 +929,6 @@
   // Save button functionality
   document.getElementById("saveBtn").addEventListener("click", async () => {
     const calculation = calculate();
-    const counterRef = db.collection("counters").doc("receiptCounter");
     
     // Validate cash payment
     if (paymentTypeSelect.value === "Cash") {
@@ -948,18 +950,10 @@
     }
     
     try {
-      const nextReceiptNo = await db.runTransaction(async transaction => {
-        const doc = await transaction.get(counterRef);
-        let current = 0;
-        if (!doc.exists) {
-          transaction.set(counterRef, { current: 1 });
-          current = 1;
-        } else {
-          current = doc.data().current + 1;
-          transaction.update(counterRef, { current });
-        }
-        return current;
-      });
+      // Increment receipt counter and save to localStorage
+      receiptCounter++;
+      localStorage.setItem('receiptCounter', receiptCounter.toString());
+      const nextReceiptNo = receiptCounter;
 
       const now = new Date();
       const data = {
