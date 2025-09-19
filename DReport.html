@@ -5,16 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Sales Report</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- Include your Firebase config -->
-<script src="fire2.js"></script>
 <style>
   :root {
-    --light: #f8f9fa;
-    --dark: #212529;
-    --gray: #6c757d;
-    --border: #dee2e6;
-    --shadow: 0 4px 10px rgba(0,0,0,0.1);
-    --radius: 4px;
+    --primary: #2c3e50;
+    --secondary: #34495e;
+    --accent: #3498db;
+    --light: #ecf0f1;
+    --dark: #2c3e50;
+    --border: #bdc3c7;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 8px;
+    --transition: all 0.3s ease;
   }
 
   * {
@@ -25,7 +26,7 @@
 
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f5f5;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
     color: var(--dark);
     line-height: 1.6;
     padding: 20px;
@@ -39,24 +40,23 @@
 
   .header {
     text-align: center;
-    margin-bottom: 20px;
-    padding: 15px;
+    margin-bottom: 30px;
+    padding: 20px;
     background: white;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    border: 1px solid #ddd;
   }
 
   .header h1 {
+    color: var(--primary);
     font-weight: 700;
-    margin-bottom: 5px;
-    font-size: 24px;
-    color: #000;
+    margin-bottom: 8px;
+    font-size: 32px;
   }
 
   .header p {
-    color: var(--gray);
-    font-size: 14px;
+    color: #7f8c8d;
+    font-size: 16px;
   }
 
   .controls {
@@ -65,11 +65,11 @@
     align-items: center;
     gap: 15px;
     margin-bottom: 20px;
-    padding: 15px;
+    padding: 20px;
     background: white;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    border: 1px solid #ddd;
+    flex-wrap: wrap;
   }
 
   .date-control {
@@ -80,45 +80,50 @@
 
   .date-control label {
     font-weight: 600;
-    color: #000;
+    color: var(--dark);
   }
 
   .date-control input {
-    padding: 8px 12px;
-    border: 1px solid #ccc;
+    padding: 10px 15px;
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    font-size: 14px;
+    font-size: 16px;
+    transition: var(--transition);
   }
 
   .date-control input:focus {
     outline: none;
-    border-color: #666;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
   }
 
   .btn {
-    padding: 8px 16px;
-    background: #555;
+    padding: 12px 24px;
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: var(--radius);
-    font-size: 14px;
+    font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
+    transition: var(--transition);
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: background 0.2s;
+    gap: 8px;
   }
 
   .btn:hover {
-    background: #333;
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 
   .btn-print {
-    background: #777;
+    background: #27ae60;
   }
 
   .btn-print:hover {
-    background: #555;
+    background: #219653;
   }
 
   .report-container {
@@ -128,145 +133,138 @@
     overflow: hidden;
     margin-bottom: 30px;
     display: none;
-    border: 1px solid #ddd;
   }
 
   .report-header {
-    background: #f0f0f0;
-    color: #000;
-    padding: 15px 20px;
+    background: var(--primary);
+    color: white;
+    padding: 25px;
     text-align: center;
-    border-bottom: 1px solid #ddd;
   }
 
   .report-header h2 {
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     font-weight: 700;
-    font-size: 20px;
+    font-size: 28px;
   }
 
   .report-header p {
-    font-size: 14px;
+    font-size: 16px;
+    opacity: 0.9;
   }
 
   .report-body {
-    padding: 20px;
+    padding: 30px;
   }
 
   .report-section {
-    margin-bottom: 25px;
+    margin-bottom: 30px;
   }
 
   .report-section h3 {
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ddd;
+    color: var(--primary);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    color: #000;
+    gap: 10px;
+    font-size: 22px;
   }
 
   .report-section h3 i {
-    font-size: 16px;
+    font-size: 24px;
+    color: var(--accent);
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 12px;
-    font-size: 13px;
-    border: 1px solid #ddd;
+    margin-top: 15px;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
   th, td {
-    padding: 10px 12px;
+    padding: 14px 16px;
     text-align: left;
-    border: 1px solid #ddd;
+    border-bottom: 1px solid var(--border);
   }
 
   th {
-    background: #f0f0f0;
+    background: #f8f9fa;
     font-weight: 600;
-    color: #000;
+    color: var(--dark);
+    position: sticky;
+    top: 0;
   }
 
-  .summary-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-top: 25px;
+  tr:hover {
+    background: #f8f9fa;
   }
 
-  .summary-card {
-    background: white;
+  .summary {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
     border-radius: var(--radius);
-    border: 1px solid #ddd;
-    padding: 15px;
-    text-align: center;
+    border-left: 4px solid var(--accent);
   }
 
-  .summary-card h4 {
-    color: #666;
-    margin-bottom: 8px;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .summary-card .value {
+  .summary h3 {
+    color: var(--primary);
+    margin-bottom: 15px;
     font-size: 20px;
-    font-weight: 700;
-    color: #000;
   }
 
-  .summary-card .currency {
-    font-size: 12px;
-    color: #666;
-    margin-left: 4px;
-  }
-
-  .voided-row {
-    background-color: #f9f9f9;
-  }
-
-  .status-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 3px;
-    font-size: 11px;
+  .summary div {
+    margin-bottom: 10px;
     font-weight: 600;
+    font-size: 16px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .summary div:last-child {
+    border-bottom: none;
+  }
+
+  .voided {
+    color: #e74c3c;
+    font-weight: bold;
   }
 
   .status-active {
-    background: #f0f0f0;
-    color: #000;
-    border: 1px solid #ddd;
-  }
-
-  .status-voided {
-    background: #f0f0f0;
-    color: #000;
-    border: 1px solid #ddd;
+    color: #27ae60;
+    font-weight: 600;
   }
 
   .loading {
     text-align: center;
-    padding: 25px;
-    color: #666;
+    padding: 40px;
+    color: #7f8c8d;
+  }
+
+  .loading i {
+    font-size: 36px;
+    margin-bottom: 15px;
+    color: var(--accent);
   }
 
   .empty-state {
     text-align: center;
-    padding: 30px;
-    color: #666;
+    padding: 50px;
+    color: #7f8c8d;
   }
 
   .empty-state i {
-    font-size: 36px;
-    margin-bottom: 10px;
-    color: #ddd;
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #dfe6e9;
+  }
+
+  .empty-state p {
+    font-size: 18px;
   }
 
   @media (max-width: 768px) {
@@ -279,8 +277,8 @@
       width: 100%;
     }
     
-    .summary-cards {
-      grid-template-columns: 1fr;
+    .report-body {
+      padding: 20px;
     }
     
     table {
@@ -288,7 +286,15 @@
     }
     
     th, td {
-      padding: 8px 10px;
+      padding: 10px 12px;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+    }
+    
+    .report-header h2 {
+      font-size: 22px;
     }
   }
 
@@ -296,7 +302,6 @@
     body {
       background: white;
       padding: 0;
-      font-size: 12px;
     }
     
     .container {
@@ -311,19 +316,23 @@
       display: block !important;
       box-shadow: none;
       margin: 0;
-      border: none;
+      width: 100%;
     }
     
     .report-header {
-      border-bottom: 1px solid #000;
+      background: white;
+      color: black;
+      border-bottom: 2px solid #000;
     }
     
     table {
-      page-break-inside: avoid;
+      box-shadow: none;
     }
     
-    .summary-cards {
-      page-break-inside: avoid;
+    th {
+      background: #f0f0f0 !important;
+      -webkit-print-color-adjust: exact;
+      color-adjust: exact;
     }
   }
 </style>
@@ -333,7 +342,7 @@
 <div class="container">
   <div class="header">
     <h1 id="companyName">Daily Sales Report</h1>
-    <p>Generate and view daily sales reports</p>
+    <p>Generate and analyze daily sales performance</p>
   </div>
 
   <div class="controls">
@@ -356,10 +365,6 @@
     </div>
 
     <div class="report-body">
-      <div class="summary-cards" id="summaryCards">
-        <!-- Summary cards will be inserted here by JavaScript -->
-      </div>
-
       <div class="report-section">
         <h3><i class="fas fa-receipt"></i> Active Receipts</h3>
         <table id="receiptsTable">
@@ -388,193 +393,74 @@
               <th>Payment Type</th>
               <th>Currency</th>
               <th>Total Amount</th>
-              <th>Reason</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
+
+      <div class="summary" id="summaryDiv"></div>
     </div>
   </div>
 </div>
 
-<!-- Firebase SDK -->
+<script src="Co.js"></script>
+<script>
+document.getElementById("companyName").innerText = companyInfo.name || "Company Name";
+</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="fire1.js"></script>
 
 <script>
-// Initialize Firebase
-let db;
-try {
-  // Check if firebaseConfig is available from fire2.js
-  if (typeof firebaseConfig !== 'undefined') {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    console.log("Firebase initialized successfully");
-  } else {
-    throw new Error("Firebase configuration not found");
-  }
-} catch (error) {
-  console.error("Firebase initialization error:", error);
-  // Fallback to demo mode
-  initDemoMode();
-}
-
-function initDemoMode() {
-  console.log("Initializing demo mode");
-  db = {
-    collection: (name) => {
-      return {
-        where: (field, operator, value) => {
-          return {
-            get: () => {
-              // Sample data for demonstration with the specific date
-              const sampleData = [
-                {
-                  id: '1',
-                  data: () => ({
-                    receiptNo: '1001',
-                    flight: 'TK123',
-                    paymentType: 'Cash',
-                    currency: 'USD',
-                    total: 150.00,
-                    batchNo: '',
-                    approvalCode: '',
-                    status: 'Active',
-                    date: "2025-09-19",
-                    timestamp: new Date("2025-09-19")
-                  })
-                },
-                {
-                  id: '2',
-                  data: () => ({
-                    receiptNo: '1002',
-                    flight: 'QR456',
-                    paymentType: 'Visa',
-                    currency: 'USD',
-                    total: 200.00,
-                    batchNo: 'B123',
-                    approvalCode: 'A456',
-                    status: 'Active',
-                    date: "2025-09-19",
-                    timestamp: new Date("2025-09-19")
-                  })
-                },
-                {
-                  id: '3',
-                  data: () => ({
-                    receiptNo: '1003',
-                    flight: 'EK789',
-                    paymentType: 'Cash',
-                    currency: 'USD',
-                    total: 175.50,
-                    batchNo: '',
-                    approvalCode: '',
-                    status: 'Voided',
-                    voided: true,
-                    voidReason: 'Customer cancellation',
-                    date: "2025-09-19",
-                    timestamp: new Date("2025-09-19")
-                  })
-                }
-              ];
-              
-              // Filter data based on the query
-              let filteredData = sampleData;
-              
-              // If this is a date range query, filter by date
-              if (field === 'timestamp' || field === 'date') {
-                const selectedDate = document.getElementById('reportDate').value;
-                
-                filteredData = sampleData.filter(item => {
-                  const itemDate = item.data().date || 
-                                 (item.data().timestamp ? formatFirebaseDate(item.data().timestamp) : null);
-                  return itemDate === selectedDate;
-                });
-              }
-              
-              return Promise.resolve({
-                docs: filteredData,
-                forEach: (callback) => {
-                  filteredData.forEach(doc => callback(doc));
-                }
-              });
-            }
-          };
-        }
-      };
-    }
-  };
-}
-
-// Set company name
-document.getElementById("companyName").innerText = "Lounge Management System";
-
 const reportDateInput = document.getElementById("reportDate");
 const generateBtn = document.getElementById("generateBtn");
 const reportContainer = document.getElementById("reportContainer");
 const reportTitle = document.getElementById("reportTitle");
 const reportDateText = document.getElementById("reportDateText");
-const summaryCards = document.getElementById("summaryCards");
+const summaryDiv = document.getElementById("summaryDiv");
 const receiptsTableBody = document.querySelector("#receiptsTable tbody");
 const voidedTableBody = document.querySelector("#voidedTable tbody");
 
-// Set default date to the date in your Firebase
-reportDateInput.value = "2025-09-19";
+// Set default date to today
+const today = new Date();
+reportDateInput.value = today.toISOString().split('T')[0];
 
 generateBtn.addEventListener("click", async () => {
   const selectedDate = reportDateInput.value;
   if(!selectedDate) return alert("Select a valid date");
 
   reportContainer.style.display = "block";
-  reportTitle.innerText = `Daily Sales Report`;
-  reportDateText.innerText = `Date: ${formatDate(selectedDate)}`;
+  reportTitle.innerText = `Sales Report for ${selectedDate}`;
+  reportDateText.innerText = `Generated on: ${new Date().toLocaleDateString()}`;
 
   try {
     // Show loading state
     receiptsTableBody.innerHTML = '<tr><td colspan="8" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading data...</td></tr>';
     voidedTableBody.innerHTML = '';
-    summaryCards.innerHTML = '';
+    summaryDiv.innerHTML = '';
 
-    // Get data from Firebase - try different field names
-    let snapshot;
-    
-    // First try to query by date field
-    try {
-      snapshot = await db.collection("bookings")
-        .where("date", "==", selectedDate)
-        .get();
-    } catch (e) {
-      console.log("Trying timestamp field instead");
-      // If date field doesn't work, try timestamp field
-      const start = new Date(selectedDate + "T00:00:00");
-      const end = new Date(selectedDate + "T23:59:59");
-      
-      snapshot = await db.collection("bookings")
-        .where("timestamp", ">=", start)
-        .where("timestamp", "<=", end)
-        .get();
-    }
+    const start = new Date(selectedDate + "T00:00:00");
+    const end = new Date(selectedDate + "T23:59:59");
+
+    const snapshot = await db.collection("bookings")
+      .where("timestamp", ">=", start)
+      .where("timestamp", "<=", end)
+      .get();
 
     let totalsCashByCurrency = {};
     let totalsNonCashByTypeCurrency = {};
     let voidedByTypeCurrency = {};
-    let totalActive = 0;
-    let totalVoided = 0;
 
     receiptsTableBody.innerHTML = "";
     voidedTableBody.innerHTML = "";
-    summaryCards.innerHTML = "";
 
-    // Process each document
-    snapshot.forEach(doc => {
+    snapshot.docs.forEach(doc => {
       const data = doc.data();
 
       const key = `${data.paymentType} (${data.currency})`;
 
-      if(data.voided || data.status === "Voided"){
-        totalVoided++;
-        
+      if(data.voided){
         // Voided totals to subtract later
         if(data.paymentType.toLowerCase() === "cash"){
           if(!voidedByTypeCurrency[data.currency]) voidedByTypeCurrency[data.currency] = 0;
@@ -585,19 +471,16 @@ generateBtn.addEventListener("click", async () => {
         }
 
         const tr = document.createElement("tr");
-        tr.className = "voided-row";
         tr.innerHTML = `
           <td>${data.receiptNo}</td>
-          <td>${data.paymentType}</td>
-          <td>${data.currency}</td>
-          <td>${data.total.toFixed(2)}</td>
-          <td>${data.voidReason || 'Customer cancellation'}</td>
+          <td class="voided">-</td>
+          <td class="voided">${data.paymentType}</td>
+          <td class="voided">${data.currency}</td>
+          <td class="voided">${data.total.toFixed(2)}</td>
         `;
         voidedTableBody.appendChild(tr);
 
       } else {
-        totalActive++;
-        
         // Active receipts table
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -608,7 +491,7 @@ generateBtn.addEventListener("click", async () => {
           <td>${data.total.toFixed(2)}</td>
           <td>${data.batchNo || '-'}</td>
           <td>${data.approvalCode || '-'}</td>
-          <td><span class="status-badge status-active">Active</span></td>
+          <td class="status-active">Active</td>
         `;
         receiptsTableBody.appendChild(tr);
 
@@ -630,73 +513,34 @@ generateBtn.addEventListener("click", async () => {
       if(voidedByTypeCurrency[key]) totalsNonCashByTypeCurrency[key] -= voidedByTypeCurrency[key];
     }
 
-    // Build summary cards
-    summaryCards.innerHTML = `
-      <div class="summary-card">
-        <h4>Active Receipts</h4>
-        <div class="value">${totalActive}</div>
-      </div>
-      <div class="summary-card">
-        <h4>Voided Receipts</h4>
-        <div class="value">${totalVoided}</div>
-      </div>
-    `;
+    // Build summary
+    summaryDiv.innerHTML = "<h3>Summary (Active Receipts Only, Voided Excluded)</h3>";
 
-    // Add currency summary cards
     for(const curr in totalsCashByCurrency){
-      if(totalsCashByCurrency[curr] > 0) {
-        summaryCards.innerHTML += `
-          <div class="summary-card">
-            <h4>Cash (${curr})</h4>
-            <div class="value">${totalsCashByCurrency[curr].toFixed(2)}<span class="currency">${curr}</span></div>
-          </div>
-        `;
+      if (totalsCashByCurrency[curr] > 0) {
+        summaryDiv.innerHTML += `<div>Total Cash in ${curr}: ${totalsCashByCurrency[curr].toFixed(2)}</div>`;
       }
     }
 
     for(const key in totalsNonCashByTypeCurrency){
-      if(totalsNonCashByTypeCurrency[key] > 0) {
-        const [type, currency] = key.split(' (');
-        const curr = currency.replace(')', '');
-        summaryCards.innerHTML += `
-          <div class="summary-card">
-            <h4>${type} (${curr})</h4>
-            <div class="value">${totalsNonCashByTypeCurrency[key].toFixed(2)}<span class="currency">${curr}</span></div>
-          </div>
-        `;
+      if (totalsNonCashByTypeCurrency[key] > 0) {
+        summaryDiv.innerHTML += `<div>Total by ${key}: ${totalsNonCashByTypeCurrency[key].toFixed(2)}</div>`;
       }
     }
 
     // Show empty state if no data
-    if (totalActive === 0 && totalVoided === 0) {
+    if (receiptsTableBody.children.length === 0 && voidedTableBody.children.length === 0) {
       receiptsTableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-receipt"></i><p>No receipts found for this date</p></td></tr>';
     }
 
   } catch(err){
     console.error("Error generating report:", err);
-    receiptsTableBody.innerHTML = '<tr><td colspan="8" style="color: #dc3545; text-align: center;">Error loading data: ' + err.message + '</td></tr>';
+    receiptsTableBody.innerHTML = '<tr><td colspan="8" style="color: #e74c3c; text-align: center; padding: 20px;">Error generating report: ' + err.message + '</td></tr>';
   }
 });
 
 function printReport(){
   window.print();
-}
-
-function formatDate(dateString) {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
-}
-
-function formatFirebaseDate(timestamp) {
-  // Handle Firebase timestamp format
-  if (timestamp && timestamp.toDate) {
-    return timestamp.toDate().toISOString().split('T')[0];
-  } else if (timestamp instanceof Date) {
-    return timestamp.toISOString().split('T')[0];
-  } else if (typeof timestamp === 'string') {
-    return timestamp.split('T')[0];
-  }
-  return null;
 }
 </script>
 </body>
