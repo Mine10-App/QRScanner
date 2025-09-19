@@ -237,6 +237,22 @@
     padding-left: 45px;
   }
 
+  /* Cash payment fields */
+  .cash-payment-fields {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fc;
+    border-radius: var(--radius);
+    border-left: 4px solid #28a745;
+  }
+
+  .cash-payment-fields.visible {
+    display: grid;
+  }
+
   /* Receipt styles */
   #receiptContainer {
     display: none;
@@ -309,6 +325,10 @@
       grid-template-columns: 1fr;
     }
     
+    .cash-payment-fields {
+      grid-template-columns: 1fr;
+    }
+    
     .card-body {
       padding: 20px 15px;
     }
@@ -349,7 +369,7 @@
 
 <div class="container">
   <div class="header">
-    <h1>Payment Entry</h1>
+    <h1>Booking / Payment Entry</h1>
     <p>Enter passenger details and process payments</p>
   </div>
 
@@ -358,7 +378,7 @@
     <div class="card">
       <div class="card-header">
         <i class="fas fa-info-circle"></i>
-        <span>Walk In Information</span>
+        <span>Booking Information</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -474,6 +494,25 @@
           </div>
         </div>
         
+        <!-- Cash Payment Fields -->
+        <div id="cashPaymentFields" class="cash-payment-fields">
+          <div class="form-group">
+            <label for="paidAmount">Paid Amount</label>
+            <div class="input-icon">
+              <i class="fas fa-money-bill-wave"></i>
+              <input type="number" id="paidAmount" class="form-control" placeholder="0.00" min="0" step="0.01">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="balanceAmount">Balance</label>
+            <div class="input-icon">
+              <i class="fas fa-coins"></i>
+              <input type="text" id="balanceAmount" class="form-control" readonly>
+            </div>
+          </div>
+        </div>
+        
         <div class="divider"></div>
         
         <h3 class="section-title">
@@ -567,6 +606,16 @@
           <span>Payment Method:</span>
           <span id="receipt-payment-type"></span>
         </div>
+        <div id="receipt-cash-details">
+          <div class="receipt-line">
+            <span>Paid Amount:</span>
+            <span id="receipt-paid-amount"></span>
+          </div>
+          <div class="receipt-line">
+            <span>Balance:</span>
+            <span id="receipt-balance-amount"></span>
+          </div>
+        </div>
         <div class="receipt-line">
           <span>Currency:</span>
           <span id="receipt-currency"></span>
@@ -574,8 +623,8 @@
       </div>
       
       <div class="receipt-footer">
-        <p>This Package is valid for 3 hours</p>
-        <p>Thank you!</p>
+        <p>Thank you for your business!</p>
+        <p>www.transportservice.example</p>
       </div>
     </div>
     
@@ -613,6 +662,9 @@
   const adultCount = document.getElementById("adultCount");
   const kidCount = document.getElementById("kidCount");
   const paymentTypeSelect = document.getElementById("paymentType");
+  const paidAmountField = document.getElementById("paidAmount");
+  const balanceAmountField = document.getElementById("balanceAmount");
+  const cashPaymentFields = document.getElementById("cashPaymentFields");
   const totalAdultsField = document.getElementById("rateField");
   const gstField = document.getElementById("gstField");
   const totalField = document.getElementById("totalField");
@@ -634,6 +686,9 @@
   const receiptTotal = document.getElementById("receipt-total");
   const receiptPaymentType = document.getElementById("receipt-payment-type");
   const receiptCurrency = document.getElementById("receipt-currency");
+  const receiptPaidAmount = document.getElementById("receipt-paid-amount");
+  const receiptBalanceAmount = document.getElementById("receipt-balance-amount");
+  const receiptCashDetails = document.getElementById("receipt-cash-details");
   const printBtn = document.getElementById("printBtn");
   const newPaymentBtn = document.getElementById("newPaymentBtn");
 
@@ -642,6 +697,41 @@
     input.addEventListener("input", () => {
       input.value = input.value.toUpperCase();
     });
+  });
+
+  // Toggle cash payment fields based on payment type
+  paymentTypeSelect.addEventListener("change", function() {
+    if (this.value === "Cash") {
+      cashPaymentFields.classList.add("visible");
+      receiptCashDetails.style.display = "block";
+    } else {
+      cashPaymentFields.classList.remove("visible");
+      receiptCashDetails.style.display = "none";
+      // Clear cash fields
+      paidAmountField.value = "";
+      balanceAmountField.value = "";
+    }
+  });
+
+  // Calculate balance when paid amount changes
+  paidAmountField.addEventListener("input", function() {
+    const total = parseFloat(totalField.textContent.replace(/[^\d.-]/g, '')) || 0;
+    const paidAmount = parseFloat(this.value) || 0;
+    const balance = paidAmount - total;
+    
+    const currencySymbol = currencyType.value === 'USD' ? '$' : 'MVR ';
+    balanceAmountField.value = balance >= 0 ? 
+      `${currencySymbol}${balance.toFixed(2)}` : 
+      `-${currencySymbol}${Math.abs(balance).toFixed(2)}`;
+    
+    // Color coding for balance
+    if (balance < 0) {
+      balanceAmountField.style.color = '#dc3545'; // Red for negative balance
+    } else if (balance === 0) {
+      balanceAmountField.style.color = '#28a745'; // Green for exact amount
+    } else {
+      balanceAmountField.style.color = '#17a2b8'; // Blue for positive balance
+    }
   });
 
   // QR Code Parser
@@ -710,6 +800,25 @@
     gstField.textContent = currencySymbol + gstAmount.toFixed(2);
     totalField.textContent = currencySymbol + total.toFixed(2);
 
+    // Recalculate balance if paid amount exists
+    if (paymentTypeSelect.value === "Cash" && paidAmountField.value) {
+      const paidAmount = parseFloat(paidAmountField.value) || 0;
+      const balance = paidAmount - total;
+      
+      balanceAmountField.value = balance >= 0 ? 
+        `${currencySymbol}${balance.toFixed(2)}` : 
+        `-${currencySymbol}${Math.abs(balance).toFixed(2)}`;
+      
+      // Color coding for balance
+      if (balance < 0) {
+        balanceAmountField.style.color = '#dc3545';
+      } else if (balance === 0) {
+        balanceAmountField.style.color = '#28a745';
+      } else {
+        balanceAmountField.style.color = '#17a2b8';
+      }
+    }
+
     return {
       total,
       subtotal,
@@ -739,11 +848,17 @@
     // Reset form
     document.getElementById("paymentForm").reset();
     
+    // Hide cash fields
+    cashPaymentFields.classList.remove("visible");
+    
     // Hide receipt
     receiptContainer.style.display = 'none';
     
     // Reset date to today
     dateField.value = new Date().toISOString().split('T')[0];
+    
+    // Reset balance field color
+    balanceAmountField.style.color = '';
     
     // Recalculate totals
     calculate();
@@ -756,6 +871,25 @@
   document.getElementById("saveBtn").addEventListener("click", async () => {
     const calculation = calculate();
     const counterRef = db.collection("counters").doc("receiptCounter");
+    
+    // Validate cash payment
+    if (paymentTypeSelect.value === "Cash") {
+      const paidAmount = parseFloat(paidAmountField.value) || 0;
+      if (paidAmount <= 0) {
+        alert("Please enter a valid paid amount for cash payment");
+        paidAmountField.focus();
+        return;
+      }
+      
+      const balance = paidAmount - calculation.total;
+      if (balance < 0) {
+        const confirmPayment = confirm(`The paid amount is less than the total. The balance is negative: ${calculation.currencySymbol}${Math.abs(balance).toFixed(2)}\nDo you want to proceed?`);
+        if (!confirmPayment) {
+          paidAmountField.focus();
+          return;
+        }
+      }
+    }
     
     try {
       const nextReceiptNo = await db.runTransaction(async transaction => {
@@ -790,6 +924,12 @@
         timestamp: now
       };
 
+      // Add cash payment details if payment type is cash
+      if (paymentTypeSelect.value === "Cash") {
+        data.paidAmount = parseFloat(paidAmountField.value) || 0;
+        data.balance = data.paidAmount - calculation.total;
+      }
+
       await db.collection("bookings").add(data);
       
       // Update receipt with data
@@ -808,6 +948,17 @@
       receiptTotal.textContent = `${calculation.currencySymbol}${calculation.total.toFixed(2)}`;
       receiptPaymentType.textContent = paymentTypeSelect.value;
       receiptCurrency.textContent = currencyType.value;
+      
+      // Update cash details on receipt if payment is cash
+      if (paymentTypeSelect.value === "Cash") {
+        const paidAmount = parseFloat(paidAmountField.value) || 0;
+        const balance = paidAmount - calculation.total;
+        receiptPaidAmount.textContent = `${calculation.currencySymbol}${paidAmount.toFixed(2)}`;
+        receiptBalanceAmount.textContent = `${calculation.currencySymbol}${balance.toFixed(2)}`;
+        receiptCashDetails.style.display = "block";
+      } else {
+        receiptCashDetails.style.display = "none";
+      }
       
       // Show receipt container
       receiptContainer.style.display = 'block';
