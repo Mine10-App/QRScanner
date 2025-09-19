@@ -1,100 +1,121 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Live QR Code Display</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shift Management</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    h2 { text-align: center; }
-    ul { list-style: none; padding: 0; max-width: 500px; margin: auto; }
-    li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #f0f0f0;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    button.copy-btn {
-      padding: 5px 10px;
-      border: none;
-      background: #007bff;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button.copy-btn.copied {
-      background: #28a745; /* green when copied */
-    }
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:20px;background:#f4f6fb}
+    .container{max-width:900px;margin:0 auto}
+    h1{margin-bottom:8px}
+    .row{display:flex;gap:16px;flex-wrap:wrap}
+    .card{background:white;padding:20px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);flex:1;min-width:260px}
+    .status{font-weight:700;margin:6px 0}
+    .meta{color:#666;font-size:13px}
+    button{padding:10px 14px;border-radius:8px;border:0;cursor:pointer}
+    .open{background:#16a34a;color:white}
+    .close{background:#ef4444;color:white}
+    .disabled{opacity:.45;cursor:not-allowed}
+    .controls{margin-top:12px}
+    #msg{margin-top:12px;color:#333}
+    .small{font-size:13px;color:#555}
   </style>
 </head>
 <body>
+  <div class="container">
+    <h1>Shift Management</h1>
+    <div class="small">Date: <span id="today"></span></div>
 
-<h2>Live Scans1</h2>
-<ul id="scan-list"></ul>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyC5G36djlzBuhNEzKzrvcJ_1-qvrTm1bOs",
-    authDomain: "qr-scanner-live-5b385.firebaseapp.com",
-    projectId: "qr-scanner-live-5b385",
-    storageBucket: "qr-scanner-live-5b385.firebasestorage.app",
-    messagingSenderId: "260207453177",
-    appId: "1:260207453177:web:ea438ade7b1b56270e1328",
-    measurementId: "G-WQEEHEPWG3"
-  };
+    <div class="row" style="margin-top:16px">
+      <div class="card" id="shift1-card">
+        <h2>Shift 1</h2>
+        <div class="status">Status: <span id="s1-status">—</span></div>
+        <div class="meta">Opened at: <span id="s1-open">—</span></div>
+        <div class="meta">Closed at: <span id="s1-close">—</span></div>
+        <div class="controls">
+          <button id="s1-open-btn" class="open">Open Shift 1</button>
+          <button id="s1-close-btn" class="close">Close Shift 1</button>
+        </div>
+      </div>
 
-  const app = firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const scanList = document.getElementById("scan-list");
 
-  // ✅ CHANGED: use serverTimestamp field for ordering instead of string "date"
-  db.collection("scans").orderBy("timestamp", "desc")
-    .onSnapshot(snapshot => {
-      scanList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const data = doc.data();
+      <div class="card" id="shift2-card">
+        <h2>Shift 2</h2>
+        <div class="status">Status: <span id="s2-status">—</span></div>
+        <div class="meta">Opened at: <span id="s2-open">—</span></div>
+        <div class="meta">Closed at: <span id="s2-close">—</span></div>
+        <div class="controls">
+          <button id="s2-open-btn" class="open">Open Shift 2</button>
+          <button id="s2-close-btn" class="close">Close Shift 2</button>
+        </div>
+      </div>
+    </div>
 
-        // ✅ CHANGED: use data.code (new field) instead of data.value
-        if (!data || !data.code) return;
 
-        const li = document.createElement("li");
+    <div id="msg"></div>
+  </div>
 
-        const textSpan = document.createElement("span");
-        textSpan.textContent = data.code; // ✅ CHANGED
 
-        // ✅ CHANGED: format timestamp correctly (serverTimestamp)
-        const ts = data.timestamp?.toDate().toLocaleString() || "";
+  <!--
+    IMPORTANT: You must provide your Firebase setup & initialization in `fire1.js`.
+    fire1.js should load Firebase SDK and initialize firebase app (either compat or namespaced firebase object).
+    This page expects the "compat" API (firebase.firestore(), firebase.auth() etc.).
 
-        const copyBtn = document.createElement("button");
-        copyBtn.textContent = "Copy";
-        copyBtn.classList.add("copy-btn");
 
-        copyBtn.addEventListener("click", async () => {
-          try {
-            await navigator.clipboard.writeText(data.code); // ✅ CHANGED
-            copyBtn.textContent = "Copied!";
-            copyBtn.classList.add("copied");
-            setTimeout(() => {
-              copyBtn.textContent = "Copy";
-              copyBtn.classList.remove("copied");
-            }, 2000);
-          } catch (err) {
-            console.error("Copy failed:", err);
-          }
-        });
+    Example fire1.js (very simple):
+      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+      <script>
+        const firebaseConfig = { /* your config */ };
+        firebase.initializeApp(firebaseConfig);
+      </script>
+  -->
 
-        li.appendChild(textSpan);
-        li.append(" — " + ts); // ✅ show date after code
-        li.appendChild(copyBtn);
-        scanList.appendChild(li);
-      });
-    });
-</script>
 
-</body>
+  <!-- user-provided firebase initialization file (fire1.js) -->
+  <script src="fire1.js"></script>
+
+
+  <script>
+    // ---------- Config / easy changes ----------
+      if (!confirm('Close Shift 1 now?')) return;
 </html>
 
+
+
+Done — I created a single-file webpage named Shift Management (opened as shift_management.html on the canvas). It contains a complete HTML+JS implementation that:
+
+Shows two shift cards with live status, opened/closed timestamps.
+
+Saves shift open/close events to Firestore under a document keyed by today's YYYY-MM-DD date.
+
+Enforces the workflow: open/close Shift 1, then open/close Shift 2; after both shifts have been closed once the page will require a password to re-open either shift.
+
+Uses a bothClosedOnce flag to track that both shifts were closed (so reopen requires password).
+
+Uses a simple hard-coded reopen password Reopen123 (change in the code).
+
+Expects your fire1.js to include Firebase SDK + initialization (the code uses the firebase compat API and firebase.firestore()).
+
+How to use
+
+Open the Shift Management document on the canvas and copy/save it as shift_management.html.
+
+Add your fire1.js file (loaded before this script). fire1.js should initialize the Firebase app (example in the file comments shows using the compat scripts).
+
+Edit REOPEN_PASSWORD inside the script to a secure password you want.
+
+Open the HTML in a browser. Actions (open/close) are saved to Firestore and the UI updates in real time.
+
+If you want, I can:
+
+Change the code to use the modular Firebase SDK (import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore') instead of compat style.
+
+Add a modal password UI instead of prompt().
+
+Add auditing (which user opened/closed) using Firebase Authentication.
+
+Tell me which of the above (if any) you want next and I’ll update the file directly.
+
+ChatG
