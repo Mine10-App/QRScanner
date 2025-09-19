@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shift Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             box-sizing: border-box;
@@ -33,11 +34,33 @@
             border-radius: 10px;
             margin-bottom: 30px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
         
         h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
+        }
+        
+        .current-shift-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 30px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         .dashboard {
@@ -54,10 +77,29 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
             text-align: center;
             transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
         
         .shift-card:hover {
             transform: translateY(-5px);
+        }
+        
+        .shift-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+        }
+        
+        .shift-card.shift1::before {
+            background-color: #3498db;
+        }
+        
+        .shift-card.shift2::before {
+            background-color: #2ecc71;
         }
         
         .shift-title {
@@ -65,6 +107,10 @@
             margin-bottom: 20px;
             color: #2c3e50;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .shift-info {
@@ -280,6 +326,25 @@
             margin-top: 20px;
         }
         
+        .firebase-status {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        
+        .connected {
+            color: #2ecc71;
+        }
+        
+        .disconnected {
+            color: #e74c3c;
+        }
+        
         @media (max-width: 768px) {
             .dashboard {
                 grid-template-columns: 1fr;
@@ -294,29 +359,42 @@
                 margin-top: 5px;
                 align-self: flex-end;
             }
+            
+            .current-shift-indicator {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin-top: 15px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Shift Management System</h1>
+            <h1><i class="fas fa-clock"></i> Shift Management System</h1>
             <p id="current-date">Current Date: Loading...</p>
+            <div id="current-shift-indicator" class="current-shift-indicator" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="current-shift-text">No Active Shift</span>
+            </div>
         </header>
         
         <div class="rules-panel">
             <h2 class="rules-title">System Rules</h2>
             <ul class="rules-list">
                 <li>Two shifts per day: Shift 1 (Morning) and Shift 2 (Evening)</li>
+                <li>Each shift can only be opened and closed once per day</li>
+                <li>To open a shift more than once, supervisory password is required</li>
                 <li>Shift 2 cannot be opened while Shift 1 is still open</li>
-                <li>Both shifts must be closed before reopening any shift</li>
-                <li>Reopening a shift requires a special password</li>
+                <li>System automatically detects which shift is currently active</li>
             </ul>
         </div>
         
         <div class="dashboard">
-            <div class="shift-card">
-                <h2 class="shift-title">Shift 1 (Morning)</h2>
+            <div class="shift-card shift1">
+                <h2 class="shift-title"><i class="fas fa-sun"></i> Shift 1 (Morning)</h2>
                 <div id="shift1-status" class="shift-info">Loading status...</div>
                 <div id="shift1-times" class="shift-times">
                     <div class="time-entry">
@@ -327,13 +405,17 @@
                         <span>Closed at:</span>
                         <span id="shift1-close-time">--:--:--</span>
                     </div>
+                    <div class="time-entry">
+                        <span>Today's Status:</span>
+                        <span id="shift1-today">Not opened today</span>
+                    </div>
                 </div>
                 <button id="shift1-open-btn" class="btn btn-success">Open Shift</button>
                 <button id="shift1-close-btn" class="btn btn-danger">Close Shift</button>
             </div>
             
-            <div class="shift-card">
-                <h2 class="shift-title">Shift 2 (Evening)</h2>
+            <div class="shift-card shift2">
+                <h2 class="shift-title"><i class="fas fa-moon"></i> Shift 2 (Evening)</h2>
                 <div id="shift2-status" class="shift-info">Loading status...</div>
                 <div id="shift2-times" class="shift-times">
                     <div class="time-entry">
@@ -344,10 +426,19 @@
                         <span>Closed at:</span>
                         <span id="shift2-close-time">--:--:--</span>
                     </div>
+                    <div class="time-entry">
+                        <span>Today's Status:</span>
+                        <span id="shift2-today">Not opened today</span>
+                    </div>
                 </div>
                 <button id="shift2-open-btn" class="btn btn-success">Open Shift</button>
                 <button id="shift2-close-btn" class="btn btn-danger">Close Shift</button>
             </div>
+        </div>
+        
+        <div class="firebase-status">
+            <i id="firebase-status-icon" class="fas fa-plug"></i>
+            <span id="firebase-status-text">Connecting to Firebase...</span>
         </div>
         
         <div class="shift-history">
@@ -361,10 +452,10 @@
     <!-- Modal for password entry -->
     <div id="password-modal" class="modal">
         <div class="modal-content">
-            <h2 class="modal-title">Enter Admin Password</h2>
+            <h2 class="modal-title">Enter Supervisor Password</h2>
             <div class="form-group">
                 <label for="password-input">Password</label>
-                <input type="password" id="password-input" placeholder="Enter special password">
+                <input type="password" id="password-input" placeholder="Enter supervisor password">
             </div>
             <div class="modal-buttons">
                 <button id="cancel-btn" class="btn btn-danger">Cancel</button>
@@ -372,8 +463,49 @@
             </div>
         </div>
     </div>
+
+    <!-- Firebase App (initialized in fire1.js) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Your Firebase config file -->
+    <script src="fire1.js"></script>
     
     <script>
+        // Initialize Firebase (assuming fire1.js contains the config)
+        if (typeof firebaseConfig !== 'undefined') {
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            
+            // Update Firebase status
+            const updateFirebaseStatus = (connected) => {
+                const statusIcon = document.getElementById('firebase-status-icon');
+                const statusText = document.getElementById('firebase-status-text');
+                
+                if (connected) {
+                    statusIcon.className = 'fas fa-plug connected';
+                    statusText.innerHTML = 'Connected to <span class="connected">Firebase</span>';
+                } else {
+                    statusIcon.className = 'fas fa-plug disconnected';
+                    statusText.innerHTML = 'Disconnected from <span class="disconnected">Firebase</span>';
+                }
+            };
+            
+            // Monitor connection state
+            firebase.firestore().enableNetwork()
+                .then(() => {
+                    updateFirebaseStatus(true);
+                })
+                .catch((error) => {
+                    updateFirebaseStatus(false);
+                    console.error("Firebase connection error:", error);
+                });
+        } else {
+            console.error("Firebase configuration not found. Please ensure fire1.js is loaded and contains your Firebase config.");
+            document.getElementById('firebase-status-text').innerHTML = 
+                '<span class="disconnected">Firebase config not found</span>';
+        }
+
         // System state
         const state = {
             shifts: {
@@ -382,18 +514,23 @@
                     name: "Shift 1 (Morning)", 
                     open: false, 
                     openTime: null, 
-                    closeTime: null 
+                    closeTime: null,
+                    openedToday: false,
+                    closedToday: false
                 },
                 shift2: { 
                     id: 2, 
                     name: "Shift 2 (Evening)", 
                     open: false, 
                     openTime: null, 
-                    closeTime: null 
+                    closeTime: null,
+                    openedToday: false,
+                    closedToday: false
                 }
             },
-            adminPassword: "admin123", // Default password
-            history: []
+            adminPassword: "super123", // Supervisor password
+            history: [],
+            currentShift: null
         };
 
         // DOM Elements
@@ -404,12 +541,16 @@
             shift1CloseTime: document.getElementById('shift1-close-time'),
             shift2OpenTime: document.getElementById('shift2-open-time'),
             shift2CloseTime: document.getElementById('shift2-close-time'),
+            shift1Today: document.getElementById('shift1-today'),
+            shift2Today: document.getElementById('shift2-today'),
             shift1OpenBtn: document.getElementById('shift1-open-btn'),
             shift1CloseBtn: document.getElementById('shift1-close-btn'),
             shift2OpenBtn: document.getElementById('shift2-open-btn'),
             shift2CloseBtn: document.getElementById('shift2-close-btn'),
             historyList: document.getElementById('history-list'),
             currentDate: document.getElementById('current-date'),
+            currentShiftIndicator: document.getElementById('current-shift-indicator'),
+            currentShiftText: document.getElementById('current-shift-text'),
             passwordModal: document.getElementById('password-modal'),
             passwordInput: document.getElementById('password-input'),
             cancelBtn: document.getElementById('cancel-btn'),
@@ -418,10 +559,17 @@
 
         // Initialize the application
         function init() {
-            loadFromLocalStorage();
+            // Try to load from Firebase first, then fallback to localStorage
+            if (typeof db !== 'undefined') {
+                loadFromFirebase();
+            } else {
+                loadFromLocalStorage();
+            }
+            
             updateUI();
             setupEventListeners();
             updateCurrentDate();
+            checkDayChange();
         }
 
         // Update current date display
@@ -431,6 +579,33 @@
             
             // Update every minute
             setTimeout(updateCurrentDate, 60000);
+        }
+
+        // Check if day has changed since last activity
+        function checkDayChange() {
+            const today = new Date().toLocaleDateString();
+            const lastActivityDate = localStorage.getItem('lastActivityDate');
+            
+            if (lastActivityDate !== today) {
+                // Day has changed, reset today's flags
+                state.shifts.shift1.openedToday = false;
+                state.shifts.shift1.closedToday = false;
+                state.shifts.shift2.openedToday = false;
+                state.shifts.shift2.closedToday = false;
+                
+                // Save the new date
+                localStorage.setItem('lastActivityDate', today);
+                
+                // Update UI
+                updateUI();
+                
+                // Save to Firebase if available
+                if (typeof db !== 'undefined') {
+                    saveToFirebase();
+                } else {
+                    saveToLocalStorage();
+                }
+            }
         }
 
         // Set up event listeners
@@ -459,13 +634,13 @@
                 return;
             }
             
-            // Check if both shifts are closed (normal operation)
-            if (!state.shifts.shift1.open && !state.shifts.shift2.open) {
-                openShift(shiftId);
-            } else {
-                // One of the shifts is open, require password to reopen
+            // Check if shift was already opened today
+            if (shift.openedToday) {
                 showPasswordModal(shiftId, 'open');
+                return;
             }
+            
+            openShift(shiftId);
         }
 
         // Handle close shift button clicks
@@ -478,6 +653,12 @@
                 return;
             }
             
+            // Check if shift was already closed today
+            if (shift.closedToday) {
+                showPasswordModal(shiftId, 'close');
+                return;
+            }
+            
             closeShift(shiftId);
         }
 
@@ -486,9 +667,21 @@
             const shift = state.shifts[shiftId];
             shift.open = true;
             shift.openTime = new Date();
+            shift.openedToday = true;
+            
+            // Set as current shift
+            state.currentShift = shiftId;
+            updateCurrentShiftIndicator();
             
             addToHistory(`Shift ${shift.id} opened at ${formatTime(shift.openTime)}`);
-            saveToLocalStorage();
+            
+            // Save to Firebase if available
+            if (typeof db !== 'undefined') {
+                saveToFirebase();
+            } else {
+                saveToLocalStorage();
+            }
+            
             updateUI();
         }
 
@@ -497,10 +690,42 @@
             const shift = state.shifts[shiftId];
             shift.open = false;
             shift.closeTime = new Date();
+            shift.closedToday = true;
+            
+            // Clear current shift if this was the active one
+            if (state.currentShift === shiftId) {
+                state.currentShift = null;
+                updateCurrentShiftIndicator();
+            }
             
             addToHistory(`Shift ${shift.id} closed at ${formatTime(shift.closeTime)}`);
-            saveToLocalStorage();
+            
+            // Save to Firebase if available
+            if (typeof db !== 'undefined') {
+                saveToFirebase();
+            } else {
+                saveToLocalStorage();
+            }
+            
             updateUI();
+        }
+
+        // Update current shift indicator
+        function updateCurrentShiftIndicator() {
+            if (state.currentShift) {
+                const shift = state.shifts[state.currentShift];
+                elements.currentShiftText.textContent = `${shift.name} is Active`;
+                elements.currentShiftIndicator.style.display = 'flex';
+                
+                // Set color based on shift
+                if (state.currentShift === 'shift1') {
+                    elements.currentShiftIndicator.style.backgroundColor = '#3498db';
+                } else {
+                    elements.currentShiftIndicator.style.backgroundColor = '#2ecc71';
+                }
+            } else {
+                elements.currentShiftIndicator.style.display = 'none';
+            }
         }
 
         // Show password modal for reopening
@@ -515,6 +740,8 @@
             if (currentAction && elements.passwordInput.value === state.adminPassword) {
                 if (currentAction.action === 'open') {
                     openShift(currentAction.shiftId);
+                } else if (currentAction.action === 'close') {
+                    closeShift(currentAction.shiftId);
                 }
                 closeModal();
             } else {
@@ -592,10 +819,20 @@
             elements.shift2OpenTime.textContent = formatTime(state.shifts.shift2.openTime);
             elements.shift2CloseTime.textContent = formatTime(state.shifts.shift2.closeTime);
             
+            // Update today's status
+            elements.shift1Today.textContent = state.shifts.shift1.openedToday ? 
+                (state.shifts.shift1.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
+                
+            elements.shift2Today.textContent = state.shifts.shift2.openedToday ? 
+                (state.shifts.shift2.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
+            
             // Enable/disable buttons based on rules
             if (state.shifts.shift1.open) {
                 elements.shift2OpenBtn.disabled = true;
             }
+            
+            // Update current shift indicator
+            updateCurrentShiftIndicator();
         }
 
         // Update history UI
@@ -629,22 +866,90 @@
                 state.shifts.shift1.open = parsedState.shifts.shift1.open;
                 state.shifts.shift1.openTime = parsedState.shifts.shift1.openTime ? new Date(parsedState.shifts.shift1.openTime) : null;
                 state.shifts.shift1.closeTime = parsedState.shifts.shift1.closeTime ? new Date(parsedState.shifts.shift1.closeTime) : null;
+                state.shifts.shift1.openedToday = parsedState.shifts.shift1.openedToday || false;
+                state.shifts.shift1.closedToday = parsedState.shifts.shift1.closedToday || false;
                 
                 state.shifts.shift2.open = parsedState.shifts.shift2.open;
                 state.shifts.shift2.openTime = parsedState.shifts.shift2.openTime ? new Date(parsedState.shifts.shift2.openTime) : null;
                 state.shifts.shift2.closeTime = parsedState.shifts.shift2.closeTime ? new Date(parsedState.shifts.shift2.closeTime) : null;
+                state.shifts.shift2.openedToday = parsedState.shifts.shift2.openedToday || false;
+                state.shifts.shift2.closedToday = parsedState.shifts.shift2.closedToday || false;
+                
+                state.currentShift = parsedState.currentShift || null;
                 
                 // Restore history with date objects
                 state.history = parsedState.history.map(item => ({
                     message: item.message,
                     timestamp: new Date(item.timestamp)
-                }));
+                })) || [];
             } else {
                 // Add initial history entry if no saved state
                 addToHistory("System initialized");
             }
             
             updateHistoryUI();
+        }
+
+        // Save state to Firebase
+        function saveToFirebase() {
+            if (typeof db === 'undefined') return;
+            
+            db.collection("shiftSystem").doc("state").set(state)
+                .then(() => {
+                    console.log("State successfully saved to Firebase");
+                })
+                .catch((error) => {
+                    console.error("Error saving state to Firebase: ", error);
+                    // Fallback to localStorage
+                    saveToLocalStorage();
+                });
+        }
+
+        // Load state from Firebase
+        function loadFromFirebase() {
+            if (typeof db === 'undefined') {
+                loadFromLocalStorage();
+                return;
+            }
+            
+            db.collection("shiftSystem").doc("state").get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // Restore state with date objects
+                        state.shifts.shift1.open = data.shifts.shift1.open;
+                        state.shifts.shift1.openTime = data.shifts.shift1.openTime ? new Date(data.shifts.shift1.openTime.seconds * 1000) : null;
+                        state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? new Date(data.shifts.shift1.closeTime.seconds * 1000) : null;
+                        state.shifts.shift1.openedToday = data.shifts.shift1.openedToday || false;
+                        state.shifts.shift1.closedToday = data.shifts.shift1.closedToday || false;
+                        
+                        state.shifts.shift2.open = data.shifts.shift2.open;
+                        state.shifts.shift2.openTime = data.shifts.shift2.openTime ? new Date(data.shifts.shift2.openTime.seconds * 1000) : null;
+                        state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? new Date(data.shifts.shift2.closeTime.seconds * 1000) : null;
+                        state.shifts.shift2.openedToday = data.shifts.shift2.openedToday || false;
+                        state.shifts.shift2.closedToday = data.shifts.shift2.closedToday || false;
+                        
+                        state.currentShift = data.currentShift || null;
+                        
+                        // Restore history with date objects
+                        state.history = data.history.map(item => ({
+                            message: item.message,
+                            timestamp: new Date(item.timestamp.seconds * 1000)
+                        })) || [];
+                        
+                        updateHistoryUI();
+                        console.log("State successfully loaded from Firebase");
+                    } else {
+                        console.log("No Firebase document found, loading from localStorage");
+                        loadFromLocalStorage();
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error loading state from Firebase: ", error);
+                    // Fallback to localStorage
+                    loadFromLocalStorage();
+                });
         }
 
         // Global variable for current action (used in password modal)
