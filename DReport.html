@@ -428,7 +428,7 @@ function initDemoMode() {
         where: (field, operator, value) => {
           return {
             get: () => {
-              // Sample data for demonstration
+              // Sample data for demonstration with the specific date
               const sampleData = [
                 {
                   id: '1',
@@ -441,7 +441,8 @@ function initDemoMode() {
                     batchNo: '',
                     approvalCode: '',
                     status: 'Active',
-                    timestamp: new Date()
+                    date: "2025-09-19",
+                    timestamp: new Date("2025-09-19")
                   })
                 },
                 {
@@ -455,7 +456,8 @@ function initDemoMode() {
                     batchNo: 'B123',
                     approvalCode: 'A456',
                     status: 'Active',
-                    timestamp: new Date()
+                    date: "2025-09-19",
+                    timestamp: new Date("2025-09-19")
                   })
                 },
                 {
@@ -471,35 +473,8 @@ function initDemoMode() {
                     status: 'Voided',
                     voided: true,
                     voidReason: 'Customer cancellation',
-                    timestamp: new Date()
-                  })
-                },
-                {
-                  id: '4',
-                  data: () => ({
-                    receiptNo: '1004',
-                    flight: 'SQ012',
-                    paymentType: 'MasterCard',
-                    currency: 'USD',
-                    total: 225.75,
-                    batchNo: 'B789',
-                    approvalCode: 'A012',
-                    status: 'Active',
-                    timestamp: new Date()
-                  })
-                },
-                {
-                  id: '5',
-                  data: () => ({
-                    receiptNo: '1005',
-                    flight: 'CX345',
-                    paymentType: 'Amex',
-                    currency: 'USD',
-                    total: 190.00,
-                    batchNo: 'B345',
-                    approvalCode: 'A678',
-                    status: 'Active',
-                    timestamp: new Date()
+                    date: "2025-09-19",
+                    timestamp: new Date("2025-09-19")
                   })
                 }
               ];
@@ -508,14 +483,13 @@ function initDemoMode() {
               let filteredData = sampleData;
               
               // If this is a date range query, filter by date
-              if (field === 'timestamp') {
+              if (field === 'timestamp' || field === 'date') {
                 const selectedDate = document.getElementById('reportDate').value;
-                const start = new Date(selectedDate + "T00:00:00");
-                const end = new Date(selectedDate + "T23:59:59");
                 
                 filteredData = sampleData.filter(item => {
-                  const itemDate = item.data().timestamp;
-                  return itemDate >= start && itemDate <= end;
+                  const itemDate = item.data().date || 
+                                 (item.data().timestamp ? formatFirebaseDate(item.data().timestamp) : null);
+                  return itemDate === selectedDate;
                 });
               }
               
@@ -545,9 +519,8 @@ const summaryCards = document.getElementById("summaryCards");
 const receiptsTableBody = document.querySelector("#receiptsTable tbody");
 const voidedTableBody = document.querySelector("#voidedTable tbody");
 
-// Set default date to today
-const today = new Date();
-reportDateInput.value = today.toISOString().split('T')[0];
+// Set default date to the date in your Firebase
+reportDateInput.value = "2025-09-19";
 
 generateBtn.addEventListener("click", async () => {
   const selectedDate = reportDateInput.value;
@@ -563,14 +536,25 @@ generateBtn.addEventListener("click", async () => {
     voidedTableBody.innerHTML = '';
     summaryCards.innerHTML = '';
 
-    const start = new Date(selectedDate + "T00:00:00");
-    const end = new Date(selectedDate + "T23:59:59");
-
-    // Get data from Firebase
-    const snapshot = await db.collection("bookings")
-      .where("timestamp", ">=", start)
-      .where("timestamp", "<=", end)
-      .get();
+    // Get data from Firebase - try different field names
+    let snapshot;
+    
+    // First try to query by date field
+    try {
+      snapshot = await db.collection("bookings")
+        .where("date", "==", selectedDate)
+        .get();
+    } catch (e) {
+      console.log("Trying timestamp field instead");
+      // If date field doesn't work, try timestamp field
+      const start = new Date(selectedDate + "T00:00:00");
+      const end = new Date(selectedDate + "T23:59:59");
+      
+      snapshot = await db.collection("bookings")
+        .where("timestamp", ">=", start)
+        .where("timestamp", "<=", end)
+        .get();
+    }
 
     let totalsCashByCurrency = {};
     let totalsNonCashByTypeCurrency = {};
@@ -701,6 +685,18 @@ function printReport(){
 function formatDate(dateString) {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return new Date(dateString).toLocaleDateString(undefined, options);
+}
+
+function formatFirebaseDate(timestamp) {
+  // Handle Firebase timestamp format
+  if (timestamp && timestamp.toDate) {
+    return timestamp.toDate().toISOString().split('T')[0];
+  } else if (timestamp instanceof Date) {
+    return timestamp.toISOString().split('T')[0];
+  } else if (typeof timestamp === 'string') {
+    return timestamp.split('T')[0];
+  }
+  return null;
 }
 </script>
 </body>
