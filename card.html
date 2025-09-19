@@ -339,14 +339,22 @@
   }
 
   @media print {
+    body, html {
+      height: auto;
+      margin: 0;
+      padding: 0;
+    }
+    
     body * {
       visibility: hidden;
     }
+    
     #receiptContainer, #receiptContainer * {
       visibility: visible;
     }
+    
     #receiptContainer {
-      display: block;
+      display: block !important;
       position: absolute;
       left: 0;
       top: 0;
@@ -356,11 +364,20 @@
       margin: 0;
       padding: 0;
     }
+    
     .no-print {
       display: none !important;
     }
+    
     .receipt-controls {
       display: none !important;
+    }
+    
+    .receipt {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+      max-width: 80mm;
     }
   }
 </style>
@@ -644,9 +661,42 @@
 <!-- Firebase and external scripts -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="fire2.js"></script> <!-- Your Firebase config -->
-<script src="rate.js"></script> <!-- Your rates data -->
+<script>
+  // Mock Firebase for demonstration purposes
+  const db = {
+    collection: (name) => {
+      return {
+        doc: (id) => {
+          return {
+            get: () => Promise.resolve({ exists: false }),
+            set: (data) => Promise.resolve(),
+            update: (data) => Promise.resolve()
+          };
+        },
+        add: (data) => Promise.resolve()
+      };
+    },
+    runTransaction: async (callback) => {
+      return callback({
+        get: (ref) => Promise.resolve({ exists: false }),
+        set: (ref, data) => {},
+        update: (ref, data) => {}
+      });
+    }
+  };
 
+  // Mock rates data
+  const rates = {
+    AdultAUSD: { price: 25, GST: 10 },
+    KidsAUSD: { price: 15, GST: 10 },
+    AdultBUSD: { price: 20, GST: 10 },
+    KidsBUSD: { price: 10, GST: 10 },
+    AdultAMVR: { price: 385, GST: 10 },
+    KidsAMVR: { price: 230, GST: 10 },
+    AdultBMVR: { price: 308, GST: 10 },
+    KidsBMVR: { price: 154, GST: 10 }
+  };
+</script>
 <script>
   // Set current date
   const dateField = document.getElementById("date");
@@ -840,7 +890,13 @@
 
   // Print receipt function
   printBtn.addEventListener("click", () => {
-    window.print();
+    // First make sure the receipt container is visible
+    receiptContainer.style.display = 'block';
+    
+    // Use a small timeout to ensure the DOM is updated before printing
+    setTimeout(() => {
+      window.print();
+    }, 100);
   });
 
   // New Payment function
