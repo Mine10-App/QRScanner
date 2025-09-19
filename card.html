@@ -555,44 +555,12 @@
   </div>
 </div>
 
+<!-- Firebase and external scripts -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-  // Mock Firebase for demonstration purposes
-  const db = {
-    collection: (name) => {
-      return {
-        doc: (id) => {
-          return {
-            get: () => Promise.resolve({ exists: false }),
-            set: (data) => Promise.resolve(),
-            update: (data) => Promise.resolve()
-          };
-        },
-        add: (data) => Promise.resolve()
-      };
-    },
-    runTransaction: async (callback) => {
-      return callback({
-        get: (ref) => Promise.resolve({ exists: false }),
-        set: (ref, data) => {},
-        update: (ref, data) => {}
-      });
-    }
-  };
+<script src="fire2.js"></script> <!-- Your Firebase config -->
+<script src="rate.js"></script> <!-- Your rates data -->
 
-  // Mock rates data
-  const rates = {
-    AdultAUSD: { price: 25, GST: 10 },
-    KidsAUSD: { price: 15, GST: 10 },
-    AdultBUSD: { price: 20, GST: 10 },
-    KidsBUSD: { price: 10, GST: 10 },
-    AdultAMVR: { price: 385, GST: 10 },
-    KidsAMVR: { price: 230, GST: 10 },
-    AdultBMVR: { price: 308, GST: 10 },
-    KidsBMVR: { price: 154, GST: 10 }
-  };
-</script>
 <script>
   // Set current date
   const dateField = document.getElementById("date");
@@ -638,7 +606,7 @@
     });
   });
 
-  // QR Code Parser - MOVED OUTSIDE OF SAVE BUTTON HANDLER
+  // QR Code Parser
   function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     const allParts = code.split(' ');
@@ -673,7 +641,7 @@
     return {name, flightNo, seatNo};
   }
 
-  // QR Code input handler - ADDED IN THE CORRECT PLACE
+  // QR Code input handler
   qrInput.addEventListener("change", ()=>{
     const parsed = parseQR(qrInput.value);
     if(parsed.name) nameField.value = parsed.name;
@@ -688,9 +656,12 @@
     const rate = rateType.value;
     const adults = parseInt(adultCount.value) || 0;
     const kids = parseInt(kidCount.value) || 0;
+    
+    // Use the rates from your rate.js file
     const adultRate = rates[`Adult${rate}${curr}`]?.price || 0;
     const kidRate = rates[`Kids${rate}${curr}`]?.price || 0;
     const gstPercent = rates[`Adult${rate}${curr}`]?.GST || 0;
+    
     const subtotal = adults * adultRate + kids * kidRate;
     const gstAmount = subtotal * (gstPercent / 100);
     const total = subtotal + gstAmount;
