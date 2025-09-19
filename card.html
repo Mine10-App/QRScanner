@@ -638,6 +638,50 @@
     });
   });
 
+  // QR Code Parser - MOVED OUTSIDE OF SAVE BUTTON HANDLER
+  function parseQR(code){
+    code = code.trim().toUpperCase().replace(/\s+/g,' ');
+    const allParts = code.split(' ');
+    let name="", flightNo="", seatNo="";
+    if(code.startsWith("TKVCPO")){
+      const tkIndex = code.indexOf("TK0");
+      if(tkIndex!=-1){ 
+        flightNo=code.substring(tkIndex,tkIndex+6); 
+        name=code.substring(6,tkIndex);
+      }
+      const mlePos = code.indexOf("MLE");
+      if(mlePos!=-1){ 
+        const afterMLE = code.substring(mlePos).split(' ')[0]; 
+        if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);
+      }
+    } else {
+      name = allParts[0].substring(2);
+      const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+      if(mleIndex!=-1){
+        const mleWord = allParts[mleIndex];
+        const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+        flightNo = mleWord.slice(-2)+nextWord;
+        const partsAfterMLE = allParts.slice(mleIndex+1);
+        for(let w of partsAfterMLE){
+          if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ 
+            seatNo = w.substring(5,w.length-4); 
+            break; 
+          }
+        }
+      }
+    }
+    return {name, flightNo, seatNo};
+  }
+
+  // QR Code input handler - ADDED IN THE CORRECT PLACE
+  qrInput.addEventListener("change", ()=>{
+    const parsed = parseQR(qrInput.value);
+    if(parsed.name) nameField.value = parsed.name;
+    if(parsed.flightNo) flightField.value = parsed.flightNo;
+    if(parsed.seatNo) seatField.value = parsed.seatNo;
+    qrInput.value='';
+  });
+
   // Calculate function
   function calculate() {
     const curr = currencyType.value;
@@ -720,40 +764,7 @@
       };
 
       await db.collection("bookings").add(data);
-
-      // QR Code Parser
-function parseQR(code){
-  code = code.trim().toUpperCase().replace(/\s+/g,' ');
-  const allParts = code.split(' ');
-  let name="", flightNo="", seatNo="";
-  if(code.startsWith("TKVCPO")){
-    const tkIndex = code.indexOf("TK0");
-    if(tkIndex!=-1){ flightNo=code.substring(tkIndex,tkIndex+6); name=code.substring(6,tkIndex);}
-    const mlePos = code.indexOf("MLE");
-    if(mlePos!=-1){ const afterMLE = code.substring(mlePos).split(' ')[0]; if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);}
-  } else {
-    name = allParts[0].substring(2);
-    const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
-    if(mleIndex!=-1){
-      const mleWord = allParts[mleIndex];
-      const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
-      flightNo = mleWord.slice(-2)+nextWord;
-      const partsAfterMLE = allParts.slice(mleIndex+1);
-      for(let w of partsAfterMLE){
-        if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ seatNo = w.substring(5,w.length-4); break; }
-      }
-    }
-  }
-  return {name, flightNo, seatNo};
-}
-
-qrInput.addEventListener("change", ()=>{
-  const parsed = parseQR(qrInput.value);
-  if(parsed.name) nameField.value = parsed.name;
-  if(parsed.flightNo) flightField.value = parsed.flightNo;
-  if(parsed.seatNo) seatField.value = parsed.seatNo;
-  qrInput.value='';
-});
+      
       // Update receipt with data
       receiptNumber.textContent = nextReceiptNo.toString().padStart(6, '0');
       receiptDate.textContent = dateField.value;
