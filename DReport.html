@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Sales Report</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Include your Firebase config -->
+<script src="fire2.js"></script>
 <style>
   :root {
     --primary: #4361ee;
@@ -387,70 +389,137 @@
   </div>
 </div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <script>
-// Mock company info - replace with your Co.js content
-const companyInfo = {
-  name: "Lounge Management System"
-};
-
-// Mock Firebase for demonstration - replace with your fire1.js
-const db = {
-  collection: (name) => {
-    return {
-      where: (field, operator, value) => {
-        return {
-          get: () => Promise.resolve({
-            docs: [
-              // Sample data for demonstration
-              {
-                data: () => ({
-                  receiptNo: '1001',
-                  flight: 'TK123',
-                  paymentType: 'Cash',
-                  currency: 'USD',
-                  total: 150.00,
-                  batchNo: '',
-                  approvalCode: '',
-                  status: 'Active',
-                  timestamp: new Date()
-                })
-              },
-              {
-                data: () => ({
-                  receiptNo: '1002',
-                  flight: 'QR456',
-                  paymentType: 'Visa',
-                  currency: 'USD',
-                  total: 200.00,
-                  batchNo: 'B123',
-                  approvalCode: 'A456',
-                  status: 'Active',
-                  timestamp: new Date()
-                })
-              },
-              {
-                data: () => ({
-                  receiptNo: '1003',
-                  flight: 'EK789',
-                  paymentType: 'Cash',
-                  currency: 'USD',
-                  total: 175.50,
-                  batchNo: '',
-                  approvalCode: '',
-                  status: 'Voided',
-                  voided: true,
-                  timestamp: new Date()
-                })
-              }
-            ]
-          })
-        };
-      }
-    };
+// Initialize Firebase
+let db;
+try {
+  // Check if firebaseConfig is available from fire2.js
+  if (typeof firebaseConfig !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase initialized successfully");
+  } else {
+    throw new Error("Firebase configuration not found");
   }
-};
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+  // Fallback to demo mode
+  db = {
+    collection: (name) => {
+      return {
+        where: (field, operator, value) => {
+          return {
+            get: () => {
+              // Sample data for demonstration
+              const sampleData = [
+                {
+                  id: '1',
+                  data: () => ({
+                    receiptNo: '1001',
+                    flight: 'TK123',
+                    paymentType: 'Cash',
+                    currency: 'USD',
+                    total: 150.00,
+                    batchNo: '',
+                    approvalCode: '',
+                    status: 'Active',
+                    timestamp: new Date()
+                  })
+                },
+                {
+                  id: '2',
+                  data: () => ({
+                    receiptNo: '1002',
+                    flight: 'QR456',
+                    paymentType: 'Visa',
+                    currency: 'USD',
+                    total: 200.00,
+                    batchNo: 'B123',
+                    approvalCode: 'A456',
+                    status: 'Active',
+                    timestamp: new Date()
+                  })
+                },
+                {
+                  id: '3',
+                  data: () => ({
+                    receiptNo: '1003',
+                    flight: 'EK789',
+                    paymentType: 'Cash',
+                    currency: 'USD',
+                    total: 175.50,
+                    batchNo: '',
+                    approvalCode: '',
+                    status: 'Voided',
+                    voided: true,
+                    timestamp: new Date()
+                  })
+                },
+                {
+                  id: '4',
+                  data: () => ({
+                    receiptNo: '1004',
+                    flight: 'SQ012',
+                    paymentType: 'MasterCard',
+                    currency: 'USD',
+                    total: 225.75,
+                    batchNo: 'B789',
+                    approvalCode: 'A012',
+                    status: 'Active',
+                    timestamp: new Date()
+                  })
+                },
+                {
+                  id: '5',
+                  data: () => ({
+                    receiptNo: '1005',
+                    flight: 'CX345',
+                    paymentType: 'Amex',
+                    currency: 'USD',
+                    total: 190.00,
+                    batchNo: 'B345',
+                    approvalCode: 'A678',
+                    status: 'Active',
+                    timestamp: new Date()
+                  })
+                }
+              ];
+              
+              // Filter data based on the query
+              let filteredData = sampleData;
+              
+              // If this is a date range query, filter by date
+              if (field === 'timestamp') {
+                const selectedDate = document.getElementById('reportDate').value;
+                const start = new Date(selectedDate + "T00:00:00");
+                const end = new Date(selectedDate + "T23:59:59");
+                
+                filteredData = sampleData.filter(item => {
+                  const itemDate = item.data().timestamp;
+                  return itemDate >= start && itemDate <= end;
+                });
+              }
+              
+              return Promise.resolve({
+                docs: filteredData,
+                forEach: (callback) => {
+                  filteredData.forEach(doc => callback(doc));
+                }
+              });
+            }
+          };
+        }
+      };
+    }
+  };
+}
 
-document.getElementById("companyName").innerText = companyInfo.name || "Company Name";
+// Set company name
+document.getElementById("companyName").innerText = "Lounge Management System";
 
 const reportDateInput = document.getElementById("reportDate");
 const generateBtn = document.getElementById("generateBtn");
@@ -474,9 +543,15 @@ generateBtn.addEventListener("click", async () => {
   reportDateText.innerText = `Date: ${formatDate(selectedDate)}`;
 
   try {
+    // Show loading state
+    receiptsTableBody.innerHTML = '<tr><td colspan="8" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading data...</td></tr>';
+    voidedTableBody.innerHTML = '';
+    summaryCards.innerHTML = '';
+
     const start = new Date(selectedDate + "T00:00:00");
     const end = new Date(selectedDate + "T23:59:59");
 
+    // Get data from Firebase
     const snapshot = await db.collection("bookings")
       .where("timestamp", ">=", start)
       .where("timestamp", "<=", end)
@@ -492,7 +567,8 @@ generateBtn.addEventListener("click", async () => {
     voidedTableBody.innerHTML = "";
     summaryCards.innerHTML = "";
 
-    snapshot.docs.forEach(doc => {
+    // Process each document
+    snapshot.forEach(doc => {
       const data = doc.data();
 
       const key = `${data.paymentType} (${data.currency})`;
@@ -516,7 +592,7 @@ generateBtn.addEventListener("click", async () => {
           <td>${data.paymentType}</td>
           <td>${data.currency}</td>
           <td>${data.total.toFixed(2)}</td>
-          <td>Customer cancellation</td>
+          <td>${data.voidReason || 'Customer cancellation'}</td>
         `;
         voidedTableBody.appendChild(tr);
 
@@ -592,9 +668,14 @@ generateBtn.addEventListener("click", async () => {
       }
     }
 
+    // Show empty state if no data
+    if (totalActive === 0 && totalVoided === 0) {
+      receiptsTableBody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-receipt"></i><p>No receipts found for this date</p></td></tr>';
+    }
+
   } catch(err){
     console.error("Error generating report:", err);
-    alert("Error generating report: "+err.message);
+    receiptsTableBody.innerHTML = '<tr><td colspan="8" style="color: #dc3545; text-align: center;">Error loading data: ' + err.message + '</td></tr>';
   }
 });
 
