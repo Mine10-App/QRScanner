@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Booking / Payment Entry</title>
+<title>Payment Entry</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   :root {
@@ -316,6 +316,13 @@
     margin-top: 20px;
   }
 
+  .validity-notice {
+    font-size: 11px;
+    margin-top: 10px;
+    font-style: italic;
+    color: #666;
+  }
+
   @media (max-width: 768px) {
     .form-grid {
       grid-template-columns: 1fr;
@@ -386,7 +393,7 @@
 
 <div class="container">
   <div class="header">
-    <h1>Booking / Payment Entry</h1>
+    <h1>Payment Entry</h1>
     <p>Enter passenger details and process payments</p>
   </div>
 
@@ -395,7 +402,7 @@
     <div class="card">
       <div class="card-header">
         <i class="fas fa-info-circle"></i>
-        <span>Booking Information</span>
+        <span>Payment Information</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -482,7 +489,7 @@
     <div class="card">
       <div class="card-header">
         <i class="fas fa-credit-card"></i>
-        <span>Payment Information</span>
+        <span>Payment Details</span>
       </div>
       <div class="card-body">
         <div class="form-grid">
@@ -566,8 +573,9 @@
   <div id="receiptContainer" class="no-print">
     <div class="receipt" id="receipt">
       <div class="receipt-header">
-        <h2>TRANSPORT SERVICE</h2>
-        <p>RECEIPT</p>
+        <h2 id="company-name">Koveli Lounge</h2>
+        <p id="company-address">Velana International Airport</p>
+        <p id="company-phone">+123 456 7890</p>
       </div>
       
       <div class="receipt-details">
@@ -640,8 +648,8 @@
       </div>
       
       <div class="receipt-footer">
+        <p class="validity-notice">This package is valid for three hours from the time of purchase</p>
         <p>Thank you for your business!</p>
-        <p>www.transportservice.example</p>
       </div>
     </div>
     
@@ -661,42 +669,10 @@
 <!-- Firebase and external scripts -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-  // Mock Firebase for demonstration purposes
-  const db = {
-    collection: (name) => {
-      return {
-        doc: (id) => {
-          return {
-            get: () => Promise.resolve({ exists: false }),
-            set: (data) => Promise.resolve(),
-            update: (data) => Promise.resolve()
-          };
-        },
-        add: (data) => Promise.resolve()
-      };
-    },
-    runTransaction: async (callback) => {
-      return callback({
-        get: (ref) => Promise.resolve({ exists: false }),
-        set: (ref, data) => {},
-        update: (ref, data) => {}
-      });
-    }
-  };
+<script src="fire2.js"></script> <!-- Your Firebase config -->
+<script src="rate.js"></script> <!-- Your rates data -->
+<script src="Co.js"></script> <!-- Your company info -->
 
-  // Mock rates data
-  const rates = {
-    AdultAUSD: { price: 25, GST: 10 },
-    KidsAUSD: { price: 15, GST: 10 },
-    AdultBUSD: { price: 20, GST: 10 },
-    KidsBUSD: { price: 10, GST: 10 },
-    AdultAMVR: { price: 385, GST: 10 },
-    KidsAMVR: { price: 230, GST: 10 },
-    AdultBMVR: { price: 308, GST: 10 },
-    KidsBMVR: { price: 154, GST: 10 }
-  };
-</script>
 <script>
   // Set current date
   const dateField = document.getElementById("date");
@@ -741,6 +717,16 @@
   const receiptCashDetails = document.getElementById("receipt-cash-details");
   const printBtn = document.getElementById("printBtn");
   const newPaymentBtn = document.getElementById("newPaymentBtn");
+  const companyName = document.getElementById("company-name");
+  const companyAddress = document.getElementById("company-address");
+  const companyPhone = document.getElementById("company-phone");
+
+  // Set company info if available
+  if (typeof companyInfo !== 'undefined') {
+    companyName.textContent = companyInfo.name;
+    companyAddress.textContent = companyInfo.address;
+    companyPhone.textContent = companyInfo.phone;
+  }
 
   // Receipt counter using localStorage for persistence
   let receiptCounter = parseInt(localStorage.getItem('receiptCounter')) || 1000;
@@ -980,7 +966,7 @@
         data.balance = data.paidAmount - calculation.total;
       }
 
-      await db.collection("bookings").add(data);
+      await db.collection("payments").add(data);
       
       // Update receipt with data
       receiptNumber.textContent = nextReceiptNo.toString().padStart(6, '0');
