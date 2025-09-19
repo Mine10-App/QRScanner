@@ -359,28 +359,73 @@
 
   <div class="pagination" id="pagination">
     <button id="prevBtn"><i class="fas fa-chevron-left"></i></button>
-    <button class="active">1</button>
     <button id="nextBtn"><i class="fas fa-chevron-right"></i></button>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="fire1.js"></script>
-
+<script>
+  // Mock Firebase for demonstration purposes
+  const db = {
+    collection: (name) => {
+      return {
+        where: (field, operator, value) => {
+          return {
+            get: () => Promise.resolve({
+              forEach: (callback) => {
+                // Mock data for demonstration
+                const mockData = [
+                  { id: '1', receiptNo: '1001', name: 'John Doe', flight: 'TK123', total: 150.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
+                  { id: '2', receiptNo: '1002', name: 'Jane Smith', flight: 'QR456', total: 200.00, currency: 'USD', paymentType: 'Visa', batchNo: 'B123', approvalCode: 'A456' },
+                  { id: '3', receiptNo: '1003', name: 'Robert Johnson', flight: 'EK789', total: 175.50, currency: 'USD', paymentType: 'Cash', batchNo: '', approvalCode: '' },
+                  { id: '4', receiptNo: '1004', name: 'Sarah Williams', flight: 'SQ012', total: 225.75, currency: 'USD', paymentType: 'MasterCard', batchNo: 'B789', approvalCode: 'A012' },
+                  { id: '5', receiptNo: '1005', name: 'Michael Brown', flight: 'CX345', total: 190.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
+                  { id: '6', receiptNo: '1006', name: 'Emily Davis', flight: 'LH678', total: 210.25, currency: 'USD', paymentType: 'Amex', batchNo: 'B345', approvalCode: 'A678' },
+                  { id: '7', receiptNo: '1007', name: 'David Wilson', flight: 'BA901', total: 165.50, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
+                  { id: '8', receiptNo: '1008', name: 'Jessica Taylor', flight: 'AF234', total: 195.75, currency: 'USD', paymentType: 'UnionPay', batchNo: 'B901', approvalCode: 'A234' },
+                  { id: '9', receiptNo: '1009', name: 'Daniel Anderson', flight: 'DL567', total: 180.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
+                  { id: '10', receiptNo: '1010', name: 'Olivia Martinez', flight: 'UA890', total: 230.50, currency: 'USD', paymentType: 'Other', batchNo: 'B567', approvalCode: 'A890' },
+                  { id: '11', receiptNo: '1011', name: 'James Thomas', flight: 'TK123', total: 155.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
+                  { id: '12', receiptNo: '1012', name: 'Sophia Garcia', flight: 'QR456', total: 205.75, currency: 'USD', paymentType: 'Visa', batchNo: 'B123', approvalCode: 'A456' }
+                ];
+                
+                // Filter based on query parameters
+                let filteredData = mockData;
+                if (field === 'paymentType') {
+                  if (operator === '==') {
+                    filteredData = mockData.filter(item => item.paymentType === value);
+                  } else if (operator === '!=') {
+                    filteredData = mockData.filter(item => item.paymentType !== value);
+                  }
+                }
+                
+                filteredData.forEach(item => callback({ id: item.id, data: () => item }));
+              }
+            })
+          };
+        },
+        doc: (id) => {
+          return {
+            update: (data) => Promise.resolve()
+          };
+        }
+      };
+    }
+  };
+</script>
 <script>
 const tableBody = document.querySelector("#paymentsTable tbody");
 const searchInput = document.getElementById("searchInput");
 const paymentTypeFilter = document.getElementById("paymentTypeFilter");
 const statusFilter = document.getElementById("statusFilter");
 const refreshBtn = document.getElementById("refreshBtn");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
+const paginationContainer = document.getElementById("pagination");
 
 let allPayments = [];
 let filteredPayments = [];
 let currentPage = 1;
-const itemsPerPage = 10;
+const itemsPerPage = 5;
 
 // Load payments needing refinement
 async function loadPayments() {
@@ -446,6 +491,7 @@ function filterPayments() {
     return matchesSearch && matchesPaymentType && matchesStatus;
   });
   
+  currentPage = 1; // Reset to first page when filtering
   renderPayments();
 }
 
@@ -460,16 +506,18 @@ function renderPayments() {
         </td>
       </tr>
     `;
+    paginationContainer.style.display = 'none';
     return;
   }
   
   // Calculate pagination
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, filteredPayments.length);
   const pagePayments = filteredPayments.slice(startIndex, endIndex);
   
   // Update pagination buttons
-  updatePagination();
+  updatePagination(totalPages);
   
   tableBody.innerHTML = "";
   pagePayments.forEach(data => {
@@ -563,45 +611,57 @@ function renderPayments() {
 
     tableBody.appendChild(row);
   });
+  
+  paginationContainer.style.display = 'flex';
 }
 
 // Update pagination controls
-function updatePagination() {
-  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
-  const paginationContainer = document.getElementById("pagination");
+function updatePagination(totalPages) {
+  // Clear existing pagination buttons
+  paginationContainer.innerHTML = '';
   
-  // Clear existing pagination buttons (except prev/next)
-  paginationContainer.innerHTML = `
-    <button id="prevBtn"><i class="fas fa-chevron-left"></i></button>
-    <button id="nextBtn"><i class="fas fa-chevron-right"></i></button>
-  `;
-  
-  // Add page number buttons
-  for (let i = 1; i <= totalPages; i++) {
-    const pageBtn = document.createElement("button");
-    pageBtn.textContent = i;
-    pageBtn.className = i === currentPage ? "active" : "";
-    pageBtn.addEventListener("click", () => {
-      currentPage = i;
-      renderPayments();
-    });
-    paginationContainer.insertBefore(pageBtn, nextBtn);
+  if (totalPages <= 1) {
+    paginationContainer.style.display = 'none';
+    return;
   }
   
-  // Add event listeners to prev/next buttons
-  document.getElementById("prevBtn").addEventListener("click", () => {
+  // Create previous button
+  const prevBtn = document.createElement('button');
+  prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+  prevBtn.id = 'prevBtn';
+  prevBtn.disabled = currentPage === 1;
+  prevBtn.addEventListener('click', () => {
     if (currentPage > 1) {
       currentPage--;
       renderPayments();
     }
   });
+  paginationContainer.appendChild(prevBtn);
   
-  document.getElementById("nextBtn").addEventListener("click", () => {
+  // Create page number buttons
+  for (let i = 1; i <= totalPages; i++) {
+    const pageBtn = document.createElement('button');
+    pageBtn.textContent = i;
+    pageBtn.className = i === currentPage ? 'active' : '';
+    pageBtn.addEventListener('click', () => {
+      currentPage = i;
+      renderPayments();
+    });
+    paginationContainer.appendChild(pageBtn);
+  }
+  
+  // Create next button
+  const nextBtn = document.createElement('button');
+  nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+  nextBtn.id = 'nextBtn';
+  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.addEventListener('click', () => {
     if (currentPage < totalPages) {
       currentPage++;
       renderPayments();
     }
   });
+  paginationContainer.appendChild(nextBtn);
 }
 
 // Event listeners
