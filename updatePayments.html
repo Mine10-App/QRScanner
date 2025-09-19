@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Update Payments</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Include your external files -->
+<script src="fire2.js"></script>
+<script src="Co.js"></script>
 <style>
   :root {
     --primary: #4361ee;
@@ -274,6 +277,98 @@
     border-color: var(--primary);
   }
 
+  /* Print Receipt Modal */
+  .print-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .print-modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 500px;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+
+  .close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--gray);
+  }
+
+  .receipt {
+    font-family: 'Courier New', monospace;
+    background: white;
+    padding: 20px;
+    border: 1px dashed #ccc;
+  }
+
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 10px;
+  }
+
+  .receipt-details {
+    margin-bottom: 20px;
+  }
+
+  .receipt-details div {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+
+  .receipt-footer {
+    text-align: center;
+    margin-top: 20px;
+    border-top: 1px dashed #000;
+    padding-top: 10px;
+    font-size: 12px;
+  }
+
+  .print-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+  .print-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-print-receipt {
+    background: var(--primary);
+    color: white;
+  }
+
+  .btn-close-receipt {
+    background: var(--gray);
+    color: white;
+  }
+
   @media (max-width: 768px) {
     .controls {
       flex-direction: column;
@@ -290,6 +385,31 @@
     
     .action-buttons {
       flex-direction: column;
+    }
+
+    .print-modal-content {
+      width: 95%;
+      padding: 20px;
+    }
+  }
+
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    .print-modal, .print-modal * {
+      visibility: visible;
+    }
+    .print-modal {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+    }
+    .print-actions, .close-modal {
+      display: none !important;
     }
   }
 </style>
@@ -363,315 +483,359 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Print Receipt Modal -->
+<div class="print-modal" id="printModal">
+  <div class="print-modal-content">
+    <span class="close-modal" id="closeModal">&times;</span>
+    <div class="receipt" id="receiptContent">
+      <div class="receipt-header">
+        <h2 id="companyNameHeader">FLIGHT BOOKING RECEIPT</h2>
+        <p>Thank you for your business!</p>
+      </div>
+      <div class="receipt-details" id="receiptDetails">
+        <!-- Receipt details will be inserted here by JavaScript -->
+      </div>
+      <div class="receipt-footer">
+        <p id="companyContact"></p>
+        <p id="companyWebsite"></p>
+      </div>
+    </div>
+    <div class="print-actions">
+      <button class="btn-print-receipt" id="printReceiptBtn">
+        <i class="fas fa-print"></i> Print Receipt
+      </button>
+      <button class="btn-close-receipt" id="closeReceiptBtn">
+        <i class="fas fa-times"></i> Close
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // Mock Firebase for demonstration purposes
-  const db = {
-    collection: (name) => {
-      return {
-        where: (field, operator, value) => {
-          return {
-            get: () => Promise.resolve({
-              forEach: (callback) => {
-                // Mock data for demonstration
-                const mockData = [
-                  { id: '1', receiptNo: '1001', name: 'John Doe', flight: 'TK123', total: 150.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
-                  { id: '2', receiptNo: '1002', name: 'Jane Smith', flight: 'QR456', total: 200.00, currency: 'USD', paymentType: 'Visa', batchNo: 'B123', approvalCode: 'A456' },
-                  { id: '3', receiptNo: '1003', name: 'Robert Johnson', flight: 'EK789', total: 175.50, currency: 'USD', paymentType: 'Cash', batchNo: '', approvalCode: '' },
-                  { id: '4', receiptNo: '1004', name: 'Sarah Williams', flight: 'SQ012', total: 225.75, currency: 'USD', paymentType: 'MasterCard', batchNo: 'B789', approvalCode: 'A012' },
-                  { id: '5', receiptNo: '1005', name: 'Michael Brown', flight: 'CX345', total: 190.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
-                  { id: '6', receiptNo: '1006', name: 'Emily Davis', flight: 'LH678', total: 210.25, currency: 'USD', paymentType: 'Amex', batchNo: 'B345', approvalCode: 'A678' },
-                  { id: '7', receiptNo: '1007', name: 'David Wilson', flight: 'BA901', total: 165.50, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
-                  { id: '8', receiptNo: '1008', name: 'Jessica Taylor', flight: 'AF234', total: 195.75, currency: 'USD', paymentType: 'UnionPay', batchNo: 'B901', approvalCode: 'A234' },
-                  { id: '9', receiptNo: '1009', name: 'Daniel Anderson', flight: 'DL567', total: 180.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
-                  { id: '10', receiptNo: '1010', name: 'Olivia Martinez', flight: 'UA890', total: 230.50, currency: 'USD', paymentType: 'Other', batchNo: 'B567', approvalCode: 'A890' },
-                  { id: '11', receiptNo: '1011', name: 'James Thomas', flight: 'TK123', total: 155.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
-                  { id: '12', receiptNo: '1012', name: 'Sophia Garcia', flight: 'QR456', total: 205.75, currency: 'USD', paymentType: 'Visa', batchNo: 'B123', approvalCode: 'A456' }
-                ];
-                
-                // Filter based on query parameters
-                let filteredData = mockData;
-                if (field === 'paymentType') {
-                  if (operator === '==') {
-                    filteredData = mockData.filter(item => item.paymentType === value);
-                  } else if (operator === '!=') {
-                    filteredData = mockData.filter(item => item.paymentType !== value);
-                  }
-                }
-                
-                filteredData.forEach(item => callback({ id: item.id, data: () => item }));
-              }
-            })
-          };
-        },
-        doc: (id) => {
-          return {
-            update: (data) => Promise.resolve()
-          };
-        }
-      };
-    }
-  };
-</script>
-<script>
-const tableBody = document.querySelector("#paymentsTable tbody");
-const searchInput = document.getElementById("searchInput");
-const paymentTypeFilter = document.getElementById("paymentTypeFilter");
-const statusFilter = document.getElementById("statusFilter");
-const refreshBtn = document.getElementById("refreshBtn");
-const paginationContainer = document.getElementById("pagination");
-
-let allPayments = [];
-let filteredPayments = [];
-let currentPage = 1;
-const itemsPerPage = 5;
-
-// Load payments needing refinement
-async function loadPayments() {
-  tableBody.innerHTML = `<tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading payments...</td></tr>`;
-  
-  try {
-    let results = [];
-
-    // Query 1: Card (generic quick entries)
-    const cardSnap = await db.collection("bookings")
-      .where("paymentType", "==", "Card")
-      .get();
-    cardSnap.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
-
-    // Query 2: Non-cash but incomplete
-    const nonCashSnap = await db.collection("bookings")
-      .where("paymentType", "!=", "Cash")
-      .get();
-    nonCashSnap.forEach(doc => {
-      const d = doc.data();
-      if (!d.batchNo || !d.approvalCode) {
-        results.push({ id: doc.id, ...d });
-      }
-    });
-
-    // Deduplicate by receiptNo
-    const unique = {};
-    results.forEach(r => unique[r.receiptNo] = r);
-    allPayments = Object.values(unique);
-    
-    filterPayments();
-    
-  } catch (error) {
-    console.error("Error loading payments:", error);
-    tableBody.innerHTML = `<tr><td colspan="9" style="color: #dc3545; text-align: center;">Error loading payments: ${error.message}</td></tr>`;
+// Wait for the external files to load
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Firebase with your configuration from fire2.js
+  if (typeof firebaseConfig !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+  } else {
+    console.error("Firebase configuration not found in fire2.js");
   }
-}
-
-// Filter payments based on search and filters
-function filterPayments() {
-  const searchTerm = searchInput.value.toLowerCase();
-  const paymentType = paymentTypeFilter.value;
-  const status = statusFilter.value;
   
-  filteredPayments = allPayments.filter(payment => {
-    // Search filter
-    const matchesSearch = !searchTerm || 
-      payment.receiptNo.toString().includes(searchTerm) ||
-      (payment.name && payment.name.toLowerCase().includes(searchTerm)) ||
-      (payment.flight && payment.flight.toLowerCase().includes(searchTerm));
+  // Get company info from Co.js
+  const companyName = typeof CompanyName !== 'undefined' ? CompanyName : "Flight Booking";
+  const companyContact = typeof CompanyContact !== 'undefined' ? CompanyContact : "support@example.com";
+  const companyWebsite = typeof CompanyWebsite !== 'undefined' ? CompanyWebsite : "www.example.com";
+  
+  // Update the receipt header with company name
+  document.getElementById('companyNameHeader').textContent = companyName.toUpperCase() + " RECEIPT";
+  document.getElementById('companyContact').textContent = `For questions, contact ${companyContact}`;
+  document.getElementById('companyWebsite').textContent = companyWebsite;
+  
+  const tableBody = document.querySelector("#paymentsTable tbody");
+  const searchInput = document.getElementById("searchInput");
+  const paymentTypeFilter = document.getElementById("paymentTypeFilter");
+  const statusFilter = document.getElementById("statusFilter");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const paginationContainer = document.getElementById("pagination");
+  const printModal = document.getElementById("printModal");
+  const closeModal = document.getElementById("closeModal");
+  const closeReceiptBtn = document.getElementById("closeReceiptBtn");
+  const printReceiptBtn = document.getElementById("printReceiptBtn");
+  const receiptDetails = document.getElementById("receiptDetails");
+
+  let allPayments = [];
+  let filteredPayments = [];
+  let currentPage = 1;
+  const itemsPerPage = 5;
+  let currentReceiptData = null;
+
+  // Load payments needing refinement
+  async function loadPayments() {
+    tableBody.innerHTML = `<tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading payments...</td></tr>`;
     
-    // Payment type filter
-    const matchesPaymentType = !paymentType || payment.paymentType === paymentType;
+    try {
+      let results = [];
+
+      // Query 1: Card (generic quick entries)
+      const cardSnap = await firebase.firestore().collection("bookings")
+        .where("paymentType", "==", "Card")
+        .get();
+      cardSnap.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+
+      // Query 2: Non-cash but incomplete
+      const nonCashSnap = await firebase.firestore().collection("bookings")
+        .where("paymentType", "!=", "Cash")
+        .get();
+      nonCashSnap.forEach(doc => {
+        const d = doc.data();
+        if (!d.batchNo || !d.approvalCode) {
+          results.push({ id: doc.id, ...d });
+        }
+      });
+
+      // Deduplicate by receiptNo
+      const unique = {};
+      results.forEach(r => unique[r.receiptNo] = r);
+      allPayments = Object.values(unique);
+      
+      filterPayments();
+      
+    } catch (error) {
+      console.error("Error loading payments:", error);
+      tableBody.innerHTML = `<tr><td colspan="9" style="color: #dc3545; text-align: center;">Error loading payments: ${error.message}</td></tr>`;
+    }
+  }
+
+  // Filter payments based on search and filters
+  function filterPayments() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const paymentType = paymentTypeFilter.value;
+    const status = statusFilter.value;
     
-    // Status filter
-    let matchesStatus = true;
-    if (status === "complete") {
-      matchesStatus = payment.batchNo && payment.approvalCode;
-    } else if (status === "pending") {
-      matchesStatus = !payment.batchNo || !payment.approvalCode;
+    filteredPayments = allPayments.filter(payment => {
+      // Search filter
+      const matchesSearch = !searchTerm || 
+        payment.receiptNo.toString().includes(searchTerm) ||
+        (payment.name && payment.name.toLowerCase().includes(searchTerm)) ||
+        (payment.flight && payment.flight.toLowerCase().includes(searchTerm));
+      
+      // Payment type filter
+      const matchesPaymentType = !paymentType || payment.paymentType === paymentType;
+      
+      // Status filter
+      let matchesStatus = true;
+      if (status === "complete") {
+        matchesStatus = payment.batchNo && payment.approvalCode;
+      } else if (status === "pending") {
+        matchesStatus = !payment.batchNo || !payment.approvalCode;
+      }
+      
+      return matchesSearch && matchesPaymentType && matchesStatus;
+    });
+    
+    currentPage = 1; // Reset to first page when filtering
+    renderPayments();
+  }
+
+  // Render payments to the table
+  function renderPayments() {
+    if (filteredPayments.length === 0) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="empty-state">
+            <i class="fas fa-receipt"></i>
+            <p>No payments found</p>
+          </td>
+        </tr>
+      `;
+      paginationContainer.style.display = 'none';
+      return;
     }
     
-    return matchesSearch && matchesPaymentType && matchesStatus;
-  });
-  
-  currentPage = 1; // Reset to first page when filtering
-  renderPayments();
-}
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, filteredPayments.length);
+    const pagePayments = filteredPayments.slice(startIndex, endIndex);
+    
+    // Update pagination buttons
+    updatePagination(totalPages);
+    
+    tableBody.innerHTML = "";
+    pagePayments.forEach(data => {
+      const isComplete = data.batchNo && data.approvalCode;
+      const statusClass = isComplete ? "status-complete" : "status-pending";
+      const statusText = isComplete ? "Complete" : "Pending";
+      
+      const row = document.createElement("tr");
 
-// Render payments to the table
-function renderPayments() {
-  if (filteredPayments.length === 0) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="9" class="empty-state">
-          <i class="fas fa-receipt"></i>
-          <p>No payments found</p>
+      row.innerHTML = `
+        <td>${data.receiptNo}</td>
+        <td>${data.name || "-"}</td>
+        <td>${data.flight || "-"}</td>
+        <td>${Number(data.total || 0).toFixed(2)} ${data.currency || ""}</td>
+        <td>
+          <select class="payType">
+            <option value="Cash" ${data.paymentType==="Cash"?"selected":""}>Cash</option>
+            <option value="Visa" ${data.paymentType==="Visa"?"selected":""}>Visa</option>
+            <option value="MasterCard" ${data.paymentType==="MasterCard"?"selected":""}>MasterCard</option>
+            <option value="Amex" ${data.paymentType==="Amex"?"selected":""}>Amex</option>
+            <option value="UnionPay" ${data.paymentType==="UnionPay"?"selected":""}>UnionPay</option>
+            <option value="Other" ${data.paymentType==="Other"?"selected":""}>Other</option>
+          </select>
         </td>
-      </tr>
-    `;
-    paginationContainer.style.display = 'none';
-    return;
-  }
-  
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, filteredPayments.length);
-  const pagePayments = filteredPayments.slice(startIndex, endIndex);
-  
-  // Update pagination buttons
-  updatePagination(totalPages);
-  
-  tableBody.innerHTML = "";
-  pagePayments.forEach(data => {
-    const isComplete = data.batchNo && data.approvalCode;
-    const statusClass = isComplete ? "status-complete" : "status-pending";
-    const statusText = isComplete ? "Complete" : "Pending";
+        <td><input type="text" class="batchNo" value="${data.batchNo || ""}" placeholder="Enter batch no"></td>
+        <td><input type="text" class="approvalCode" value="${data.approvalCode || ""}" placeholder="Enter approval code"></td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-update" title="Update payment">
+              <i class="fas fa-save"></i> Update
+            </button>
+            <button class="btn btn-print" title="Print receipt">
+              <i class="fas fa-print"></i> Print
+            </button>
+          </div>
+        </td>
+      `;
+
+      // Update handler
+      row.querySelector(".btn-update").addEventListener("click", async () => {
+        const newPayType = row.querySelector(".payType").value;
+        const batchNo = row.querySelector(".batchNo").value.trim();
+        const approvalCode = row.querySelector(".approvalCode").value.trim();
+
+        if (newPayType === "Cash") {
+          if (batchNo || approvalCode) {
+            alert("Cash payments must not have Batch No or Approval Code.");
+            return;
+          }
+        } else {
+          if (!batchNo || !approvalCode) {
+            alert("Non-cash payments require Batch No and Approval Code.");
+            return;
+          }
+        }
+
+        try {
+          await firebase.firestore().collection("bookings").doc(data.id).update({
+            paymentType: newPayType,
+            batchNo: newPayType === "Cash" ? null : batchNo,
+            approvalCode: newPayType === "Cash" ? null : approvalCode
+          });
+          
+          // Update status badge
+          const statusBadge = row.querySelector(".status-badge");
+          statusBadge.textContent = "Complete";
+          statusBadge.className = "status-badge status-complete";
+          
+          alert("Payment updated successfully!");
+        } catch (error) {
+          alert("Error updating payment: " + error.message);
+        }
+      });
+
+      // Print handler -> shows receipt in modal
+      row.querySelector(".btn-print").addEventListener("click", () => {
+        const updated = {
+          ...data,
+          paymentType: row.querySelector(".payType").value,
+          batchNo: row.querySelector(".batchNo").value.trim(),
+          approvalCode: row.querySelector(".approvalCode").value.trim()
+        };
+
+        currentReceiptData = updated;
+        showReceipt(updated);
+      });
+
+      tableBody.appendChild(row);
+    });
     
-    const row = document.createElement("tr");
+    paginationContainer.style.display = 'flex';
+  }
 
-    row.innerHTML = `
-      <td>${data.receiptNo}</td>
-      <td>${data.name || "-"}</td>
-      <td>${data.flight || "-"}</td>
-      <td>${Number(data.total || 0).toFixed(2)} ${data.currency || ""}</td>
-      <td>
-        <select class="payType">
-          <option value="Cash" ${data.paymentType==="Cash"?"selected":""}>Cash</option>
-          <option value="Visa" ${data.paymentType==="Visa"?"selected":""}>Visa</option>
-          <option value="MasterCard" ${data.paymentType==="MasterCard"?"selected":""}>MasterCard</option>
-          <option value="Amex" ${data.paymentType==="Amex"?"selected":""}>Amex</option>
-          <option value="UnionPay" ${data.paymentType==="UnionPay"?"selected":""}>UnionPay</option>
-          <option value="Other" ${data.paymentType==="Other"?"selected":""}>Other</option>
-        </select>
-      </td>
-      <td><input type="text" class="batchNo" value="${data.batchNo || ""}" placeholder="Enter batch no"></td>
-      <td><input type="text" class="approvalCode" value="${data.approvalCode || ""}" placeholder="Enter approval code"></td>
-      <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-      <td>
-        <div class="action-buttons">
-          <button class="btn btn-update" title="Update payment">
-            <i class="fas fa-save"></i> Update
-          </button>
-          <button class="btn btn-print" title="Print receipt">
-            <i class="fas fa-print"></i> Print
-          </button>
-        </div>
-      </td>
+  // Show receipt in modal
+  function showReceipt(data) {
+    const date = new Date().toLocaleDateString();
+    const time = new Date().toLocaleTimeString();
+    
+    receiptDetails.innerHTML = `
+      <div><strong>Receipt No:</strong> <span>${data.receiptNo}</span></div>
+      <div><strong>Date:</strong> <span>${date}</span></div>
+      <div><strong>Time:</strong> <span>${time}</span></div>
+      <div><strong>Name:</strong> <span>${data.name || "-"}</span></div>
+      <div><strong>Flight:</strong> <span>${data.flight || "-"}</span></div>
+      <div><strong>Payment Type:</strong> <span>${data.paymentType}</span></div>
+      ${data.paymentType !== "Cash" ? `
+        <div><strong>Batch No:</strong> <span>${data.batchNo || "-"}</span></div>
+        <div><strong>Approval Code:</strong> <span>${data.approvalCode || "-"}</span></div>
+      ` : ''}
+      <div style="border-top: 1px dashed #000; margin: 15px 0; padding-top: 10px;">
+        <div><strong>Total Amount:</strong> <span>${Number(data.total || 0).toFixed(2)} ${data.currency || ""}</span></div>
+      </div>
     `;
+    
+    printModal.style.display = "flex";
+  }
 
-    // Update handler
-    row.querySelector(".btn-update").addEventListener("click", async () => {
-      const newPayType = row.querySelector(".payType").value;
-      const batchNo = row.querySelector(".batchNo").value.trim();
-      const approvalCode = row.querySelector(".approvalCode").value.trim();
-
-      if (newPayType === "Cash") {
-        if (batchNo || approvalCode) {
-          alert("Cash payments must not have Batch No or Approval Code.");
-          return;
-        }
-      } else {
-        if (!batchNo || !approvalCode) {
-          alert("Non-cash payments require Batch No and Approval Code.");
-          return;
-        }
-      }
-
-      try {
-        await db.collection("bookings").doc(data.id).update({
-          paymentType: newPayType,
-          batchNo: newPayType === "Cash" ? null : batchNo,
-          approvalCode: newPayType === "Cash" ? null : approvalCode
-        });
-        
-        // Update status badge
-        const statusBadge = row.querySelector(".status-badge");
-        statusBadge.textContent = "Complete";
-        statusBadge.className = "status-badge status-complete";
-        
-        alert("Payment updated successfully!");
-      } catch (error) {
-        alert("Error updating payment: " + error.message);
+  // Update pagination controls
+  function updatePagination(totalPages) {
+    // Clear existing pagination buttons
+    paginationContainer.innerHTML = '';
+    
+    if (totalPages <= 1) {
+      paginationContainer.style.display = 'none';
+      return;
+    }
+    
+    // Create previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevBtn.id = 'prevBtn';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderPayments();
       }
     });
-
-    // Print handler -> opens Receipt Viewer page
-    row.querySelector(".btn-print").addEventListener("click", () => {
-      const updated = {
-        ...data,
-        paymentType: row.querySelector(".payType").value,
-        batchNo: row.querySelector(".batchNo").value.trim(),
-        approvalCode: row.querySelector(".approvalCode").value.trim()
-      };
-
-      // Save booking data to localStorage
-      localStorage.setItem("printBooking", JSON.stringify(updated));
-
-      // Open receipt viewer page
-      window.open("receipt.html", "_blank");
+    paginationContainer.appendChild(prevBtn);
+    
+    // Create page number buttons
+    for (let i = 1; i <= totalPages; i++) {
+      const pageBtn = document.createElement('button');
+      pageBtn.textContent = i;
+      pageBtn.className = i === currentPage ? 'active' : '';
+      pageBtn.addEventListener('click', () => {
+        currentPage = i;
+        renderPayments();
+      });
+      paginationContainer.appendChild(pageBtn);
+    }
+    
+    // Create next button
+    const nextBtn = document.createElement('button');
+    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextBtn.id = 'nextBtn';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderPayments();
+      }
     });
+    paginationContainer.appendChild(nextBtn);
+  }
 
-    tableBody.appendChild(row);
+  // Event listeners
+  searchInput.addEventListener("input", filterPayments);
+  paymentTypeFilter.addEventListener("change", filterPayments);
+  statusFilter.addEventListener("change", filterPayments);
+  refreshBtn.addEventListener("click", loadPayments);
+  
+  // Modal event listeners
+  closeModal.addEventListener("click", () => {
+    printModal.style.display = "none";
   });
   
-  paginationContainer.style.display = 'flex';
-}
+  closeReceiptBtn.addEventListener("click", () => {
+    printModal.style.display = "none";
+  });
+  
+  printReceiptBtn.addEventListener("click", () => {
+    window.print();
+  });
 
-// Update pagination controls
-function updatePagination(totalPages) {
-  // Clear existing pagination buttons
-  paginationContainer.innerHTML = '';
-  
-  if (totalPages <= 1) {
-    paginationContainer.style.display = 'none';
-    return;
-  }
-  
-  // Create previous button
-  const prevBtn = document.createElement('button');
-  prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-  prevBtn.id = 'prevBtn';
-  prevBtn.disabled = currentPage === 1;
-  prevBtn.addEventListener('click', () => {
-    if (currentPage > 1) {
-      currentPage--;
-      renderPayments();
+  // Close modal when clicking outside
+  window.addEventListener("click", (event) => {
+    if (event.target === printModal) {
+      printModal.style.display = "none";
     }
   });
-  paginationContainer.appendChild(prevBtn);
-  
-  // Create page number buttons
-  for (let i = 1; i <= totalPages; i++) {
-    const pageBtn = document.createElement('button');
-    pageBtn.textContent = i;
-    pageBtn.className = i === currentPage ? 'active' : '';
-    pageBtn.addEventListener('click', () => {
-      currentPage = i;
-      renderPayments();
-    });
-    paginationContainer.appendChild(pageBtn);
-  }
-  
-  // Create next button
-  const nextBtn = document.createElement('button');
-  nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-  nextBtn.id = 'nextBtn';
-  nextBtn.disabled = currentPage === totalPages;
-  nextBtn.addEventListener('click', () => {
-    if (currentPage < totalPages) {
-      currentPage++;
-      renderPayments();
-    }
-  });
-  paginationContainer.appendChild(nextBtn);
-}
 
-// Event listeners
-searchInput.addEventListener("input", filterPayments);
-paymentTypeFilter.addEventListener("change", filterPayments);
-statusFilter.addEventListener("change", filterPayments);
-refreshBtn.addEventListener("click", loadPayments);
-
-// Initialize
-loadPayments();
+  // Initialize
+  loadPayments();
+});
 </script>
 
 </body>
