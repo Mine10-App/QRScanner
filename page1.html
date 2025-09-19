@@ -381,7 +381,16 @@
             </div>
         </header>
         
-       
+        <div class="rules-panel">
+            <h2 class="rules-title">Shift Rules</h2>
+            <ul class="rules-list">
+                <li>Shift 1 must be opened before Shift 2 can be opened</li>
+                <li>Shift 1 must be closed before Shift 2 can be opened</li>
+                <li>Shift 2 cannot be opened while Shift 1 is still open</li>
+                <li>Each shift can only be opened and closed once per day</li>
+                <li>Supervisor password is required to reopen a closed shift</li>
+            </ul>
+        </div>
         
         <div class="dashboard">
             <div class="shift-card shift1">
@@ -625,6 +634,12 @@
                 return;
             }
             
+            // Check if trying to open shift 2 before shift 1 has been closed today
+            if (shiftId === 'shift2' && !state.shifts.shift1.closedToday) {
+                alert("Shift 1 must be closed before opening Shift 2!");
+                return;
+            }
+            
             // Check if shift was already opened today
             if (shift.openedToday) {
                 showPasswordModal(shiftId, 'open');
@@ -819,6 +834,11 @@
             
             // Enable/disable buttons based on rules
             if (state.shifts.shift1.open) {
+                elements.shift2OpenBtn.disabled = true;
+            }
+            
+            // Disable shift 2 open button if shift 1 hasn't been closed today
+            if (!state.shifts.shift1.closedToday) {
                 elements.shift2OpenBtn.disabled = true;
             }
             
