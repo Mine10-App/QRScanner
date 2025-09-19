@@ -176,14 +176,13 @@
   }
 
   .btn {
-    display: block;
-    width: 100%;
-    padding: 16px;
+    display: inline-block;
+    padding: 12px 20px;
     background: var(--primary);
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
@@ -198,6 +197,19 @@
 
   .btn i {
     margin-right: 8px;
+  }
+
+  .btn-sm {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+
+  .btn-success {
+    background: #28a745;
+  }
+
+  .btn-success:hover {
+    background: #218838;
   }
 
   .input-icon {
@@ -216,68 +228,67 @@
     padding-left: 45px;
   }
 
-  /* Receipt styles */
-  #receiptContainer {
+  .qr-scanner-container {
+    margin-top: 15px;
+    border: 2px dashed var(--primary);
+    border-radius: var(--radius);
+    padding: 15px;
+    text-align: center;
+  }
+
+  #qr-scanner {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    display: block;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .scanner-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .camera-permission {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fc;
+    border-radius: var(--radius);
+  }
+
+  .camera-permission i {
+    font-size: 48px;
+    color: var(--primary);
+    margin-bottom: 15px;
+  }
+
+  .file-upload {
     display: none;
   }
 
-  .receipt {
-    width: 80mm;
+  .file-upload-label {
+    display: inline-block;
+    padding: 10px 15px;
+    background: #6c757d;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .file-upload-label:hover {
+    background: #5a6268;
+  }
+
+  .parsed-data {
+    margin-top: 15px;
     padding: 10px;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    background: white;
-    margin: 0 auto;
-  }
-
-  .receipt-header {
-    text-align: center;
-    margin-bottom: 15px;
-    border-bottom: 1px dashed #000;
-    padding-bottom: 10px;
-  }
-
-  .receipt-header h2 {
-    font-size: 18px;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-  }
-
-  .receipt-details {
-    margin-bottom: 15px;
-  }
-
-  .receipt-line {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 3px;
-  }
-
-  .receipt-divider {
-    border-top: 1px dashed #000;
-    margin: 10px 0;
-  }
-
-  .receipt-total {
-    font-weight: bold;
-    text-transform: uppercase;
-  }
-
-  .receipt-footer {
-    text-align: center;
-    margin-top: 15px;
-    font-size: 12px;
-    border-top: 1px dashed #000;
-    padding-top: 10px;
-  }
-
-  .btn-print {
-    margin-top: 15px;
-    background: #28a745;
-  }
-
-  .btn-print:hover {
-    background: #218838;
+    background: #e8f5e9;
+    border-radius: 6px;
+    border-left: 4px solid #4caf50;
   }
 
   @media (max-width: 768px) {
@@ -292,24 +303,9 @@
     .card-body {
       padding: 20px 15px;
     }
-  }
-
-  @media print {
-    body * {
-      visibility: hidden;
-    }
-    #receiptContainer, #receiptContainer * {
-      visibility: visible;
-    }
-    #receiptContainer {
-      display: block;
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-    }
-    .no-print {
-      display: none !important;
+    
+    .scanner-controls {
+      flex-direction: column;
     }
   }
 </style>
@@ -358,6 +354,37 @@
           <div class="input-icon">
             <i class="fas fa-qrcode"></i>
             <input type="text" id="qrCode" class="form-control" placeholder="Scan or paste QR code">
+          </div>
+          
+          <div class="qr-scanner-container">
+            <div class="camera-permission" id="camera-permission">
+              <i class="fas fa-camera"></i>
+              <p>Click "Start Scanner" to scan a QR code with your camera</p>
+              <div class="scanner-controls">
+                <button type="button" id="startScanner" class="btn btn-sm">
+                  <i class="fas fa-camera"></i> Start Scanner
+                </button>
+                <label for="file-upload" class="file-upload-label">
+                  <i class="fas fa-upload"></i> Upload Image
+                </label>
+                <input id="file-upload" type="file" accept="image/*" class="file-upload" />
+              </div>
+            </div>
+            <div id="scanner-container" style="display: none;">
+              <div id="qr-reader" style="width: 100%"></div>
+              <div class="scanner-controls">
+                <button type="button" id="stopScanner" class="btn btn-sm">
+                  <i class="fas fa-stop"></i> Stop Scanner
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div id="parsed-data" class="parsed-data" style="display: none;">
+            <p><strong>Parsed Data:</strong></p>
+            <p>Name: <span id="parsed-name"></span></p>
+            <p>Flight: <span id="parsed-flight"></span></p>
+            <p>Seat: <span id="parsed-seat"></span></p>
           </div>
         </div>
       </div>
@@ -469,95 +496,192 @@
       </div>
     </div>
 
-    <button type="button" id="saveBtn" class="btn">
+    <button type="button" id="saveBtn" class="btn" style="display: block; width: 100%;">
       <i class="fas fa-check-circle"></i>
       Process Payment
     </button>
   </form>
-
-  <!-- Receipt Container (Hidden until payment is processed) -->
-  <div id="receiptContainer" class="no-print">
-    <div class="receipt" id="receipt">
-      <div class="receipt-header">
-        <h2>TRANSPORT SERVICE</h2>
-        <p>RECEIPT</p>
-      </div>
-      
-      <div class="receipt-details">
-        <div class="receipt-line">
-          <span>Receipt #: <span id="receipt-number"></span></span>
-        </div>
-        <div class="receipt-line">
-          <span>Date: <span id="receipt-date"></span></span>
-        </div>
-        <div class="receipt-line">
-          <span>Time: <span id="receipt-time"></span></span>
-        </div>
-        
-        <div class="receipt-divider"></div>
-        
-        <div class="receipt-line">
-          <span>Passenger: <span id="receipt-name"></span></span>
-        </div>
-        <div class="receipt-line">
-          <span>Flight: <span id="receipt-flight"></span></span>
-        </div>
-        <div class="receipt-line">
-          <span>Seat: <span id="receipt-seat"></span></span>
-        </div>
-        
-        <div class="receipt-divider"></div>
-        
-        <div class="receipt-line">
-          <span>Adults: <span id="receipt-adults"></span> x <span id="receipt-adult-rate"></span></span>
-        </div>
-        <div class="receipt-line">
-          <span>Children: <span id="receipt-kids"></span> x <span id="receipt-kid-rate"></span></span>
-        </div>
-        
-        <div class="receipt-divider"></div>
-        
-        <div class="receipt-line">
-          <span>Subtotal:</span>
-          <span id="receipt-subtotal"></span>
-        </div>
-        <div class="receipt-line">
-          <span>GST:</span>
-          <span id="receipt-gst"></span>
-        </div>
-        <div class="receipt-line receipt-total">
-          <span>TOTAL:</span>
-          <span id="receipt-total"></span>
-        </div>
-        
-        <div class="receipt-divider"></div>
-        
-        <div class="receipt-line">
-          <span>Payment Method:</span>
-          <span id="receipt-payment-type"></span>
-        </div>
-        <div class="receipt-line">
-          <span>Currency:</span>
-          <span id="receipt-currency"></span>
-        </div>
-      </div>
-      
-      <div class="receipt-footer">
-        <p>Thank you for your business!</p>
-        <p>www.transportservice.example</p>
-      </div>
-    </div>
-    
-    <button id="printBtn" class="btn btn-print">
-      <i class="fas fa-print"></i>
-      Print Receipt
-    </button>
-  </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Include the QR scanner library -->
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <script>
+  // Set current date
+  const dateField = document.getElementById("date");
+  dateField.value = new Date().toISOString().split('T')[0];
+
+  // Get all input fields
+  const qrInput = document.getElementById("qrCode");
+  const nameField = document.getElementById("name");
+  const flightField = document.getElementById("flight");
+  const seatField = document.getElementById("seat");
+  const currencyType = document.getElementById("currency");
+  const rateType = document.getElementById("rate");
+  const adultCount = document.getElementById("adultCount");
+  const kidCount = document.getElementById("kidCount");
+  const paymentTypeSelect = document.getElementById("paymentType");
+  const totalAdultsField = document.getElementById("rateField");
+  const gstField = document.getElementById("gstField");
+  const totalField = document.getElementById("totalField");
+
+  // QR Code Scanner Elements
+  const startScannerBtn = document.getElementById("startScanner");
+  const stopScannerBtn = document.getElementById("stopScanner");
+  const cameraPermission = document.getElementById("camera-permission");
+  const scannerContainer = document.getElementById("scanner-container");
+  const fileUpload = document.getElementById("file-upload");
+  const parsedData = document.getElementById("parsed-data");
+  const parsedName = document.getElementById("parsed-name");
+  const parsedFlight = document.getElementById("parsed-flight");
+  const parsedSeat = document.getElementById("parsed-seat");
+
+  // QR Code Scanner variables
+  let html5QrcodeScanner = null;
+
+  // Convert inputs to uppercase
+  [nameField, flightField, seatField].forEach(input => {
+    input.addEventListener("input", () => {
+      input.value = input.value.toUpperCase();
+    });
+  });
+
+  // QR Code Parser
+  function parseQR(code){
+    code = code.trim().toUpperCase().replace(/\s+/g,' ');
+    const allParts = code.split(' ');
+    let name="", flightNo="", seatNo="";
+    
+    if(code.startsWith("TKVCPO")){
+      const tkIndex = code.indexOf("TK0");
+      if(tkIndex!=-1){ 
+        flightNo=code.substring(tkIndex,tkIndex+6); 
+        name=code.substring(6,tkIndex);
+      }
+      const mlePos = code.indexOf("MLE");
+      if(mlePos!=-1){ 
+        const afterMLE = code.substring(mlePos).split(' ')[0]; 
+        if(afterMLE.length>=11) seatNo=afterMLE.substring(8,11);
+      }
+    } else {
+      name = allParts[0].substring(2);
+      const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+      if(mleIndex!=-1){
+        const mleWord = allParts[mleIndex];
+        const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+        flightNo = mleWord.slice(-2)+nextWord;
+        const partsAfterMLE = allParts.slice(mleIndex+1);
+        for(let w of partsAfterMLE){
+          if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ 
+            seatNo = w.substring(5,w.length-4); 
+            break; 
+          }
+        }
+      }
+    }
+    return {name, flightNo, seatNo};
+  }
+
+  // Process QR code input
+  function processQRCode(code) {
+    const parsed = parseQR(code);
+    
+    // Show parsed data
+    parsedName.textContent = parsed.name || "Not found";
+    parsedFlight.textContent = parsed.flightNo || "Not found";
+    parsedSeat.textContent = parsed.seatNo || "Not found";
+    parsedData.style.display = "block";
+    
+    // Auto-fill form fields if data is available
+    if (parsed.name) nameField.value = parsed.name;
+    if (parsed.flightNo) flightField.value = parsed.flightNo;
+    if (parsed.seatNo) seatField.value = parsed.seatNo;
+    
+    // Clear the QR input field
+    qrInput.value = '';
+  }
+
+  // Initialize QR Code Scanner
+  function initQRScanner() {
+    html5QrcodeScanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      },
+      /* verbose= */ false
+    );
+    
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  }
+
+  // Handle successful QR code scan
+  function onScanSuccess(decodedText, decodedResult) {
+    console.log(`Scan result: ${decodedText}`, decodedResult);
+    processQRCode(decodedText);
+    stopScanner();
+  }
+
+  // Handle scan failure
+  function onScanFailure(error) {
+    // Most errors are handled silently as scanning continues
+    console.warn(`QR error = ${error}`);
+  }
+
+  // Start the QR scanner
+  startScannerBtn.addEventListener("click", () => {
+    cameraPermission.style.display = "none";
+    scannerContainer.style.display = "block";
+    initQRScanner();
+  });
+
+  // Stop the QR scanner
+  stopScannerBtn.addEventListener("click", stopScanner);
+
+  function stopScanner() {
+    if (html5QrcodeScanner) {
+      try {
+        html5QrcodeScanner.clear();
+      } catch (e) {
+        console.log("Scanner clear error:", e);
+      }
+      html5QrcodeScanner = null;
+    }
+    scannerContainer.style.display = "none";
+    cameraPermission.style.display = "block";
+  }
+
+  // Handle file upload for QR code scanning
+  fileUpload.addEventListener("change", function(e) {
+    if (e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.scanFile(file, true)
+          .then(decodedText => {
+            processQRCode(decodedText);
+            e.target.value = ''; // Reset file input
+          })
+          .catch(err => {
+            console.log("Error scanning file:", err);
+            alert("Error scanning QR code: " + err);
+            e.target.value = ''; // Reset file input
+          });
+      }
+    }).catch(err => {
+      console.log("Camera error:", err);
+    });
+  });
+
+  // Manual QR code input handling
+  qrInput.addEventListener("change", () => {
+    if (qrInput.value.trim() !== '') {
+      processQRCode(qrInput.value);
+    }
+  });
+
   // Mock Firebase for demonstration purposes
   const db = {
     collection: (name) => {
@@ -592,51 +716,6 @@
     AdultBMVR: { price: 308, GST: 10 },
     KidsBMVR: { price: 154, GST: 10 }
   };
-</script>
-<script>
-  // Set current date
-  const dateField = document.getElementById("date");
-  dateField.value = new Date().toISOString().split('T')[0];
-
-  // Get all input fields
-  const qrInput = document.getElementById("qrCode");
-  const nameField = document.getElementById("name");
-  const flightField = document.getElementById("flight");
-  const seatField = document.getElementById("seat");
-  const currencyType = document.getElementById("currency");
-  const rateType = document.getElementById("rate");
-  const adultCount = document.getElementById("adultCount");
-  const kidCount = document.getElementById("kidCount");
-  const paymentTypeSelect = document.getElementById("paymentType");
-  const totalAdultsField = document.getElementById("rateField");
-  const gstField = document.getElementById("gstField");
-  const totalField = document.getElementById("totalField");
-
-  // Receipt elements
-  const receiptContainer = document.getElementById("receiptContainer");
-  const receiptNumber = document.getElementById("receipt-number");
-  const receiptDate = document.getElementById("receipt-date");
-  const receiptTime = document.getElementById("receipt-time");
-  const receiptName = document.getElementById("receipt-name");
-  const receiptFlight = document.getElementById("receipt-flight");
-  const receiptSeat = document.getElementById("receipt-seat");
-  const receiptAdults = document.getElementById("receipt-adults");
-  const receiptKids = document.getElementById("receipt-kids");
-  const receiptAdultRate = document.getElementById("receipt-adult-rate");
-  const receiptKidRate = document.getElementById("receipt-kid-rate");
-  const receiptSubtotal = document.getElementById("receipt-subtotal");
-  const receiptGst = document.getElementById("receipt-gst");
-  const receiptTotal = document.getElementById("receipt-total");
-  const receiptPaymentType = document.getElementById("receipt-payment-type");
-  const receiptCurrency = document.getElementById("receipt-currency");
-  const printBtn = document.getElementById("printBtn");
-
-  // Convert inputs to uppercase
-  [nameField, flightField, seatField].forEach(input => {
-    input.addEventListener("input", () => {
-      input.value = input.value.toUpperCase();
-    });
-  });
 
   // Calculate function
   function calculate() {
@@ -657,14 +736,7 @@
     gstField.textContent = currencySymbol + gstAmount.toFixed(2);
     totalField.textContent = currencySymbol + total.toFixed(2);
 
-    return {
-      total,
-      subtotal,
-      gstAmount,
-      adultRate,
-      kidRate,
-      currencySymbol
-    };
+    return total;
   }
 
   // Add event listeners for calculation
@@ -676,14 +748,9 @@
   // Calculate on page load
   window.addEventListener("DOMContentLoaded", calculate);
 
-  // Print receipt function
-  printBtn.addEventListener("click", () => {
-    window.print();
-  });
-
   // Save button functionality
   document.getElementById("saveBtn").addEventListener("click", async () => {
-    const calculation = calculate();
+    const total = calculate();
     const counterRef = db.collection("counters").doc("receiptCounter");
     
     try {
@@ -700,7 +767,6 @@
         return current;
       });
 
-      const now = new Date();
       const data = {
         date: dateField.value,
         qrCode: qrInput.value || null,
@@ -715,34 +781,17 @@
         kids: parseInt(kidCount.value) || 0,
         paymentType: paymentTypeSelect.value,
         receiptNo: nextReceiptNo,
-        total: calculation.total,
-        timestamp: now
+        total: total,
+        timestamp: new Date()
       };
 
       await db.collection("bookings").add(data);
+      alert("Payment processed successfully! Receipt #" + nextReceiptNo);
       
-      // Update receipt with data
-      receiptNumber.textContent = nextReceiptNo.toString().padStart(6, '0');
-      receiptDate.textContent = dateField.value;
-      receiptTime.textContent = now.toLocaleTimeString();
-      receiptName.textContent = nameField.value || '-';
-      receiptFlight.textContent = flightField.value || '-';
-      receiptSeat.textContent = seatField.value || '-';
-      receiptAdults.textContent = data.adults;
-      receiptKids.textContent = data.kids;
-      receiptAdultRate.textContent = `${calculation.currencySymbol}${calculation.adultRate.toFixed(2)}`;
-      receiptKidRate.textContent = `${calculation.currencySymbol}${calculation.kidRate.toFixed(2)}`;
-      receiptSubtotal.textContent = `${calculation.currencySymbol}${calculation.subtotal.toFixed(2)}`;
-      receiptGst.textContent = `${calculation.currencySymbol}${calculation.gstAmount.toFixed(2)}`;
-      receiptTotal.textContent = `${calculation.currencySymbol}${calculation.total.toFixed(2)}`;
-      receiptPaymentType.textContent = paymentTypeSelect.value;
-      receiptCurrency.textContent = currencyType.value;
-      
-      // Show receipt container
-      receiptContainer.style.display = 'block';
-      
-      // Scroll to receipt
-      receiptContainer.scrollIntoView({ behavior: 'smooth' });
+      // Reset form
+      document.getElementById("paymentForm").reset();
+      parsedData.style.display = "none";
+      calculate(); // Recalculate totals
       
     } catch (err) {
       alert("Error saving: " + err.message);
