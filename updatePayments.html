@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Update Payments</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <!-- Include your external files -->
 <script src="fire2.js"></script>
 <script src="Co.js"></script>
@@ -312,36 +310,62 @@
     color: var(--gray);
   }
 
+  /* Receipt styles from payment entry page */
   .receipt {
+    width: 80mm;
+    padding: 10px;
     font-family: 'Courier New', monospace;
+    font-size: 14px;
     background: white;
-    padding: 20px;
-    border: 1px dashed #ccc;
+    margin: 0 auto;
   }
 
   .receipt-header {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     border-bottom: 1px dashed #000;
     padding-bottom: 10px;
   }
 
-  .receipt-details {
-    margin-bottom: 20px;
+  .receipt-header h2 {
+    font-size: 18px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
   }
 
-  .receipt-details div {
+  .receipt-details {
+    margin-bottom: 15px;
+  }
+
+  .receipt-line {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
+  }
+
+  .receipt-divider {
+    border-top: 1px dashed #000;
+    margin: 10px 0;
+  }
+
+  .receipt-total {
+    font-weight: bold;
+    text-transform: uppercase;
   }
 
   .receipt-footer {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 15px;
+    font-size: 12px;
     border-top: 1px dashed #000;
     padding-top: 10px;
-    font-size: 12px;
+  }
+
+  .validity-notice {
+    font-size: 11px;
+    margin-top: 10px;
+    font-style: italic;
+    color: #666;
   }
 
   .print-actions {
@@ -491,17 +515,21 @@
     <span class="close-modal" id="closeModal">&times;</span>
     <div class="receipt" id="receiptContent">
       <div class="receipt-header">
-        <h2 id="companyNameHeader">FLIGHT BOOKING RECEIPT</h2>
-        <p>Thank you for your business!</p>
+        <h2 id="companyNameHeader">Koveli Lounge</h2>
+        <p id="companyAddress">Velana International Airport</p>
+        <p id="companyPhone">+123 456 7890</p>
       </div>
+      
       <div class="receipt-details" id="receiptDetails">
         <!-- Receipt details will be inserted here by JavaScript -->
       </div>
+      
       <div class="receipt-footer">
-        <p id="companyContact">For questions, contact support@example.com</p>
-        <p id="companyWebsite">www.example.com</p>
+        <p class="validity-notice">This package is valid for three hours from the time of purchase</p>
+        <p>Thank you for your business!</p>
       </div>
     </div>
+    
     <div class="print-actions">
       <button class="btn-print-receipt" id="printReceiptBtn">
         <i class="fas fa-print"></i> Print Receipt
@@ -513,6 +541,8 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
 // Wait for the external files to load
 window.addEventListener('load', function() {
@@ -529,14 +559,14 @@ window.addEventListener('load', function() {
   }
   
   // Get company info from Co.js or use defaults
-  const companyName = typeof CompanyName !== 'undefined' ? CompanyName : "Flight Booking";
-  const companyContact = typeof CompanyContact !== 'undefined' ? CompanyContact : "support@example.com";
-  const companyWebsite = typeof CompanyWebsite !== 'undefined' ? CompanyWebsite : "www.example.com";
+  const companyName = typeof CompanyName !== 'undefined' ? CompanyName : "Koveli Lounge";
+  const companyAddress = typeof CompanyAddress !== 'undefined' ? CompanyAddress : "Velana International Airport";
+  const companyPhone = typeof CompanyPhone !== 'undefined' ? CompanyPhone : "+123 456 7890";
   
   // Update the receipt header with company name
-  document.getElementById('companyNameHeader').textContent = companyName.toUpperCase() + " RECEIPT";
-  document.getElementById('companyContact').textContent = `For questions, contact ${companyContact}`;
-  document.getElementById('companyWebsite').textContent = companyWebsite;
+  document.getElementById('companyNameHeader').textContent = companyName.toUpperCase();
+  document.getElementById('companyAddress').textContent = companyAddress;
+  document.getElementById('companyPhone').textContent = companyPhone;
   
   const tableBody = document.querySelector("#paymentsTable tbody");
   const searchInput = document.getElementById("searchInput");
@@ -554,7 +584,6 @@ window.addEventListener('load', function() {
   let filteredPayments = [];
   let currentPage = 1;
   const itemsPerPage = 5;
-  let currentReceiptData = null;
 
   // Load payments needing refinement
   async function loadPayments() {
@@ -614,7 +643,9 @@ window.addEventListener('load', function() {
       { id: '7', receiptNo: '1007', name: 'David Wilson', flight: 'BA901', total: 165.50, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
       { id: '8', receiptNo: '1008', name: 'Jessica Taylor', flight: 'AF234', total: 195.75, currency: 'USD', paymentType: 'UnionPay', batchNo: 'B901', approvalCode: 'A234' },
       { id: '9', receiptNo: '1009', name: 'Daniel Anderson', flight: 'DL567', total: 180.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
-      { id: '10', receiptNo: '1010', name: 'Olivia Martinez', flight: 'UA890', total: 230.50, currency: 'USD', paymentType: 'Other', batchNo: 'B567', approvalCode: 'A890' }
+      { id: '10', receiptNo: '1010', name: 'Olivia Martinez', flight: 'UA890', total: 230.50, currency: 'USD', paymentType: 'Other', batchNo: 'B567', approvalCode: 'A890' },
+      { id: '11', receiptNo: '1011', name: 'James Thomas', flight: 'TK123', total: 155.00, currency: 'USD', paymentType: 'Card', batchNo: '', approvalCode: '' },
+      { id: '12', receiptNo: '1012', name: 'Sophia Garcia', flight: 'QR456', total: 205.75, currency: 'USD', paymentType: 'Visa', batchNo: 'B123', approvalCode: 'A456' }
     ];
     
     allPayments = mockData;
@@ -661,7 +692,7 @@ window.addEventListener('load', function() {
             <i class="fas fa-receipt"></i>
             <p>No payments found</p>
           </td>
-        </tr>
+      </tr>
       `;
       paginationContainer.style.display = 'none';
       return;
@@ -762,7 +793,6 @@ window.addEventListener('load', function() {
           approvalCode: row.querySelector(".approvalCode").value.trim()
         };
 
-        currentReceiptData = updated;
         showReceipt(updated);
       });
 
@@ -772,24 +802,64 @@ window.addEventListener('load', function() {
     paginationContainer.style.display = 'flex';
   }
 
-  // Show receipt in modal
+  // Show receipt in modal (using the new design)
   function showReceipt(data) {
-    const date = new Date().toLocaleDateString();
-    const time = new Date().toLocaleTimeString();
+    const now = new Date();
+    const date = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
     
+    // Create receipt content
     receiptDetails.innerHTML = `
-      <div><strong>Receipt No:</strong> <span>${data.receiptNo}</span></div>
-      <div><strong>Date:</strong> <span>${date}</span></div>
-      <div><strong>Time:</strong> <span>${time}</span></div>
-      <div><strong>Name:</strong> <span>${data.name || "-"}</span></div>
-      <div><strong>Flight:</strong> <span>${data.flight || "-"}</span></div>
-      <div><strong>Payment Type:</strong> <span>${data.paymentType}</span></div>
-      ${data.paymentType !== "Cash" ? `
-        <div><strong>Batch No:</strong> <span>${data.batchNo || "-"}</span></div>
-        <div><strong>Approval Code:</strong> <span>${data.approvalCode || "-"}</span></div>
-      ` : ''}
-      <div style="border-top: 1px dashed #000; margin: 15px 0; padding-top: 10px;">
-        <div><strong>Total Amount:</strong> <span>${Number(data.total || 0).toFixed(2)} ${data.currency || ""}</span></div>
+      <div class="receipt-line">
+        <span>Receipt #: <span>${data.receiptNo.toString().padStart(6, '0')}</span></span>
+      </div>
+      <div class="receipt-line">
+        <span>Date: <span>${date}</span></span>
+      </div>
+      <div class="receipt-line">
+        <span>Time: <span>${time}</span></span>
+      </div>
+      
+      <div class="receipt-divider"></div>
+      
+      <div class="receipt-line">
+        <span>Passenger: <span>${data.name || "-"}</span></span>
+      </div>
+      <div class="receipt-line">
+        <span>Flight: <span>${data.flight || "-"}</span></span>
+      </div>
+      <div class="receipt-line">
+        <span>Seat: <span>${data.seat || "-"}</span></span>
+      </div>
+      
+      <div class="receipt-divider"></div>
+      
+      <div class="receipt-line">
+        <span>Subtotal:</span>
+        <span>${Number(data.total || 0).toFixed(2)} ${data.currency || ""}</span>
+      </div>
+      <div class="receipt-line">
+        <span>GST:</span>
+        <span>${(Number(data.total || 0) * 0.1).toFixed(2)} ${data.currency || ""}</span>
+      </div>
+      <div class="receipt-line receipt-total">
+        <span>TOTAL:</span>
+        <span>${(Number(data.total || 0) * 1.1).toFixed(2)} ${data.currency || ""}</span>
+      </div>
+      
+      <div class="receipt-divider"></div>
+      
+      <div class="receipt-line">
+        <span>Payment Method:</span>
+        <span>${data.paymentType}</span>
+      </div>
+      <div class="receipt-line">
+        <span>Batch No:</span>
+        <span>${data.batchNo || "-"}</span>
+      </div>
+      <div class="receipt-line">
+        <span>Approval Code:</span>
+        <span>${data.approvalCode || "-"}</span>
       </div>
     `;
     
