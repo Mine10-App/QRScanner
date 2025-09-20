@@ -527,9 +527,21 @@
             renderNotifications(sampleNotifications);
         }
 
-        // Add event listener to Update Payments button
+        // Add event listeners to buttons for page redirects
+        document.getElementById('newpaymentbtn').addEventListener('click', () => {
+            window.location.href = 'newpayment.html';
+        });
+    
+        document.getElementById('viewreport').addEventListener('click', () => {
+            window.location.href = 'DReport.html';
+        });
+    
         document.getElementById('updatePaymentsBtn').addEventListener('click', () => {
-            window.location.href = 'edit_booking.html';
+            window.location.href = 'updatePayments.html';
+        });
+    
+        document.getElementById('void').addEventListener('click', () => {
+            window.location.href = 'edit_payments.html';
         });
 
         // Initialize the dashboard
