@@ -6,7 +6,6 @@
 <title>Shift Management</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="fire2.js"></script> <!-- Firebase config -->
-<script src="users.js"></script> <!-- users array -->
 <style>
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 20px; min-height: 100vh; color: #212529; }
 .container { max-width: 900px; margin: 0 auto; }
@@ -49,6 +48,7 @@ th { background: #f8f9fa; }
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="users.js"></script>
 <script>
 window.addEventListener('load', async () => {
   if (typeof firebaseConfig === 'undefined') { alert("Firebase config not found in fire2.js"); return; }
@@ -61,14 +61,8 @@ window.addEventListener('load', async () => {
   const shiftsTableBody = document.querySelector("#shiftsTable tbody");
 
   let currentShift = null;
+  const currentUser = "Koveli"; // Set logged-in user dynamically
   const maxShifts = 2;
-
-  // Prompt user login (simulate login)
-  let currentUser = prompt("Enter your username:");
-  if (!users.find(u => u.username === currentUser)) {
-    alert("User not found! Defaulting to Koveli.");
-    currentUser = "Koveli";
-  }
 
   async function loadShifts() {
     const snapshot = await db.collection("shifts").orderBy("shiftNo").get();
@@ -137,11 +131,11 @@ window.addEventListener('load', async () => {
 
     if (nextShiftNo > maxShifts) { alert("Only 2 shifts allowed per day."); return; }
 
-    // Check if shift exists and is closed (reopening)
+    // Reopening check
     const existingShift = shifts.find(s => s.shiftNo === nextShiftNo && s.status === "closed");
     if (existingShift) {
       const ok = await promptSupervisor();
-      if (!ok) return;  // stop if wrong credentials
+      if (!ok) return;
     }
 
     await db.collection("shifts").add({
@@ -157,6 +151,7 @@ window.addEventListener('load', async () => {
 
   closeBtn.addEventListener("click", async () => {
     if (!currentShift) return;
+
     await db.collection("shifts").doc(currentShift.id).update({
       status: "closed",
       endTime: firebase.firestore.FieldValue.serverTimestamp()
