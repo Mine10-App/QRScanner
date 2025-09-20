@@ -444,13 +444,13 @@
         // Check if Firebase is already initialized by fire2.js
         function checkFirebaseInitialization() {
             if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                console.log("Firebase is initialized by fire2.js");
                 // Firebase is already initialized by fire2.js
                 db = firebase.firestore();
                 initDashboard();
-            } else {
-                // Wait a bit and check again
-                setTimeout(checkFirebaseInitialization, 500);
+                return true;
             }
+            return false;
         }
         
         // Function to update Firebase status display
@@ -597,44 +597,6 @@
             });
         }
 
-        // Function to fetch today's statistics from Firebase
-        function fetchTodaysStats() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Replace with your actual collection and query
-            db.collection('transactions')
-                .where('date', '>=', today)
-                .get()
-                .then((querySnapshot) => {
-                    let revenue = 0;
-                    let transactions = 0;
-                    let completed = 0;
-                    let pending = 0;
-                    
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        transactions++;
-                        revenue += data.amount || 0;
-                        
-                        if (data.status === 'completed') {
-                            completed++;
-                        } else if (data.status === 'pending') {
-                            pending++;
-                        }
-                    });
-                    
-                    // Update the UI
-                    document.getElementById('todayRevenue').textContent = '$' + revenue.toFixed(2);
-                    document.getElementById('todayTransactions').textContent = transactions;
-                    document.getElementById('completedPayments').textContent = completed;
-                    document.getElementById('pendingUpdates').textContent = pending;
-                })
-                .catch((error) => {
-                    console.error("Error fetching statistics: ", error);
-                });
-        }
-
         // Function to set up real-time shift listener
         function setupShiftListener() {
             if (shiftListener) {
@@ -747,54 +709,70 @@
             setupNotificationsListener();
             
             updateFirebaseStatus(true);
+            
+            // Set up button event listeners
+            setupButtonListeners();
         }
 
-        // Add event listeners to buttons for page redirects
-        document.getElementById('newpaymentbtn').addEventListener('click', () => {
-            window.location.href = 'newpayment.html';
-        });
+        // Set up button event listeners
+        function setupButtonListeners() {
+            // Add event listeners to buttons for page redirects
+            document.getElementById('newpaymentbtn').addEventListener('click', () => {
+                window.location.href = 'newpayment.html';
+            });
 
-        document.getElementById('viewreport').addEventListener('click', () => {
-            window.location.href = 'DReport.html';
-        });
+            document.getElementById('viewreport').addEventListener('click', () => {
+                window.location.href = 'DReport.html';
+            });
 
-        document.getElementById('updatePaymentsBtn').addEventListener('click', () => {
-            window.location.href = 'updatePayments.html';
-        });
+            document.getElementById('updatePaymentsBtn').addEventListener('click', () => {
+                window.location.href = 'updatePayments.html';
+            });
 
-        document.getElementById('void').addEventListener('click', () => {
-            window.location.href = 'edit_payments.html';
-        });
+            document.getElementById('void').addEventListener('click', () => {
+                window.location.href = 'edit_payments.html';
+            });
 
-        // Add event listeners for the new buttons
-        document.getElementById('shiftManagementBtn').addEventListener('click', () => {
-            window.location.href = 'shiftmanagement.html';
-        });
+            // Add event listeners for the new buttons
+            document.getElementById('shiftManagementBtn').addEventListener('click', () => {
+                window.location.href = 'shiftmanagement.html';
+            });
 
-        document.getElementById('cashierManagementBtn').addEventListener('click', () => {
-            window.location.href = 'cashiermanagement.html';
-        });
+            document.getElementById('cashierManagementBtn').addEventListener('click', () => {
+                window.location.href = 'cashiermanagement.html';
+            });
+            
+            console.log("All button listeners set up successfully");
+        }
 
         // Start checking for Firebase initialization
         document.addEventListener('DOMContentLoaded', () => {
-            // Check if Firebase is already initialized
-            checkFirebaseInitialization();
+            // Set up button listeners immediately
+            setupButtonListeners();
             
-            // Set a timeout in case fire2.js fails to load
-            setTimeout(() => {
-                if (!db) {
-                    console.error("Firebase initialization failed. Using sample data.");
-                    updateFirebaseStatus(false);
-                    updateShiftInfo(null);
-                    renderSampleNotifications();
-                    
-                    // Set sample stats
-                    document.getElementById('todayRevenue').textContent = '$1,245.80';
-                    document.getElementById('todayTransactions').textContent = '42';
-                    document.getElementById('completedPayments').textContent = '38';
-                    document.getElementById('pendingUpdates').textContent = '4';
-                }
-            }, 5000);
+            // Check if Firebase is already initialized
+            if (!checkFirebaseInitialization()) {
+                // If not, check every 500ms for up to 10 seconds
+                let attempts = 0;
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    if (checkFirebaseInitialization()) {
+                        clearInterval(checkInterval);
+                    } else if (attempts > 20) { // 10 seconds (20 * 500ms)
+                        clearInterval(checkInterval);
+                        console.error("Firebase initialization failed. Using sample data.");
+                        updateFirebaseStatus(false);
+                        updateShiftInfo(null);
+                        renderSampleNotifications();
+                        
+                        // Set sample stats
+                        document.getElementById('todayRevenue').textContent = '$1,245.80';
+                        document.getElementById('todayTransactions').textContent = '42';
+                        document.getElementById('completedPayments').textContent = '38';
+                        document.getElementById('pendingUpdates').textContent = '4';
+                    }
+                }, 500);
+            }
         });
     </script>
 </body>
