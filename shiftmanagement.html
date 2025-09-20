@@ -434,24 +434,13 @@
     </div>
 
     <!-- Firebase App -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-// Wait for the external files to load
-window.addEventListener('load', function() {
-  // Initialize Firebase with your configuration from fire2.js
-  if (typeof firebaseConfig !== 'undefined') {
-    try {
-      firebase.initializeApp(firebaseConfig);
-      console.log("Firebase initialized successfully");
-    } catch (error) {
-      console.error("Firebase initialization error:", error);
-    }
-  } else {
-    console.error("Firebase configuration not found in fire2.js");
-  }
-  
-        
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Your Firebase config file - fire2.js -->
+    <script src="fire2.js"></script>
+    
+    <script>
         // Initialize Firebase
         let db;
         if (typeof firebaseConfig !== 'undefined') {
@@ -482,7 +471,7 @@ window.addEventListener('load', function() {
                     console.error("Firebase connection error:", error);
                 });
         } else {
-            console.error("Firebase configuration not found.");
+            console.error("Firebase configuration not found. Please ensure fire2.js is loaded and contains your Firebase config.");
             document.getElementById('firebase-status-text').innerHTML = 
                 '<span class="disconnected">Firebase config not found</span>';
         }
