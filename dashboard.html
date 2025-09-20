@@ -8,8 +8,6 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- Firebase Configuration -->
-    <script src="fire2.js"></script>
     <style>
         :root {
             --primary: #4361ee;
@@ -421,6 +419,16 @@
     </div>
 
     <script>
+        // Firebase configuration - Replace with your own config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-project-id.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+
         // Initialize Firebase
         let db;
         let shiftListener = null;
@@ -697,43 +705,39 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Initialize Firebase
             try {
-                if (typeof firebaseConfig !== 'undefined') {
-                    firebase.initializeApp(firebaseConfig);
-                    db = firebase.firestore();
-                    
-                    // Set up real-time listeners
-                    setupShiftListener();
-                    fetchNotifications();
-                    fetchTodaysStats();
-                    
-                    // Set up real-time listener for new notifications
-                    db.collection('notifications')
-                        .orderBy('timestamp', 'desc')
-                        .limit(5)
-                        .onSnapshot((querySnapshot) => {
-                            const notifications = [];
-                            querySnapshot.forEach((doc) => {
-                                notifications.push({ id: doc.id, ...doc.data() });
-                            });
-                            renderNotifications(notifications);
-                        }, (error) => {
-                            console.error("Error setting up real-time listener: ", error);
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                // Set up real-time listeners
+                setupShiftListener();
+                fetchNotifications();
+                fetchTodaysStats();
+                
+                // Set up real-time listener for new notifications
+                db.collection('notifications')
+                    .orderBy('timestamp', 'desc')
+                    .limit(5)
+                    .onSnapshot((querySnapshot) => {
+                        const notifications = [];
+                        querySnapshot.forEach((doc) => {
+                            notifications.push({ id: doc.id, ...doc.data() });
                         });
-                        
-                    // Set up real-time listener for today's stats
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
+                        renderNotifications(notifications);
+                    }, (error) => {
+                        console.error("Error setting up real-time listener: ", error);
+                    });
                     
-                    db.collection('transactions')
-                        .where('date', '>=', today)
-                        .onSnapshot((querySnapshot) => {
-                            fetchTodaysStats();
-                        }, (error) => {
-                            console.error("Error setting up stats listener: ", error);
-                        });
-                } else {
-                    throw new Error("Firebase configuration not found");
-                }
+                // Set up real-time listener for today's stats
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                db.collection('transactions')
+                    .where('date', '>=', today)
+                    .onSnapshot((querySnapshot) => {
+                        fetchTodaysStats();
+                    }, (error) => {
+                        console.error("Error setting up stats listener: ", error);
+                    });
             } catch (error) {
                 console.error("Firebase initialization error: ", error);
                 updateFirebaseStatus(false);
