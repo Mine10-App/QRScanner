@@ -465,43 +465,11 @@
             </div>
         </div>
     </div>
-    <!-- Firebase App -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-
-<!-- Firestore -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
 
-    <script>
-        // Firebase configuration - REPLACE WITH YOUR OWN CONFIGURATION
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "your-project-id.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project-id.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "your-app-id"
-        };
-
-        // Initialize Firebase
-        let db;
-        let firebaseConnected = false;
-        let shiftListener = null;
-        
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            firebaseConnected = true;
-            console.log("Firebase connected successfully");
-            
-            // Update Firebase status indicator
-            document.getElementById('firebase-status-icon').className = 'fas fa-plug connected';
-            document.getElementById('firebase-status-text').textContent = 'Firebase connected successfully';
-            document.getElementById('firebase-setup').style.display = 'none';
-        } catch (error) {
-            console.error("Firebase initialization error:", error);
-            document.getElementById('firebase-status-icon').className = 'fas fa-plug disconnected';
-            document.getElementById('firebase-status-text').textContent = 'Firebase connection failed - Using localStorage';
-        }
+<!-- Your Firebase Config (real keys inside fire3.js) -->
+<script src="fire3.js"></script>
 
         // System state
         const state = {
