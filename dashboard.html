@@ -421,6 +421,7 @@
     <script>
         // Firebase configuration - Replace with your own config
         const firebaseConfig = {
+            // Replace these with your actual Firebase project configuration
             apiKey: "YOUR_API_KEY",
             authDomain: "your-project-id.firebaseapp.com",
             projectId: "your-project-id",
@@ -708,6 +709,12 @@
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 
+                // Enable offline persistence
+                db.enablePersistence()
+                  .catch((err) => {
+                      console.log('Firebase persistence error: ', err);
+                  });
+                
                 // Set up real-time listeners
                 setupShiftListener();
                 fetchNotifications();
@@ -738,6 +745,15 @@
                     }, (error) => {
                         console.error("Error setting up stats listener: ", error);
                     });
+                    
+                // Add connection state listener
+                firebase.firestore().enableNetwork()
+                  .then(() => {
+                      console.log("Firebase network enabled");
+                  })
+                  .catch((error) => {
+                      console.error("Error enabling network: ", error);
+                  });
             } catch (error) {
                 console.error("Firebase initialization error: ", error);
                 updateFirebaseStatus(false);
@@ -750,6 +766,11 @@
                 document.getElementById('completedPayments').textContent = '38';
                 document.getElementById('pendingUpdates').textContent = '4';
             }
+        });
+        
+        // Add connection state listener
+        firebase.firestore().onSnapshotsInSync(() => {
+            updateFirebaseStatus(true);
         });
     </script>
 </body>
