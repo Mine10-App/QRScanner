@@ -253,6 +253,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .history-item:last-child {
@@ -343,6 +349,20 @@
         
         .disconnected {
             color: #e74c3c;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         @media (max-width: 768px) {
@@ -458,10 +478,20 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <!-- Your Firebase config file - updated to fire2.js -->
-    <script src="fire2.js"></script>
+    <script>
+        // Firebase configuration - replace with your actual config
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project-id.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+    </script>
     
     <script>
-        // Initialize Firebase (assuming fire2.js contains the config)
+        // Initialize Firebase
         let db;
         if (typeof firebaseConfig !== 'undefined') {
             firebase.initializeApp(firebaseConfig);
@@ -491,7 +521,7 @@
                     console.error("Firebase connection error:", error);
                 });
         } else {
-            console.error("Firebase configuration not found. Please ensure fire2.js is loaded and contains your Firebase config.");
+            console.error("Firebase configuration not found.");
             document.getElementById('firebase-status-text').innerHTML = 
                 '<span class="disconnected">Firebase config not found</span>';
         }
@@ -935,6 +965,10 @@
                 loadFromLocalStorage();
                 return;
             }
+            
+            // Show loading status
+            elements.shift1Status.textContent = "Loading from Firebase...";
+            elements.shift2Status.textContent = "Loading from Firebase...";
             
             db.collection("shiftSystem").doc("state").get()
                 .then((doc) => {
