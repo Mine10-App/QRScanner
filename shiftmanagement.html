@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shift Management System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -436,19 +439,7 @@
             <ol class="setup-steps">
                 <li>Create a Firebase project at <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
                 <li>Enable Firestore Database in your Firebase project</li>
-                <li>Create a file named <strong>fire2.js</strong> with your Firebase configuration</li>
-                <li>Add this code to fire2.js:
-                    <pre>
-const firebaseConfig = {
-    apiKey: "your-api-key",
-    authDomain: "your-project-id.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project-id.appspot.com",
-    messagingSenderId: "your-sender-id",
-    appId: "your-app-id"
-};</pre>
-                </li>
-                <li>Replace the placeholder values with your actual Firebase project details</li>
+                <li>Replace the Firebase configuration below with your own details</li>
             </ol>
         </div>
         
@@ -476,6 +467,37 @@ const firebaseConfig = {
     </div>
 
     <script>
+        // Firebase configuration - REPLACE WITH YOUR OWN CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-project-id.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+
+        // Initialize Firebase
+        let db;
+        let firebaseConnected = false;
+        let shiftListener = null;
+        
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            firebaseConnected = true;
+            console.log("Firebase connected successfully");
+            
+            // Update Firebase status indicator
+            document.getElementById('firebase-status-icon').className = 'fas fa-plug connected';
+            document.getElementById('firebase-status-text').textContent = 'Firebase connected successfully';
+            document.getElementById('firebase-setup').style.display = 'none';
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            document.getElementById('firebase-status-icon').className = 'fas fa-plug disconnected';
+            document.getElementById('firebase-status-text').textContent = 'Firebase connection failed - Using localStorage';
+        }
+
         // System state
         const state = {
             shifts: {
@@ -529,7 +551,11 @@ const firebaseConfig = {
 
         // Initialize the application
         function init() {
-            loadFromLocalStorage();
+            if (firebaseConnected) {
+                loadFromFirebase();
+            } else {
+                loadFromLocalStorage();
+            }
             updateUI();
             setupEventListeners();
             updateCurrentDate();
@@ -562,7 +588,13 @@ const firebaseConfig = {
                 
                 // Update UI
                 updateUI();
-                saveToLocalStorage();
+                
+                // Save to appropriate storage
+                if (firebaseConnected) {
+                    saveToFirebase();
+                } else {
+                    saveToLocalStorage();
+                }
             }
         }
 
@@ -638,7 +670,14 @@ const firebaseConfig = {
             updateCurrentShiftIndicator();
             
             addToHistory(`Shift ${shift.id} opened at ${formatTime(shift.openTime)}`);
-            saveToLocalStorage();
+            
+            // Save to appropriate storage
+            if (firebaseConnected) {
+                saveToFirebase();
+            } else {
+                saveToLocalStorage();
+            }
+            
             updateUI();
         }
 
@@ -656,7 +695,14 @@ const firebaseConfig = {
             }
             
             addToHistory(`Shift ${shift.id} closed at ${formatTime(shift.closeTime)}`);
-            saveToLocalStorage();
+            
+            // Save to appropriate storage
+            if (firebaseConnected) {
+                saveToFirebase();
+            } else {
+                saveToLocalStorage();
+            }
+            
             updateUI();
         }
 
@@ -846,11 +892,134 @@ const firebaseConfig = {
             updateUI(); // Make sure UI reflects the loaded state
         }
 
+        // Save state to Firebase
+        async function saveToFirebase() {
+            if (!firebaseConnected) return;
+            
+            try {
+                // Convert dates to Firebase timestamps
+                const dataToSave = {
+                    shifts: {
+                        shift1: {
+                            ...state.shifts.shift1,
+                            openTime: state.shifts.shift1.openTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift1.openTime) : null,
+                            closeTime: state.shifts.shift1.closeTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift1.closeTime) : null
+                        },
+                        shift2: {
+                            ...state.shifts.shift2,
+                            openTime: state.shifts.shift2.openTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift2.openTime) : null,
+                            closeTime: state.shifts.shift2.closeTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift2.closeTime) : null
+                        }
+                    },
+                    currentShift: state.currentShift,
+                    history: state.history.map(item => ({
+                        message: item.message,
+                        timestamp: firebase.firestore.Timestamp.fromDate(item.timestamp)
+                    }))
+                };
+                
+                await db.collection("shiftSystem").doc("currentState").set(dataToSave);
+                console.log("Data saved to Firebase");
+            } catch (error) {
+                console.error("Error saving to Firebase:", error);
+            }
+        }
+
+        // Load state from Firebase
+        async function loadFromFirebase() {
+            if (!firebaseConnected) return;
+            
+            try {
+                const doc = await db.collection("shiftSystem").doc("currentState").get();
+                
+                if (doc.exists) {
+                    const data = doc.data();
+                    
+                    // Restore state from Firebase data
+                    state.shifts.shift1.open = data.shifts.shift1.open;
+                    state.shifts.shift1.openTime = data.shifts.shift1.openTime ? data.shifts.shift1.openTime.toDate() : null;
+                    state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? data.shifts.shift1.closeTime.toDate() : null;
+                    state.shifts.shift1.openedToday = data.shifts.shift1.openedToday || false;
+                    state.shifts.shift1.closedToday = data.shifts.shift1.closedToday || false;
+                    
+                    state.shifts.shift2.open = data.shifts.shift2.open;
+                    state.shifts.shift2.openTime = data.shifts.shift2.openTime ? data.shifts.shift2.openTime.toDate() : null;
+                    state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? data.shifts.shift2.closeTime.toDate() : null;
+                    state.shifts.shift2.openedToday = data.shifts.shift2.openedToday || false;
+                    state.shifts.shift2.closedToday = data.shifts.shift2.closedToday || false;
+                    
+                    state.currentShift = data.currentShift || null;
+                    
+                    // Restore history
+                    state.history = data.history.map(item => ({
+                        message: item.message,
+                        timestamp: item.timestamp.toDate()
+                    })) || [];
+                    
+                    updateHistoryUI();
+                    updateUI();
+                    console.log("Data loaded from Firebase");
+                } else {
+                    // No data in Firebase, add initial history entry
+                    addToHistory("System initialized with Firebase");
+                    await saveToFirebase();
+                }
+            } catch (error) {
+                console.error("Error loading from Firebase:", error);
+                // Fall back to localStorage if Firebase fails
+                loadFromLocalStorage();
+            }
+        }
+
+        // Set up real-time listener for Firebase changes
+        function setupFirebaseListener() {
+            if (!firebaseConnected) return;
+            
+            db.collection("shiftSystem").doc("currentState")
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // Update state from Firebase changes
+                        state.shifts.shift1.open = data.shifts.shift1.open;
+                        state.shifts.shift1.openTime = data.shifts.shift1.openTime ? data.shifts.shift1.openTime.toDate() : null;
+                        state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? data.shifts.shift1.closeTime.toDate() : null;
+                        state.shifts.shift1.openedToday = data.shifts.shift1.openedToday || false;
+                        state.shifts.shift1.closedToday = data.shifts.shift1.closedToday || false;
+                        
+                        state.shifts.shift2.open = data.shifts.shift2.open;
+                        state.shifts.shift2.openTime = data.shifts.shift2.openTime ? data.shifts.shift2.openTime.toDate() : null;
+                        state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? data.shifts.shift2.closeTime.toDate() : null;
+                        state.shifts.shift2.openedToday = data.shifts.shift2.openedToday || false;
+                        state.shifts.shift2.closedToday = data.shifts.shift2.closedToday || false;
+                        
+                        state.currentShift = data.currentShift || null;
+                        
+                        // Restore history
+                        state.history = data.history.map(item => ({
+                            message: item.message,
+                            timestamp: item.timestamp.toDate()
+                        })) || [];
+                        
+                        updateHistoryUI();
+                        updateUI();
+                        console.log("Real-time update from Firebase");
+                    }
+                }, (error) => {
+                    console.error("Error setting up Firebase listener:", error);
+                });
+        }
+
         // Global variable for current action (used in password modal)
         let currentAction = null;
 
         // Initialize the application when the page loads
         window.addEventListener('load', init);
+        
+        // Set up Firebase listener after initialization
+        if (firebaseConnected) {
+            setTimeout(setupFirebaseListener, 1000);
+        }
     </script>
 </body>
 </html>
