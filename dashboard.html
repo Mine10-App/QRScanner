@@ -8,6 +8,8 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <!-- Your Firebase Config -->
+    <script src="fire2.js"></script>
     <style>
         :root {
             --primary: #4361ee;
@@ -298,6 +300,20 @@
             color: #e74c3c;
         }
 
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .dashboard {
                 grid-template-columns: 1fr;
@@ -361,7 +377,7 @@
                 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div id="todayRevenue" class="stat-value">$0</div>
+                        <div id="todayRevenue" class="stat-value">$0.00</div>
                         <div class="stat-label">Today's Revenue</div>
                     </div>
                     <div class="stat-card">
@@ -419,20 +435,23 @@
     </div>
 
     <script>
-        // Firebase configuration - Replace with your own config
-        const firebaseConfig = {
-            // Replace these with your actual Firebase project configuration
-            apiKey: "YOUR_API_KEY",
-            authDomain: "your-project-id.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project-id.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "your-app-id"
-        };
-
-        // Initialize Firebase
+        // Wait for the external fire2.js to load and initialize Firebase
         let db;
         let shiftListener = null;
+        let statsListener = null;
+        let notificationsListener = null;
+        
+        // Check if Firebase is already initialized by fire2.js
+        function checkFirebaseInitialization() {
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                // Firebase is already initialized by fire2.js
+                db = firebase.firestore();
+                initDashboard();
+            } else {
+                // Wait a bit and check again
+                setTimeout(checkFirebaseInitialization, 500);
+            }
+        }
         
         // Function to update Firebase status display
         function updateFirebaseStatus(connected) {
@@ -463,10 +482,14 @@
             const diffMins = Math.round(diffMs / (1000 * 60));
             const diffHrs = Math.round(diffMs / (1000 * 60 * 60));
             
-            if (diffMins < 60) {
+            if (diffMins < 1) {
+                return "Just now";
+            } else if (diffMins < 60) {
                 return `${diffMins} minutes ago`;
-            } else {
+            } else if (diffHrs < 24) {
                 return `${diffHrs} hours ago`;
+            } else {
+                return date.toLocaleDateString();
             }
         }
 
@@ -487,7 +510,7 @@
                 return;
             }
             
-            const shifts = shiftData.shifts;
+            const shifts = shiftData.shifts || {};
             let activeShift = null;
             let shiftName = "No Active Shift";
             let shiftStatus = "All shifts are closed";
@@ -495,16 +518,16 @@
             let iconClass = "fas fa-moon";
             
             // Check which shift is active
-            if (shifts.shift1.open) {
+            if (shifts.shift1 && shifts.shift1.open) {
                 activeShift = shifts.shift1;
                 shiftName = "Morning Shift (Active)";
-                shiftStatus = `Started at ${formatTime(activeShift.openTime)}`;
+                shiftStatus = `Started at ${formatTime(activeShift.openTime.toDate())}`;
                 shiftIcon = "shift-morning";
                 iconClass = "fas fa-sun";
-            } else if (shifts.shift2.open) {
+            } else if (shifts.shift2 && shifts.shift2.open) {
                 activeShift = shifts.shift2;
                 shiftName = "Evening Shift (Active)";
-                shiftStatus = `Started at ${formatTime(activeShift.openTime)}`;
+                shiftStatus = `Started at ${formatTime(activeShift.openTime.toDate())}`;
                 shiftIcon = "shift-evening";
                 iconClass = "fas fa-moon";
             }
@@ -612,27 +635,6 @@
                 });
         }
 
-        // Function to fetch notifications from Firebase
-        function fetchNotifications() {
-            // Replace 'notifications' with your actual collection name
-            db.collection('notifications')
-                .orderBy('timestamp', 'desc')
-                .limit(5) // Get the 5 most recent notifications
-                .get()
-                .then((querySnapshot) => {
-                    const notifications = [];
-                    querySnapshot.forEach((doc) => {
-                        notifications.push({ id: doc.id, ...doc.data() });
-                    });
-                    renderNotifications(notifications);
-                })
-                .catch((error) => {
-                    console.error("Error fetching notifications: ", error);
-                    // Fallback to sample data if Firebase fails
-                    renderSampleNotifications();
-                });
-        }
-
         // Function to set up real-time shift listener
         function setupShiftListener() {
             if (shiftListener) {
@@ -658,6 +660,67 @@
                 });
         }
 
+        // Function to set up real-time stats listener
+        function setupStatsListener() {
+            if (statsListener) {
+                statsListener();
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            statsListener = db.collection('transactions')
+                .where('date', '>=', today)
+                .onSnapshot((querySnapshot) => {
+                    let revenue = 0;
+                    let transactions = 0;
+                    let completed = 0;
+                    let pending = 0;
+                    
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        transactions++;
+                        revenue += data.amount || 0;
+                        
+                        if (data.status === 'completed') {
+                            completed++;
+                        } else if (data.status === 'pending') {
+                            pending++;
+                        }
+                    });
+                    
+                    // Update the UI
+                    document.getElementById('todayRevenue').textContent = '$' + revenue.toFixed(2);
+                    document.getElementById('todayTransactions').textContent = transactions;
+                    document.getElementById('completedPayments').textContent = completed;
+                    document.getElementById('pendingUpdates').textContent = pending;
+                }, (error) => {
+                    console.error("Error setting up stats listener: ", error);
+                });
+        }
+
+        // Function to set up real-time notifications listener
+        function setupNotificationsListener() {
+            if (notificationsListener) {
+                notificationsListener();
+            }
+            
+            notificationsListener = db.collection('notifications')
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .onSnapshot((querySnapshot) => {
+                    const notifications = [];
+                    querySnapshot.forEach((doc) => {
+                        notifications.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderNotifications(notifications);
+                }, (error) => {
+                    console.error("Error setting up notifications listener: ", error);
+                    // Fallback to sample data if Firebase fails
+                    renderSampleNotifications();
+                });
+        }
+
         // Fallback function with sample notifications if Firebase fails
         function renderSampleNotifications() {
             const sampleNotifications = [
@@ -674,6 +737,16 @@
             ];
             
             renderNotifications(sampleNotifications);
+        }
+
+        // Initialize the dashboard
+        function initDashboard() {
+            // Set up real-time listeners
+            setupShiftListener();
+            setupStatsListener();
+            setupNotificationsListener();
+            
+            updateFirebaseStatus(true);
         }
 
         // Add event listeners to buttons for page redirects
@@ -702,75 +775,26 @@
             window.location.href = 'cashiermanagement.html';
         });
 
-        // Initialize the dashboard
+        // Start checking for Firebase initialization
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Firebase
-            try {
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                
-                // Enable offline persistence
-                db.enablePersistence()
-                  .catch((err) => {
-                      console.log('Firebase persistence error: ', err);
-                  });
-                
-                // Set up real-time listeners
-                setupShiftListener();
-                fetchNotifications();
-                fetchTodaysStats();
-                
-                // Set up real-time listener for new notifications
-                db.collection('notifications')
-                    .orderBy('timestamp', 'desc')
-                    .limit(5)
-                    .onSnapshot((querySnapshot) => {
-                        const notifications = [];
-                        querySnapshot.forEach((doc) => {
-                            notifications.push({ id: doc.id, ...doc.data() });
-                        });
-                        renderNotifications(notifications);
-                    }, (error) => {
-                        console.error("Error setting up real-time listener: ", error);
-                    });
+            // Check if Firebase is already initialized
+            checkFirebaseInitialization();
+            
+            // Set a timeout in case fire2.js fails to load
+            setTimeout(() => {
+                if (!db) {
+                    console.error("Firebase initialization failed. Using sample data.");
+                    updateFirebaseStatus(false);
+                    updateShiftInfo(null);
+                    renderSampleNotifications();
                     
-                // Set up real-time listener for today's stats
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                db.collection('transactions')
-                    .where('date', '>=', today)
-                    .onSnapshot((querySnapshot) => {
-                        fetchTodaysStats();
-                    }, (error) => {
-                        console.error("Error setting up stats listener: ", error);
-                    });
-                    
-                // Add connection state listener
-                firebase.firestore().enableNetwork()
-                  .then(() => {
-                      console.log("Firebase network enabled");
-                  })
-                  .catch((error) => {
-                      console.error("Error enabling network: ", error);
-                  });
-            } catch (error) {
-                console.error("Firebase initialization error: ", error);
-                updateFirebaseStatus(false);
-                updateShiftInfo(null);
-                renderSampleNotifications();
-                
-                // Set sample stats
-                document.getElementById('todayRevenue').textContent = '$1,245.80';
-                document.getElementById('todayTransactions').textContent = '42';
-                document.getElementById('completedPayments').textContent = '38';
-                document.getElementById('pendingUpdates').textContent = '4';
-            }
-        });
-        
-        // Add connection state listener
-        firebase.firestore().onSnapshotsInSync(() => {
-            updateFirebaseStatus(true);
+                    // Set sample stats
+                    document.getElementById('todayRevenue').textContent = '$1,245.80';
+                    document.getElementById('todayTransactions').textContent = '42';
+                    document.getElementById('completedPayments').textContent = '38';
+                    document.getElementById('pendingUpdates').textContent = '4';
+                }
+            }, 5000);
         });
     </script>
 </body>
