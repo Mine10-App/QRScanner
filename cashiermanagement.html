@@ -102,50 +102,52 @@
             }
         }
 
-        .denomination-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+        .denomination-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
         }
 
-        @media (max-width: 576px) {
-            .denomination-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .denomination-table th {
+            text-align: left;
+            padding: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .denomination-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
         }
 
         .denom-input {
-            display: flex;
-            flex-direction: column;
-            background: #f8f9fc;
-            padding: 15px;
-            border-radius: var(--radius);
-        }
-
-        .denom-input label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--dark);
-        }
-
-        .denom-input input {
-            padding: 10px;
+            width: 70px;
+            padding: 6px;
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            font-size: 16px;
             text-align: center;
+        }
+
+        .denom-total {
+            width: 100px;
+            padding: 6px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center;
+            background-color: #f8f9fa;
         }
 
         .total-display {
             background: #f8f9fc;
             padding: 15px;
             border-radius: var(--radius);
-            margin-top: 20px;
+            margin-top: 10px;
             text-align: center;
         }
 
         .total-amount {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--primary);
         }
@@ -167,13 +169,24 @@
             background: #f8f9fc;
             padding: 20px;
             border-radius: var(--radius);
-            text-align: center;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-label {
+            font-weight: 600;
+            color: var(--dark);
         }
 
         .summary-value {
-            font-size: 24px;
             font-weight: 700;
-            margin: 10px 0;
+            font-size: 18px;
         }
 
         .usd-summary .summary-value {
@@ -184,27 +197,22 @@
             color: var(--info);
         }
 
-        .difference {
-            font-size: 20px;
-            font-weight: 600;
+        .tally-status {
+            text-align: center;
             padding: 10px;
             border-radius: var(--radius);
-            margin-top: 10px;
+            margin-top: 15px;
+            font-weight: 600;
         }
 
-        .positive-difference {
+        .tally-success {
             background: #d4edda;
             color: #155724;
         }
 
-        .negative-difference {
+        .tally-error {
             background: #f8d7da;
             color: #721c24;
-        }
-
-        .zero-difference {
-            background: #d1ecf1;
-            color: #0c5460;
         }
 
         .action-buttons {
@@ -333,36 +341,52 @@
                 <!-- USD Denomination -->
                 <div class="usd-denomination">
                     <h3><i class="fas fa-dollar-sign"></i> USD Count</h3>
-                    <div class="denomination-grid">
-                        <div class="denom-input">
-                            <label for="usd-100">$100 Bills</label>
-                            <input type="number" min="0" id="usd-100" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="usd-50">$50 Bills</label>
-                            <input type="number" min="0" id="usd-50" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="usd-20">$20 Bills</label>
-                            <input type="number" min="0" id="usd-20" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="usd-10">$10 Bills</label>
-                            <input type="number" min="0" id="usd-10" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="usd-5">$5 Bills</label>
-                            <input type="number" min="0" id="usd-5" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="usd-1">$1 Bills</label>
-                            <input type="number" min="0" id="usd-1" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="usd-coins">Coins</label>
-                            <input type="number" min="0" step="0.01" id="usd-coins" value="0.00">
-                        </div>
-                    </div>
+                    <table class="denomination-table">
+                        <thead>
+                            <tr>
+                                <th>Denomination</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>$100 Bills</td>
+                                <td><input type="number" min="0" class="denom-input" id="usd-100" value="0"></td>
+                                <td><input type="text" class="denom-total" id="usd-100-total" value="$0.00" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>$50 Bills</td>
+                                <td><input type="number" min="0" class="denom-input" id="usd-50" value="0"></td>
+                                <td><input type="text" class="denom-total" id="usd-50-total" value="$0.00" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>$20 Bills</td>
+                                <td><input type="number" min="0" class="denom-input" id="usd-20" value="0"></td>
+                                <td><input type="text" class="denom-total" id="usd-20-total" value="$0.00" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>$10 Bills</td>
+                                <td><input type="number" min="0" class="denom-input" id="usd-10" value="0"></td>
+                                <td><input type="text" class="denom-total" id="usd-10-total" value="$0.00" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>$5 Bills</td>
+                                <td><input type="number" min="0" class="denom-input" id="usd-5" value="0"></td>
+                                <td><input type="text" class="denom-total" id="usd-5-total" value="$0.00" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>$1 Bills</td>
+                                <td><input type="number" min="0" class="denom-input" id="usd-1" value="0"></td>
+                                <td><input type="text" class="denom-total" id="usd-1-total" value="$0.00" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Coins</td>
+                                <td><input type="number" min="0" step="0.01" class="denom-input" id="usd-coins" value="0.00"></td>
+                                <td><input type="text" class="denom-total" id="usd-coins-total" value="$0.00" readonly></td>
+                            </tr>
+                        </tbody>
+                    </table>
                     <div class="total-display">
                         <p>Total USD Counted</p>
                         <div class="total-amount" id="usd-total">$0.00</div>
@@ -372,44 +396,62 @@
                 <!-- MVR Denomination -->
                 <div class="mvr-denomination">
                     <h3><i class="fas fa-ruble-sign"></i> MVR Count</h3>
-                    <div class="denomination-grid">
-                        <div class="denom-input">
-                            <label for="mvr-1000">1000 Rufiyaa</label>
-                            <input type="number" min="0" id="mvr-1000" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-500">500 Rufiyaa</label>
-                            <input type="number" min="0" id="mvr-500" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-100">100 Rufiyaa</label>
-                            <input type="number" min="0" id="mvr-100" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-50">50 Rufiyaa</label>
-                            <input type="number" min="0" id="mvr-50" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-20">20 Rufiyaa</label>
-                            <input type="number" min="0" id="mvr-20" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-10">10 Rufiyaa</label>
-                            <input type="number" min="0" id="mvr-10" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-5">5 Rufiyaa</label>
-                            <input type="number" min="0" id="mvr-5" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-2">2 Rufiyaa (Coins)</label>
-                            <input type="number" min="0" id="mvr-2" value="0">
-                        </div>
-                        <div class="denom-input">
-                            <label for="mvr-1">1 Rufiyaa (Coins)</label>
-                            <input type="number" min="0" id="mvr-1" value="0">
-                        </div>
-                    </div>
+                    <table class="denomination-table">
+                        <thead>
+                            <tr>
+                                <th>Denomination</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1000 Rufiyaa</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-1000" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-1000-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>500 Rufiyaa</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-500" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-500-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>100 Rufiyaa</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-100" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-100-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>50 Rufiyaa</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-50" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-50-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>20 Rufiyaa</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-20" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-20-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>10 Rufiyaa</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-10" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-10-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>5 Rufiyaa</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-5" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-5-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>2 Rufiyaa (Coins)</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-2" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-2-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>1 Rufiyaa (Coins)</td>
+                                <td><input type="number" min="0" class="denom-input" id="mvr-1" value="0"></td>
+                                <td><input type="text" class="denom-total" id="mvr-1-total" value="0.00 MVR" readonly></td>
+                            </tr>
+                        </tbody>
+                    </table>
                     <div class="total-display">
                         <p>Total MVR Counted</p>
                         <div class="total-amount" id="mvr-total">0.00 MVR</div>
@@ -426,28 +468,44 @@
             <div class="summary-grid">
                 <div class="summary-card usd-summary">
                     <h3><i class="fas fa-dollar-sign"></i> USD Summary</h3>
-                    <div class="summary-value" id="usd-sales">$0.00</div>
-                    <p>Sales Amount from System</p>
-                    <div class="summary-value" id="usd-petty">$0.00</div>
-                    <p>Petty Cash Amount</p>
-                    <div class="summary-value" id="usd-expected">$0.00</div>
-                    <p>Expected Total</p>
-                    <div class="summary-value" id="usd-counted">$0.00</div>
-                    <p>Counted Total</p>
-                    <div id="usd-difference" class="difference zero-difference">$0.00</div>
+                    <div class="summary-item">
+                        <span class="summary-label">Cash Sales:</span>
+                        <span class="summary-value" id="usd-sales">$0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Petty Cash:</span>
+                        <span class="summary-value" id="usd-petty">$0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Expected Total:</span>
+                        <span class="summary-value" id="usd-expected">$0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Counted Total:</span>
+                        <span class="summary-value" id="usd-counted">$0.00</span>
+                    </div>
+                    <div id="usd-tally" class="tally-status tally-error">Not Tallying</div>
                 </div>
 
                 <div class="summary-card mvr-summary">
                     <h3><i class="fas fa-ruble-sign"></i> MVR Summary</h3>
-                    <div class="summary-value" id="mvr-sales">0.00 MVR</div>
-                    <p>Sales Amount from System</p>
-                    <div class="summary-value" id="mvr-petty">0.00 MVR</div>
-                    <p>Petty Cash Amount</p>
-                    <div class="summary-value" id="mvr-expected">0.00 MVR</div>
-                    <p>Expected Total</p>
-                    <div class="summary-value" id="mvr-counted">0.00 MVR</div>
-                    <p>Counted Total</p>
-                    <div id="mvr-difference" class="difference zero-difference">0.00 MVR</div>
+                    <div class="summary-item">
+                        <span class="summary-label">Cash Sales:</span>
+                        <span class="summary-value" id="mvr-sales">0.00 MVR</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Petty Cash:</span>
+                        <span class="summary-value" id="mvr-petty">0.00 MVR</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Expected Total:</span>
+                        <span class="summary-value" id="mvr-expected">0.00 MVR</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Counted Total:</span>
+                        <span class="summary-value" id="mvr-counted">0.00 MVR</span>
+                    </div>
+                    <div id="mvr-tally" class="tally-status tally-error">Not Tallying</div>
                 </div>
             </div>
 
@@ -455,7 +513,7 @@
                 <button class="btn btn-primary" id="calculate-btn">
                     <i class="fas fa-calculator"></i> Calculate Totals
                 </button>
-                <button class="btn btn-success" id="close-cashier-btn">
+                <button class="btn btn-success" id="close-cashier-btn" disabled>
                     <i class="fas fa-check-circle"></i> Close Cashier
                 </button>
             </div>
@@ -491,16 +549,6 @@
     </div>
 
     <script>
-        // Firebase configuration (should be in fire2.js)
-        // For demonstration, we'll use mock data
-        const firebaseConfig = {
-            // Your Firebase config here
-        };
-
-        // Initialize Firebase (commented out for this demo)
-        // firebase.initializeApp(firebaseConfig);
-        // const db = firebase.firestore();
-
         // Mock data for demonstration
         const mockData = {
             usdSales: 1245.75,
@@ -560,13 +608,26 @@
         // Calculate USD total
         function calculateUSDTotal() {
             let total = 0;
-            total += parseInt(usdInputs[100].value) * 100;
-            total += parseInt(usdInputs[50].value) * 50;
-            total += parseInt(usdInputs[20].value) * 20;
-            total += parseInt(usdInputs[10].value) * 10;
-            total += parseInt(usdInputs[5].value) * 5;
-            total += parseInt(usdInputs[1].value) * 1;
-            total += parseFloat(usdInputs.coins.value);
+            
+            // Calculate each denomination
+            const usd100 = parseInt(usdInputs[100].value) * 100;
+            const usd50 = parseInt(usdInputs[50].value) * 50;
+            const usd20 = parseInt(usdInputs[20].value) * 20;
+            const usd10 = parseInt(usdInputs[10].value) * 10;
+            const usd5 = parseInt(usdInputs[5].value) * 5;
+            const usd1 = parseInt(usdInputs[1].value) * 1;
+            const usdCoins = parseFloat(usdInputs.coins.value);
+            
+            total = usd100 + usd50 + usd20 + usd10 + usd5 + usd1 + usdCoins;
+            
+            // Update individual totals
+            document.getElementById('usd-100-total').value = `$${usd100.toFixed(2)}`;
+            document.getElementById('usd-50-total').value = `$${usd50.toFixed(2)}`;
+            document.getElementById('usd-20-total').value = `$${usd20.toFixed(2)}`;
+            document.getElementById('usd-10-total').value = `$${usd10.toFixed(2)}`;
+            document.getElementById('usd-5-total').value = `$${usd5.toFixed(2)}`;
+            document.getElementById('usd-1-total').value = `$${usd1.toFixed(2)}`;
+            document.getElementById('usd-coins-total').value = `$${usdCoins.toFixed(2)}`;
             
             usdCountedTotal = total;
             document.getElementById('usd-total').textContent = `$${total.toFixed(2)}`;
@@ -578,15 +639,30 @@
         // Calculate MVR total
         function calculateMVRTotal() {
             let total = 0;
-            total += parseInt(mvrInputs[1000].value) * 1000;
-            total += parseInt(mvrInputs[500].value) * 500;
-            total += parseInt(mvrInputs[100].value) * 100;
-            total += parseInt(mvrInputs[50].value) * 50;
-            total += parseInt(mvrInputs[20].value) * 20;
-            total += parseInt(mvrInputs[10].value) * 10;
-            total += parseInt(mvrInputs[5].value) * 5;
-            total += parseInt(mvrInputs[2].value) * 2;
-            total += parseInt(mvrInputs[1].value) * 1;
+            
+            // Calculate each denomination
+            const mvr1000 = parseInt(mvrInputs[1000].value) * 1000;
+            const mvr500 = parseInt(mvrInputs[500].value) * 500;
+            const mvr100 = parseInt(mvrInputs[100].value) * 100;
+            const mvr50 = parseInt(mvrInputs[50].value) * 50;
+            const mvr20 = parseInt(mvrInputs[20].value) * 20;
+            const mvr10 = parseInt(mvrInputs[10].value) * 10;
+            const mvr5 = parseInt(mvrInputs[5].value) * 5;
+            const mvr2 = parseInt(mvrInputs[2].value) * 2;
+            const mvr1 = parseInt(mvrInputs[1].value) * 1;
+            
+            total = mvr1000 + mvr500 + mvr100 + mvr50 + mvr20 + mvr10 + mvr5 + mvr2 + mvr1;
+            
+            // Update individual totals
+            document.getElementById('mvr-1000-total').value = `${mvr1000.toFixed(2)} MVR`;
+            document.getElementById('mvr-500-total').value = `${mvr500.toFixed(2)} MVR`;
+            document.getElementById('mvr-100-total').value = `${mvr100.toFixed(2)} MVR`;
+            document.getElementById('mvr-50-total').value = `${mvr50.toFixed(2)} MVR`;
+            document.getElementById('mvr-20-total').value = `${mvr20.toFixed(2)} MVR`;
+            document.getElementById('mvr-10-total').value = `${mvr10.toFixed(2)} MVR`;
+            document.getElementById('mvr-5-total').value = `${mvr5.toFixed(2)} MVR`;
+            document.getElementById('mvr-2-total').value = `${mvr2.toFixed(2)} MVR`;
+            document.getElementById('mvr-1-total').value = `${mvr1.toFixed(2)} MVR`;
             
             mvrCountedTotal = total;
             document.getElementById('mvr-total').textContent = `${total.toFixed(2)} MVR`;
@@ -595,32 +671,38 @@
             return total;
         }
 
-        // Calculate differences
+        // Calculate differences and update tally status
         function calculateDifferences(usdExpected, mvrExpected) {
             const usdDifference = usdCountedTotal - usdExpected;
             const mvrDifference = mvrCountedTotal - mvrExpected;
             
-            const usdDiffElement = document.getElementById('usd-difference');
-            const mvrDiffElement = document.getElementById('mvr-difference');
+            const usdTallyElement = document.getElementById('usd-tally');
+            const mvrTallyElement = document.getElementById('mvr-tally');
+            const closeButton = document.getElementById('close-cashier-btn');
             
-            // USD Difference
-            usdDiffElement.textContent = `$${usdDifference.toFixed(2)}`;
-            if (usdDifference > 0) {
-                usdDiffElement.className = 'difference positive-difference';
-            } else if (usdDifference < 0) {
-                usdDiffElement.className = 'difference negative-difference';
+            // USD Tally Status
+            if (usdDifference === 0) {
+                usdTallyElement.textContent = "Tallying";
+                usdTallyElement.className = 'tally-status tally-success';
             } else {
-                usdDiffElement.className = 'difference zero-difference';
+                usdTallyElement.textContent = `Off by $${Math.abs(usdDifference).toFixed(2)}`;
+                usdTallyElement.className = 'tally-status tally-error';
             }
             
-            // MVR Difference
-            mvrDiffElement.textContent = `${mvrDifference.toFixed(2)} MVR`;
-            if (mvrDifference > 0) {
-                mvrDiffElement.className = 'difference positive-difference';
-            } else if (mvrDifference < 0) {
-                mvrDiffElement.className = 'difference negative-difference';
+            // MVR Tally Status
+            if (mvrDifference === 0) {
+                mvrTallyElement.textContent = "Tallying";
+                mvrTallyElement.className = 'tally-status tally-success';
             } else {
-                mvrDiffElement.className = 'difference zero-difference';
+                mvrTallyElement.textContent = `Off by ${Math.abs(mvrDifference).toFixed(2)} MVR`;
+                mvrTallyElement.className = 'tally-status tally-error';
+            }
+            
+            // Enable close button only if both currencies tally
+            if (usdDifference === 0 && mvrDifference === 0) {
+                closeButton.disabled = false;
+            } else {
+                closeButton.disabled = true;
             }
             
             return {
@@ -680,12 +762,16 @@
         Object.values(usdInputs).forEach(input => {
             input.addEventListener('input', () => {
                 calculateUSDTotal();
+                const { usdExpected, mvrExpected } = fetchSalesData();
+                calculateDifferences(usdExpected, mvrExpected);
             });
         });
 
         Object.values(mvrInputs).forEach(input => {
             input.addEventListener('input', () => {
                 calculateMVRTotal();
+                const { usdExpected, mvrExpected } = fetchSalesData();
+                calculateDifferences(usdExpected, mvrExpected);
             });
         });
 
@@ -694,6 +780,8 @@
             fetchSalesData();
             calculateUSDTotal();
             calculateMVRTotal();
+            const { usdExpected, mvrExpected } = fetchSalesData();
+            calculateDifferences(usdExpected, mvrExpected);
         });
     </script>
 </body>
