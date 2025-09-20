@@ -193,40 +193,6 @@
             transform: none;
         }
         
-        .rules-panel {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-        }
-        
-        .rules-title {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-        
-        .rules-list {
-            list-style-type: none;
-        }
-        
-        .rules-list li {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-        }
-        
-        .rules-list li:before {
-            content: "•";
-            color: #3498db;
-            font-weight: bold;
-            display: inline-block;
-            width: 20px;
-            font-size: 1.5rem;
-        }
-        
         .shift-history {
             background: white;
             border-radius: 10px;
@@ -253,12 +219,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         
         .history-item:last-child {
@@ -473,11 +433,10 @@
         </div>
     </div>
 
-    <!-- Firebase App (initialized in fire2.js) -->
+    <!-- Firebase App -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
-    <!-- Your Firebase config file - updated to fire2.js -->
     <script>
         // Firebase configuration - replace with your actual config
         const firebaseConfig = {
@@ -488,9 +447,7 @@
             messagingSenderId: "your-sender-id",
             appId: "your-app-id"
         };
-    </script>
-    
-    <script>
+        
         // Initialize Firebase
         let db;
         if (typeof firebaseConfig !== 'undefined') {
@@ -590,6 +547,49 @@
             setupEventListeners();
             updateCurrentDate();
             checkDayChange();
+            
+            // Set up real-time listener for shift changes
+            setupFirebaseListener();
+        }
+
+        // Set up Firebase real-time listener
+        function setupFirebaseListener() {
+            if (typeof db === 'undefined') return;
+            
+            db.collection("shiftSystem").doc("state")
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        updateStateFromFirebase(data);
+                        updateUI();
+                    }
+                });
+        }
+
+        // Update state from Firebase data
+        function updateStateFromFirebase(data) {
+            // Restore state with date objects
+            state.shifts.shift1.open = data.shifts.shift1.open;
+            state.shifts.shift1.openTime = data.shifts.shift1.openTime ? data.shifts.shift1.openTime.toDate() : null;
+            state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? data.shifts.shift1.closeTime.toDate() : null;
+            state.shifts.shift1.openedToday = data.shifts.shift1.openedToday || false;
+            state.shifts.shift1.closedToday = data.shifts.shift1.closedToday || false;
+            
+            state.shifts.shift2.open = data.shifts.shift2.open;
+            state.shifts.shift2.openTime = data.shifts.shift2.openTime ? data.shifts.shift2.openTime.toDate() : null;
+            state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? data.shifts.shift2.closeTime.toDate() : null;
+            state.shifts.shift2.openedToday = data.shifts.shift2.openedToday || false;
+            state.shifts.shift2.closedToday = data.shifts.shift2.closedToday || false;
+            
+            state.currentShift = data.currentShift || null;
+            
+            // Restore history with date objects
+            state.history = data.history.map(item => ({
+                message: item.message,
+                timestamp: item.timestamp.toDate()
+            })) || [];
+            
+            updateHistoryUI();
         }
 
         // Update current date display
@@ -974,29 +974,7 @@
                 .then((doc) => {
                     if (doc.exists) {
                         const data = doc.data();
-                        
-                        // Restore state with date objects
-                        state.shifts.shift1.open = data.shifts.shift1.open;
-                        state.shifts.shift1.openTime = data.shifts.shift1.openTime ? data.shifts.shift1.openTime.toDate() : null;
-                        state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? data.shifts.shift1.closeTime.toDate() : null;
-                        state.shifts.shift1.openedToday = data.shifts.shift1.openedToday || false;
-                        state.shifts.shift1.closedToday = data.shifts.shift1.closedToday || false;
-                        
-                        state.shifts.shift2.open = data.shifts.shift2.open;
-                        state.shifts.shift2.openTime = data.shifts.shift2.openTime ? data.shifts.shift2.openTime.toDate() : null;
-                        state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? data.shifts.shift2.closeTime.toDate() : null;
-                        state.shifts.shift2.openedToday = data.shifts.shift2.openedToday || false;
-                        state.shifts.shift2.closedToday = data.shifts.shift2.closedToday || false;
-                        
-                        state.currentShift = data.currentShift || null;
-                        
-                        // Restore history with date objects
-                        state.history = data.history.map(item => ({
-                            message: item.message,
-                            timestamp: item.timestamp.toDate()
-                        })) || [];
-                        
-                        updateHistoryUI();
+                        updateStateFromFirebase(data);
                         updateUI(); // Make sure UI reflects the loaded state
                         console.log("State successfully loaded from Firebase");
                     } else {
