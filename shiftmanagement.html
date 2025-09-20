@@ -1,627 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Management</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
-            padding: 20px;
-            min-height: 100vh;
-            color: #212529;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            color: #4361ee;
-        }
-        .shift-info {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 18px;
-            padding: 10px;
-            border-radius: 8px;
-            background: #f8f9fa;
-        }
-        .buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            color: white;
-            transition: all 0.3s;
-        }
-        #openShiftBtn {
-            background: #28a745;
-        }
-        #closeShiftBtn {
-            background: #dc3545;
-        }
-        #reopenShiftBtn {
-            background: #ffc107;
-            color: #212529;
-        }
-        #openShiftBtn:disabled, #closeShiftBtn:disabled, #reopenShiftBtn:disabled {
-            background: #888;
-            cursor: not-allowed;
-            color: white;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #dee2e6;
-            text-align: left;
-        }
-        th {
-            background: #f8f9fa;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            width: 300px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-        }
-        .modal h3 {
-            margin-top: 0;
-            color: #4361ee;
-        }
-        .modal input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .modal-buttons button {
-            padding: 8px 15px;
-        }
-        .user-info {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #4361ee;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-        .error {
-            color: #dc3545;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .shift-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            justify-content: center;
-        }
-        .shift-btn {
-            padding: 10px 15px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .shift-btn.active {
-            background: #4361ee;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shift Management</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="fire2.js"></script> <!-- Firebase config -->
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 20px; min-height: 100vh; color: #212529; }
+.container { max-width: 900px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 20px; }
+.header h1 { color: #4361ee; }
+.shift-info { text-align: center; margin-bottom: 20px; font-size: 18px; }
+.buttons { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+button { padding: 12px 20px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: white; }
+#openShiftBtn { background: #28a745; }
+#closeShiftBtn { background: #dc3545; }
+#openShiftBtn:disabled, #closeShiftBtn:disabled { background: #888; cursor: not-allowed; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th, td { padding: 10px; border: 1px solid #dee2e6; text-align: left; }
+th { background: #f8f9fa; }
+</style>
 </head>
 <body>
-    <div class="user-info" id="userInfo">Not logged in</div>
-    
-    <div class="container">
-        <div class="header">
-            <h1>Shift Management</h1>
-        </div>
-        
-        <div class="shift-controls">
-            <button class="shift-btn active" data-shift="1">Shift 1</button>
-            <button class="shift-btn" data-shift="2">Shift 2</button>
-        </div>
-        
-        <div class="shift-info" id="currentShiftInfo">
-            Loading current shift...
-        </div>
-        
-        <div class="buttons">
-            <button id="openShiftBtn">Open Shift</button>
-            <button id="closeShiftBtn">Close Shift</button>
-            <button id="reopenShiftBtn">Reopen Shift</button>
-        </div>
-        
-        <table id="shiftsTable">
-            <thead>
-                <tr>
-                    <th>Shift No</th>
-                    <th>Status</th>
-                    <th>User</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="5" style="text-align:center;">Loading shifts...</td></tr>
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Login Modal -->
-    <div class="modal" id="loginModal">
-        <div class="modal-content">
-            <h3>Login Required</h3>
-            <div id="loginMessage">Please login to continue</div>
-            <select id="userSelect">
-                <option value="">Select User</option>
-                <!-- Users will be populated from JS -->
-            </select>
-            <input type="password" id="passwordInput" placeholder="Password">
-            <div class="error" id="loginError"></div>
-            <div class="modal-buttons">
-                <button id="cancelLoginBtn" style="background: #6c757d;">Cancel</button>
-                <button id="confirmLoginBtn" style="background: #4361ee;">Login</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Supervisor Modal -->
-    <div class="modal" id="supervisorModal">
-        <div class="modal-content">
-            <h3>Supervisor Authorization</h3>
-            <p>Supervisor password required to reopen shift</p>
-            <input type="password" id="supervisorPassword" placeholder="Supervisor Password">
-            <div class="error" id="supervisorError"></div>
-            <div class="modal-buttons">
-                <button id="cancelSupervisorBtn" style="background: #6c757d;">Cancel</button>
-                <button id="confirmSupervisorBtn" style="background: #4361ee;">Confirm</button>
-            </div>
-        </div>
-    </div>
+<div class="container">
+  <div class="header"><h1>Shift Management</h1></div>
+  <div class="shift-info" id="currentShiftInfo"> Loading current shift... </div>
+  <div class="buttons">
+    <button id="openShiftBtn">Open Shift</button>
+    <button id="closeShiftBtn">Close Shift</button>
+  </div>
+  <table id="shiftsTable">
+    <thead>
+      <tr>
+        <th>Shift No</th>
+        <th>Status</th>
+        <th>User</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="5" style="text-align:center;">Loading shifts...</td></tr>
+    </tbody>
+  </table>
+</div>
 
-    <script>
-        // User data (would normally come from users.js)
-        const users = [
-            { username: "Leeli", name: "Leeli Lounge", password: "12345", rcNo: "1", WP: "Leeli", Level: "Supervisor" },
-            { username: "Koveli", name: "Koveli Lounge", password: "12345", rcNo: "2", WP: "Koveli", Level: "User" }
-        ];
-        
-        // Firebase config (would normally come from fire2.js)
-        const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "your-app-id"
-        };
-    </script>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
-    <script>
-        // Global variables
-        let currentUser = null;
-        let currentShift = null;
-        let selectedShiftNumber = 1;
-        let db;
-        
-        // DOM Elements
-        const currentShiftInfo = document.getElementById("currentShiftInfo");
-        const openBtn = document.getElementById("openShiftBtn");
-        const closeBtn = document.getElementById("closeShiftBtn");
-        const reopenBtn = document.getElementById("reopenShiftBtn");
-        const shiftsTableBody = document.querySelector("#shiftsTable tbody");
-        const userInfo = document.getElementById("userInfo");
-        const shiftButtons = document.querySelectorAll(".shift-btn");
-        
-        // Modal elements
-        const loginModal = document.getElementById("loginModal");
-        const supervisorModal = document.getElementById("supervisorModal");
-        const userSelect = document.getElementById("userSelect");
-        const passwordInput = document.getElementById("passwordInput");
-        const loginError = document.getElementById("loginError");
-        const supervisorPassword = document.getElementById("supervisorPassword");
-        const supervisorError = document.getElementById("supervisorError");
-        
-        window.addEventListener('load', async () => {
-            // Initialize Firebase
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            
-            // Populate user dropdown
-            users.forEach(user => {
-                const option = document.createElement("option");
-                option.value = user.username;
-                option.textContent = `${user.name} (${user.Level})`;
-                userSelect.appendChild(option);
-            });
-            
-            // Check if user is logged in
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                userInfo.textContent = `Logged in as: ${currentUser.name} (${currentUser.Level})`;
-            } else {
-                // Show login modal if not logged in
-                showLoginModal();
-            }
-            
-            // Set up event listeners
-            setupEventListeners();
-            
-            // Load initial shifts
-            await loadShifts();
-            
-            // Set up real-time listener
-            setupRealtimeUpdates();
-        });
-        
-        function setupEventListeners() {
-            // Shift selection buttons
-            shiftButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    shiftButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedShiftNumber = parseInt(btn.dataset.shift);
-                    updateShiftInfo();
-                });
-            });
-            
-            // Action buttons
-            openBtn.addEventListener("click", openShift);
-            closeBtn.addEventListener("click", closeShift);
-            reopenBtn.addEventListener("click", reopenShift);
-            
-            // Login modal
-            document.getElementById("confirmLoginBtn").addEventListener("click", confirmLogin);
-            document.getElementById("cancelLoginBtn").addEventListener("click", hideLoginModal);
-            
-            // Supervisor modal
-            document.getElementById("confirmSupervisorBtn").addEventListener("click", confirmSupervisor);
-            document.getElementById("cancelSupervisorBtn").addEventListener("click", hideSupervisorModal);
-        }
-        
-        function showLoginModal() {
-            loginModal.style.display = 'flex';
-        }
-        
-        function hideLoginModal() {
-            loginModal.style.display = 'none';
-            loginError.textContent = '';
-            passwordInput.value = '';
-        }
-        
-        function showSupervisorModal() {
-            supervisorModal.style.display = 'flex';
-        }
-        
-        function hideSupervisorModal() {
-            supervisorModal.style.display = 'none';
-            supervisorError.textContent = '';
-            supervisorPassword.value = '';
-        }
-        
-        function confirmLogin() {
-            const username = userSelect.value;
-            const password = passwordInput.value;
-            
-            if (!username || !password) {
-                loginError.textContent = 'Please select a user and enter password';
-                return;
-            }
-            
-            const user = users.find(u => u.username === username && u.password === password);
-            
-            if (user) {
-                currentUser = user;
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                userInfo.textContent = `Logged in as: ${user.name} (${user.Level})`;
-                hideLoginModal();
-                loadShifts();
-            } else {
-                loginError.textContent = 'Invalid credentials';
-            }
-        }
-        
-        async function confirmSupervisor() {
-            const password = supervisorPassword.value;
-            
-            // Check if any supervisor user has this password
-            const supervisor = users.find(u => u.Level === "Supervisor" && u.password === password);
-            
-            if (supervisor) {
-                // Supervisor authenticated - reopen the shift
-                await reopenShiftAction();
-                hideSupervisorModal();
-            } else {
-                supervisorError.textContent = 'Invalid supervisor password';
-            }
-        }
-        
-        async function loadShifts() {
-            if (!currentUser) return;
-            
-            const snapshot = await db.collection("shifts").orderBy("startTime", "desc").get();
-            const shifts = [];
-            snapshot.forEach(doc => {
-                shifts.push({ id: doc.id, ...doc.data() });
-            });
-            
-            renderShifts(shifts);
-            
-            // Find the currently open shift for the selected shift number
-            currentShift = shifts.find(s => s.status === "open" && s.shiftNo === selectedShiftNumber) || null;
-            updateShiftInfo();
-        }
-        
-        function renderShifts(shifts) {
-            if (shifts.length === 0) {
-                shiftsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No shifts found</td></tr>';
-                return;
-            }
-            
-            // Filter shifts for the selected shift number
-            const filteredShifts = shifts.filter(s => s.shiftNo === selectedShiftNumber);
-            
-            if (filteredShifts.length === 0) {
-                shiftsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No shifts found for Shift ${selectedShiftNumber}</td></tr>`;
-                return;
-            }
-            
-            shiftsTableBody.innerHTML = "";
-            filteredShifts.forEach(shift => {
-                const start = shift.startTime ? new Date(shift.startTime.seconds * 1000).toLocaleString() : "-";
-                const end = shift.endTime ? new Date(shift.endTime.seconds * 1000).toLocaleString() : "-";
-                
-                shiftsTableBody.innerHTML += `
-                    <tr>
-                        <td>${shift.shiftNo}</td>
-                        <td>${shift.status}</td>
-                        <td>${shift.user}</td>
-                        <td>${start}</td>
-                        <td>${end}</td>
-                    </tr>
-                `;
-            });
-        }
-        
-        function updateShiftInfo() {
-            if (!currentUser) {
-                currentShiftInfo.textContent = "Please log in";
-                openBtn.disabled = true;
-                closeBtn.disabled = true;
-                reopenBtn.disabled = true;
-                return;
-            }
-            
-            if (currentShift) {
-                const start = currentShift.startTime ? 
-                    new Date(currentShift.startTime.seconds * 1000).toLocaleString() : "-";
-                
-                currentShiftInfo.textContent = 
-                    `Current Shift: ${currentShift.shiftNo} | Status: ${currentShift.status} | ` +
-                    `User: ${currentShift.user} | Start: ${start}`;
-                
-                openBtn.disabled = true;
-                closeBtn.disabled = false;
-                reopenBtn.disabled = true;
-            } else {
-                // Check if we can open this shift based on rules
-                let canOpen = true;
-                let message = "";
-                
-                // Rule: Shift 1 must be opened first
-                if (selectedShiftNumber === 2) {
-                    // Check if there's any Shift 1 that was previously opened
-                    const shift1Query = db.collection("shifts")
-                        .where("shiftNo", "==", 1)
-                        .orderBy("startTime", "desc")
-                        .limit(1);
-                    
-                    shift1Query.get().then(snapshot => {
-                        if (snapshot.empty) {
-                            openBtn.disabled = true;
-                            currentShiftInfo.textContent = "Cannot open Shift 2 before Shift 1 has been opened";
-                        } else {
-                            const shift1 = snapshot.docs[0].data();
-                            // Check if Shift 1 is closed
-                            if (shift1.status !== "closed") {
-                                openBtn.disabled = true;
-                                currentShiftInfo.textContent = "Cannot open Shift 2 while Shift 1 is still open";
-                            } else {
-                                openBtn.disabled = false;
-                                currentShiftInfo.textContent = "No shift is currently open. Ready to open a new shift.";
-                            }
-                        }
-                    }).catch(error => {
-                        console.error("Error checking shift rules:", error);
-                    });
-                } else {
-                    openBtn.disabled = false;
-                    currentShiftInfo.textContent = "No shift is currently open. Ready to open a new shift.";
-                }
-                
-                closeBtn.disabled = true;
-                
-                // Enable reopen button if there are previous shifts
-                checkReopenability();
-            }
-        }
-        
-        async function checkReopenability() {
-            // Check if there are any closed shifts that could be reopened
-            const snapshot = await db.collection("shifts")
-                .where("shiftNo", "==", selectedShiftNumber)
-                .where("status", "==", "closed")
-                .orderBy("endTime", "desc")
-                .limit(1)
-                .get();
-            
-            if (!snapshot.empty) {
-                reopenBtn.disabled = false;
-            } else {
-                reopenBtn.disabled = true;
-            }
-        }
-        
-        async function openShift() {
-            if (!currentUser) {
-                showLoginModal();
-                return;
-            }
-            
-            // Additional validation for Shift 2
-            if (selectedShiftNumber === 2) {
-                // Check if Shift 1 exists and is closed
-                const shift1Query = db.collection("shifts")
-                    .where("shiftNo", "==", 1)
-                    .orderBy("startTime", "desc")
-                    .limit(1);
-                
-                const snapshot = await shift1Query.get();
-                
-                if (snapshot.empty) {
-                    alert("Cannot open Shift 2 before Shift 1 has been opened");
-                    return;
-                }
-                
-                const shift1 = snapshot.docs[0].data();
-                if (shift1.status !== "closed") {
-                    alert("Cannot open Shift 2 while Shift 1 is still open");
-                    return;
-                }
-            }
-            
-            // Create new shift
-            await db.collection("shifts").add({
-                shiftNo: selectedShiftNumber,
-                status: "open",
-                user: currentUser.name,
-                startTime: firebase.firestore.FieldValue.serverTimestamp(),
-                endTime: null
-            });
-            
-            await loadShifts();
-            alert(`Shift ${selectedShiftNumber} opened successfully`);
-        }
-        
-        async function closeShift() {
-            if (!currentShift) return;
-            
-            await db.collection("shifts").doc(currentShift.id).update({
-                status: "closed",
-                endTime: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            await loadShifts();
-            alert(`Shift ${selectedShiftNumber} closed successfully`);
-        }
-        
-        async function reopenShift() {
-            if (!currentUser) {
-                showLoginModal();
-                return;
-            }
-            
-            // For supervisors, no need for password
-            if (currentUser.Level === "Supervisor") {
-                await reopenShiftAction();
-            } else {
-                // Regular users need supervisor authentication
-                showSupervisorModal();
-            }
-        }
-        
-        async function reopenShiftAction() {
-            // Get the most recent closed shift
-            const snapshot = await db.collection("shifts")
-                .where("shiftNo", "==", selectedShiftNumber)
-                .where("status", "==", "closed")
-                .orderBy("endTime", "desc")
-                .limit(1)
-                .get();
-            
-            if (snapshot.empty) {
-                alert("No closed shift found to reopen");
-                return;
-            }
-            
-            const shiftToReopen = snapshot.docs[0];
-            
-            await db.collection("shifts").doc(shiftToReopen.id).update({
-                status: "open",
-                endTime: null,
-                reopenedBy: currentUser.name,
-                reopenTime: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            await loadShifts();
-            alert(`Shift ${selectedShiftNumber} reopened successfully`);
-        }
-        
-        function setupRealtimeUpdates() {
-            // Real-time listener for shifts
-            db.collection("shifts").orderBy("startTime", "desc")
-                .onSnapshot(snapshot => {
-                    const shifts = [];
-                    snapshot.forEach(doc => {
-                        shifts.push({ id: doc.id, ...doc.data() });
-                    });
-                    
-                    renderShifts(shifts);
-                    
-                    // Find the currently open shift for the selected shift number
-                    currentShift = shifts.find(s => s.status === "open" && s.shiftNo === selectedShiftNumber) || null;
-                    updateShiftInfo();
-                });
-        }
-    </script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="users.js"></script>
+<script>
+window.addEventListener('load', async () => {
+  if (typeof firebaseConfig === 'undefined') { alert("Firebase config not found in fire2.js"); return; }
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const currentShiftInfo = document.getElementById("currentShiftInfo");
+  const openBtn = document.getElementById("openShiftBtn");
+  const closeBtn = document.getElementById("closeShiftBtn");
+  const shiftsTableBody = document.querySelector("#shiftsTable tbody");
+
+  let currentShift = null;
+  const currentUser = "Koveli"; // Set logged-in user dynamically
+  const maxShifts = 2;
+
+  async function loadShifts() {
+    const snapshot = await db.collection("shifts").orderBy("shiftNo").get();
+    const shifts = [];
+    snapshot.forEach(doc => shifts.push({ id: doc.id, ...doc.data() }));
+    renderShifts(shifts);
+    currentShift = shifts.find(s => s.status === "open") || null;
+    updateShiftInfo(shifts);
+  }
+
+  function renderShifts(shifts) {
+    if (shifts.length === 0) {
+      shiftsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No shifts found</td></tr>`;
+      return;
+    }
+    shiftsTableBody.innerHTML = "";
+    shifts.forEach(shift => {
+      const start = shift.startTime ? new Date(shift.startTime.seconds * 1000).toLocaleString() : "-";
+      const end = shift.endTime ? new Date(shift.endTime.seconds * 1000).toLocaleString() : "-";
+      shiftsTableBody.innerHTML += `<tr>
+        <td>${shift.shiftNo}</td>
+        <td>${shift.status}</td>
+        <td>${shift.user}</td>
+        <td>${start}</td>
+        <td>${end}</td>
+      </tr>`;
+    });
+  }
+
+  function updateShiftInfo(shifts) {
+    const shift1 = shifts.find(s => s.shiftNo === 1) || null;
+    const shift2 = shifts.find(s => s.shiftNo === 2) || null;
+
+    if (currentShift) {
+      currentShiftInfo.textContent = `Current Shift: ${currentShift.shiftNo} | Status: ${currentShift.status} | User: ${currentShift.user}`;
+      openBtn.disabled = true;
+      closeBtn.disabled = false;
+    } else {
+      // Determine which shift can open
+      if (!shift1) { openBtn.disabled = false; } 
+      else if (shift1 && shift1.status === "closed" && !shift2) { openBtn.disabled = false; } 
+      else { openBtn.disabled = true; }
+      closeBtn.disabled = true;
+      currentShiftInfo.textContent = "No shift is currently open.";
+    }
+  }
+
+  async function promptSupervisor() {
+    const username = prompt("Supervisor username:");
+    const password = prompt("Supervisor password:");
+    const supervisor = users.find(u => u.Level === "Supervisor" && u.username === username && u.password === password);
+    if (!supervisor) {
+      alert("Invalid supervisor credentials!");
+      return false;
+    }
+    return true;
+  }
+
+  openBtn.addEventListener("click", async () => {
+    const snapshot = await db.collection("shifts").orderBy("shiftNo").get();
+    const shifts = [];
+    snapshot.forEach(doc => shifts.push({ id: doc.id, ...doc.data() }));
+
+    let nextShiftNo = 1;
+    if (shifts.length > 0) nextShiftNo = shifts.length + 1;
+
+    if (nextShiftNo > maxShifts) { alert("Only 2 shifts allowed per day."); return; }
+
+    // Reopening check
+    const existingShift = shifts.find(s => s.shiftNo === nextShiftNo && s.status === "closed");
+    if (existingShift) {
+      const ok = await promptSupervisor();
+      if (!ok) return;
+    }
+
+    await db.collection("shifts").add({
+      shiftNo: nextShiftNo,
+      status: "open",
+      user: currentUser,
+      startTime: firebase.firestore.FieldValue.serverTimestamp(),
+      endTime: null
+    });
+    await loadShifts();
+    alert(`Shift ${nextShiftNo} opened`);
+  });
+
+  closeBtn.addEventListener("click", async () => {
+    if (!currentShift) return;
+
+    await db.collection("shifts").doc(currentShift.id).update({
+      status: "closed",
+      endTime: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await loadShifts();
+    alert(`Shift ${currentShift.shiftNo} closed`);
+  });
+
+  // Load initial shifts
+  loadShifts();
+
+  // Live updates
+  db.collection("shifts").orderBy("shiftNo").onSnapshot(snapshot => {
+    const shifts = [];
+    snapshot.forEach(doc => shifts.push({ id: doc.id, ...doc.data() }));
+    renderShifts(shifts);
+    currentShift = shifts.find(s => s.status === "open") || null;
+    updateShiftInfo(shifts);
+  });
+});
+</script>
 </body>
 </html>
