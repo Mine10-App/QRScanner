@@ -8,7 +8,6 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <!-- Firebase Configuration -->
     <script src="fire2.js"></script>
     <!-- Users Configuration -->
@@ -95,6 +94,45 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .shift-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fc;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+        }
+
+        .shift-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+
+        .shift-morning {
+            background: var(--primary);
+        }
+
+        .shift-evening {
+            background: var(--warning);
+        }
+
+        .shift-details h3 {
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .shift-details p {
+            color: var(--gray);
+            font-size: 14px;
         }
 
         .currency-section {
@@ -381,19 +419,50 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-cash-register"></i> Cashier Management</h1>
-            <p>Count and verify cash denominations</p>
+            <p>Count and verify cash denominations for current shift</p>
         </div>
 
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title"><i class="fas fa-money-bill-wave"></i> Cash Denomination Count</h2>
                 <span id="cashierStatus" class="tally-status tally-error">Cashier: Closed</span>
+            </div>
+
+            <div class="shift-info">
+                <div class="shift-icon shift-morning">
+                    <i class="fas fa-sun"></i>
+                </div>
+                <div class="shift-details">
+                    <h3 id="currentShift">Morning Shift (Active)</h3>
+                    <p id="shiftTiming">Started at 08:00 AM</p>
+                </div>
             </div>
 
             <div class="currency-section">
@@ -522,76 +591,86 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title"><i class="fas fa-calculator"></i> Cash Reconciliation</h2>
-            </div>
-
-            <div class="summary-grid">
-                <div class="summary-card usd-summary">
-                    <h3><i class="fas fa-dollar-sign"></i> USD Summary</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Cash Sales:</span>
-                        <span class="summary-value" id="usd-sales">$0.00</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Petty Cash:</span>
-                        <span class="summary-value" id="usd-petty">$0.00</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Expected Total:</span>
-                        <span class="summary-value" id="usd-expected">$0.00</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Counted Total:</span>
-                        <span class="summary-value" id="usd-counted">$0.00</span>
-                    </div>
-                    <div id="usd-tally" class="tally-status tally-error">Not Tallying</div>
-                </div>
-
-                <div class="summary-card mvr-summary">
-                    <h3><i class="fas fa-ruble-sign"></i> MVR Summary</h3>
-                    <div class="summary-item">
-                        <span class="summary-label">Cash Sales:</span>
-                        <span class="summary-value" id="mvr-sales">0.00 MVR</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Petty Cash:</span>
-                        <span class="summary-value" id="mvr-petty">0.00 MVR</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Expected Total:</span>
-                        <span class="summary-value" id="mvr-expected">0.00 MVR</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Counted Total:</span>
-                        <span class="summary-value" id="mvr-counted">0.00 MVR</span>
-                    </div>
-                    <div id="mvr-tally" class="tally-status tally-error">Not Tallying</div>
-                </div>
-            </div>
-
-            <div class="supervisor-panel">
-                <h4><i class="fas fa-user-shield"></i> Supervisor Controls</h4>
-                <div class="pettycash-controls">
-                    <div class="form-group">
-                        <label for="usd-petty-adjust">USD Petty Cash:</label>
-                        <input type="number" min="0" step="0.01" id="usd-petty-adjust" value="500.00">
-                    </div>
-                    <div class="form-group">
-                        <label for="mvr-petty-adjust">MVR Petty Cash:</label>
-                        <input type="number" min="0" step="0.01" id="mvr-petty-adjust" value="2000.00">
-                    </div>
-                </div>
-                <button class="btn btn-primary" id="update-petty-btn" style="margin-top: 10px;">
-                    <i class="fas fa-save"></i> Update Petty Cash
+                <button class="btn btn-primary" id="refresh-sales-btn">
+                    <i class="fas fa-sync-alt"></i> Refresh Sales Data
                 </button>
             </div>
 
-            <div class="action-buttons">
-                <button class="btn btn-success" id="open-cashier-btn">
-                    <i class="fas fa-lock-open"></i> Open Cashier
-                </button>
-                <button class="btn btn-danger" id="close-cashier-btn" disabled>
-                    <i class="fas fa-lock"></i> Close Cashier
-                </button>
+            <div id="sales-loading" class="loading">
+                <div class="loading-spinner"></div>
+                <span style="margin-left: 10px;">Loading sales data...</span>
+            </div>
+
+            <div id="sales-content" style="display: none;">
+                <div class="summary-grid">
+                    <div class="summary-card usd-summary">
+                        <h3><i class="fas fa-dollar-sign"></i> USD Summary</h3>
+                        <div class="summary-item">
+                            <span class="summary-label">Cash Sales:</span>
+                            <span class="summary-value" id="usd-sales">$0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Petty Cash:</span>
+                            <span class="summary-value" id="usd-petty">$0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Expected Total:</span>
+                            <span class="summary-value" id="usd-expected">$0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Counted Total:</span>
+                            <span class="summary-value" id="usd-counted">$0.00</span>
+                        </div>
+                        <div id="usd-tally" class="tally-status tally-error">Not Tallying</div>
+                    </div>
+
+                    <div class="summary-card mvr-summary">
+                        <h3><i class="fas fa-ruble-sign"></i> MVR Summary</h3>
+                        <div class="summary-item">
+                            <span class="summary-label">Cash Sales:</span>
+                            <span class="summary-value" id="mvr-sales">0.00 MVR</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Petty Cash:</span>
+                            <span class="summary-value" id="mvr-petty">0.00 MVR</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Expected Total:</span>
+                            <span class="summary-value" id="mvr-expected">0.00 MVR</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Counted Total:</span>
+                            <span class="summary-value" id="mvr-counted">0.00 MVR</span>
+                        </div>
+                        <div id="mvr-tally" class="tally-status tally-error">Not Tallying</div>
+                    </div>
+                </div>
+
+                <div class="supervisor-panel">
+                    <h4><i class="fas fa-user-shield"></i> Supervisor Controls</h4>
+                    <div class="pettycash-controls">
+                        <div class="form-group">
+                            <label for="usd-petty-adjust">USD Petty Cash:</label>
+                            <input type="number" min="0" step="0.01" id="usd-petty-adjust" value="500.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="mvr-petty-adjust">MVR Petty Cash:</label>
+                            <input type="number" min="0" step="0.01" id="mvr-petty-adjust" value="2000.00">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="update-petty-btn" style="margin-top: 10px;">
+                        <i class="fas fa-save"></i> Update Petty Cash
+                    </button>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-success" id="open-cashier-btn">
+                        <i class="fas fa-lock-open"></i> Open Cashier
+                    </button>
+                    <button class="btn btn-danger" id="close-cashier-btn" disabled>
+                        <i class="fas fa-lock"></i> Close Cashier
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -669,8 +748,59 @@
             mvrSales: 0,
             usdPetty: 500.00,
             mvrPetty: 2000.00,
-            currentAction: null // 'open' or 'close'
+            currentAction: null, // 'open' or 'close'
+            currentShift: "morning", // 'morning' or 'evening'
+            shiftStartTime: new Date()
         };
+
+        // Set shift start time based on current time
+        function setShiftTiming() {
+            const now = new Date();
+            const hours = now.getHours();
+            
+            if (hours >= 6 && hours < 14) {
+                // Morning shift: 6 AM to 2 PM
+                appState.currentShift = "morning";
+                appState.shiftStartTime = new Date(now);
+                appState.shiftStartTime.setHours(6, 0, 0, 0);
+                document.getElementById('currentShift').textContent = "Morning Shift (Active)";
+                document.getElementById('shiftTiming').textContent = `Started at ${formatTime(appState.shiftStartTime)}`;
+            } else {
+                // Evening shift: 2 PM to 10 PM
+                appState.currentShift = "evening";
+                appState.shiftStartTime = new Date(now);
+                if (hours < 6) {
+                    // If it's before 6 AM, it's still previous day's evening shift
+                    appState.shiftStartTime.setDate(appState.shiftStartTime.getDate() - 1);
+                }
+                appState.shiftStartTime.setHours(14, 0, 0, 0);
+                document.getElementById('currentShift').textContent = "Evening Shift (Active)";
+                document.getElementById('shiftTiming').textContent = `Started at ${formatTime(appState.shiftStartTime)}`;
+                
+                // Update shift icon
+                document.querySelector('.shift-icon').className = "shift-icon shift-evening";
+                document.querySelector('.shift-icon i').className = "fas fa-moon";
+            }
+        }
+
+        // Format time to HH:MM AM/PM
+        function formatTime(date) {
+            let hours = date.getHours();
+            let minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            minutes = minutes < 10 ? '0'+minutes : minutes;
+            return hours + ':' + minutes + ' ' + ampm;
+        }
+
+        // Format date to YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
 
         // DOM Elements
         const usdInputs = {
@@ -699,37 +829,52 @@
         let usdCountedTotal = 0;
         let mvrCountedTotal = 0;
 
-        // Fetch sales data from Firebase
+        // Fetch sales data from Firebase for current shift
         function fetchSalesData() {
+            showLoading(true);
+            
             // In a real scenario, this would come from Firebase
-            // For demo purposes, we'll use random data
-            const today = new Date();
-            const isWeekend = today.getDay() === 0 || today.getDay() === 6;
-            
-            appState.usdSales = isWeekend ? 1845.25 : 1245.75;
-            appState.mvrSales = isWeekend ? 22567.80 : 18732.50;
-            
-            // Update UI
-            document.getElementById('usd-sales').textContent = `$${appState.usdSales.toFixed(2)}`;
-            document.getElementById('mvr-sales').textContent = `${appState.mvrSales.toFixed(2)} MVR`;
-            document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
-            document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
-            
-            // Set petty cash adjustment inputs
-            document.getElementById('usd-petty-adjust').value = appState.usdPetty.toFixed(2);
-            document.getElementById('mvr-petty-adjust').value = appState.mvrPetty.toFixed(2);
-            
-            // Calculate expected totals
-            const usdExpected = appState.usdSales + appState.usdPetty;
-            const mvrExpected = appState.mvrSales + appState.mvrPetty;
-            
-            document.getElementById('usd-expected').textContent = `$${usdExpected.toFixed(2)}`;
-            document.getElementById('mvr-expected').textContent = `${mvrExpected.toFixed(2)} MVR`;
-            
-            return {
-                usdExpected,
-                mvrExpected
-            };
+            // For demo purposes, we'll use random data based on shift
+            setTimeout(() => {
+                const isMorningShift = appState.currentShift === "morning";
+                
+                // Different sales amounts for different shifts
+                appState.usdSales = isMorningShift ? 1245.75 : 1845.25;
+                appState.mvrSales = isMorningShift ? 18732.50 : 22567.80;
+                
+                // Update UI
+                document.getElementById('usd-sales').textContent = `$${appState.usdSales.toFixed(2)}`;
+                document.getElementById('mvr-sales').textContent = `${appState.mvrSales.toFixed(2)} MVR`;
+                document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
+                document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
+                
+                // Set petty cash adjustment inputs
+                document.getElementById('usd-petty-adjust').value = appState.usdPetty.toFixed(2);
+                document.getElementById('mvr-petty-adjust').value = appState.mvrPetty.toFixed(2);
+                
+                // Calculate expected totals
+                const usdExpected = appState.usdSales + appState.usdPetty;
+                const mvrExpected = appState.mvrSales + appState.mvrPetty;
+                
+                document.getElementById('usd-expected').textContent = `$${usdExpected.toFixed(2)}`;
+                document.getElementById('mvr-expected').textContent = `${mvrExpected.toFixed(2)} MVR`;
+                
+                // Update differences
+                calculateDifferences(usdExpected, mvrExpected);
+                
+                showLoading(false);
+                
+                return {
+                    usdExpected,
+                    mvrExpected
+                };
+            }, 1000);
+        }
+
+        // Show/hide loading indicator
+        function showLoading(show) {
+            document.getElementById('sales-loading').style.display = show ? 'flex' : 'none';
+            document.getElementById('sales-content').style.display = show ? 'none' : 'block';
         }
 
         // Calculate USD total
@@ -973,6 +1118,10 @@
             showModal('auth-modal');
         });
 
+        document.getElementById('refresh-sales-btn').addEventListener('click', () => {
+            fetchSalesData();
+        });
+
         document.getElementById('auth-submit-btn').addEventListener('click', () => {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -1060,11 +1209,10 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
+            setShiftTiming();
             fetchSalesData();
             calculateUSDTotal();
             calculateMVRTotal();
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateDifferences(usdExpected, mvrExpected);
         });
     </script>
 </body>
