@@ -3,6 +3,183 @@
 <head>
   <meta charset="UTF-8">
   <title>Shift Management</title>
+  <script type="module">
+    // 🔹 Import Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // 🔹 Your Firebase config (replace with your fire.js config)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const SUPERVISOR_PASSWORD = "1234"; // 🔑 change to real one
+
+    let state = {
+      shifts: {
+        shift1: { open: false, openTime: null, closeTime: null, openedToday: false, closedToday: false, name: "Shift 1" },
+        shift2: { open: false, openTime: null, closeTime: null, openedToday: false, closedToday: false, name: "Shift 2" }
+      },
+      pendingAction: null
+    };
+
+    // --- UI Elements ---
+    const els = {};
+    window.onload = async () => {
+      els.shift1Status = document.getElementById("shift1Status");
+      els.shift1OpenTime = document.getElementById("shift1OpenTime");
+      els.shift1CloseTime = document.getElementById("shift1CloseTime");
+      els.shift1Today = document.getElementById("shift1Today");
+      els.shift1OpenBtn = document.getElementById("shift1OpenBtn");
+      els.shift1CloseBtn = document.getElementById("shift1CloseBtn");
+
+      els.shift2Status = document.getElementById("shift2Status");
+      els.shift2OpenTime = document.getElementById("shift2OpenTime");
+      els.shift2CloseTime = document.getElementById("shift2CloseTime");
+      els.shift2Today = document.getElementById("shift2Today");
+      els.shift2OpenBtn = document.getElementById("shift2OpenBtn");
+      els.shift2CloseBtn = document.getElementById("shift2CloseBtn");
+
+      els.currentShift = document.getElementById("currentShift");
+      els.passwordModal = document.getElementById("passwordModal");
+      els.supervisorPassword = document.getElementById("supervisorPassword");
+      els.modalAction = document.getElementById("modalAction");
+
+      els.shift1OpenBtn.addEventListener("click", () => handleOpenShift("shift1"));
+      els.shift1CloseBtn.addEventListener("click", () => handleCloseShift("shift1"));
+      els.shift2OpenBtn.addEventListener("click", () => handleOpenShift("shift2"));
+      els.shift2CloseBtn.addEventListener("click", () => handleCloseShift("shift2"));
+
+      await loadState(); // 🔹 Load from Firestore on startup
+      updateUI();
+    };
+
+    // --- Firebase Functions ---
+    async function loadState() {
+      const docRef = doc(db, "shifts", "today");
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        state = snap.data();
+        // restore Date objects
+        for (let s of ["shift1","shift2"]) {
+          if (state.shifts[s].openTime) state.shifts[s].openTime = new Date(state.shifts[s].openTime);
+          if (state.shifts[s].closeTime) state.shifts[s].closeTime = new Date(state.shifts[s].closeTime);
+        }
+      }
+    }
+
+    async function saveState() {
+      await setDoc(doc(db, "shifts", "today"), JSON.parse(JSON.stringify(state)));
+    }
+
+    // --- Utility ---
+    function formatTime(date) { return date ? new Date(date).toLocaleTimeString() : "-"; }
+
+    function showPasswordModal(shiftId, action) {
+      state.pendingAction = { shiftId, action };
+      els.modalAction.textContent = `Supervisor approval required to ${action} ${state.shifts[shiftId].name}`;
+      els.supervisorPassword.value = "";
+      els.passwordModal.style.display = "flex";
+    }
+    function closeModal() { els.passwordModal.style.display = "none"; }
+    window.submitPassword = function() {
+      if (els.supervisorPassword.value === SUPERVISOR_PASSWORD) {
+        const { shiftId, action } = state.pendingAction;
+        if (action === "open") openShift(shiftId);
+        else closeShift(shiftId);
+        closeModal();
+      } else alert("Incorrect password!");
+    };
+
+    // --- Shift Logic ---
+    async function handleOpenShift(shiftId) {
+      const shift = state.shifts[shiftId];
+      if (shiftId === "shift2" && !state.shifts.shift1.closedToday) {
+        alert("You must complete Shift 1 before opening Shift 2.");
+        return;
+      }
+      if (shift.open) { alert(`${shift.name} is already open!`); return; }
+      if (shift.openedToday) { showPasswordModal(shiftId, "open"); return; }
+      openShift(shiftId);
+    }
+
+    async function openShift(shiftId) {
+      const shift = state.shifts[shiftId];
+      shift.open = true;
+      shift.openTime = new Date();
+      shift.openedToday = true;
+      await saveState();
+      updateUI();
+    }
+
+    async function handleCloseShift(shiftId) {
+      const shift = state.shifts[shiftId];
+      if (!shift.open) { alert(`${shift.name} is not open!`); return; }
+      if (shift.closedToday) { showPasswordModal(shiftId, "close"); return; }
+      closeShift(shiftId);
+    }
+
+    async function closeShift(shiftId) {
+      const shift = state.shifts[shiftId];
+      shift.open = false;
+      shift.closeTime = new Date();
+      shift.closedToday = true;
+      await saveState();
+      updateUI();
+    }
+
+    // --- UI ---
+    function updateUI() {
+      // Shift 1
+      if (state.shifts.shift1.open) {
+        els.shift1Status.textContent = "OPEN";
+        els.shift1Status.className = "shift-info open";
+        els.shift1OpenBtn.disabled = true;
+        els.shift1CloseBtn.disabled = false;
+      } else {
+        els.shift1Status.textContent = "CLOSED";
+        els.shift1Status.className = "shift-info closed";
+        els.shift1OpenBtn.disabled = state.shifts.shift1.openedToday;
+        els.shift1CloseBtn.disabled = true;
+      }
+      // Shift 2
+      if (state.shifts.shift2.open) {
+        els.shift2Status.textContent = "OPEN";
+        els.shift2Status.className = "shift-info open";
+        els.shift2OpenBtn.disabled = true;
+        els.shift2CloseBtn.disabled = false;
+      } else {
+        els.shift2Status.textContent = "CLOSED";
+        els.shift2Status.className = "shift-info closed";
+        els.shift2OpenBtn.disabled = !state.shifts.shift1.closedToday || state.shifts.shift2.openedToday;
+        els.shift2CloseBtn.disabled = true;
+      }
+      // Times
+      els.shift1OpenTime.textContent = formatTime(state.shifts.shift1.openTime);
+      els.shift1CloseTime.textContent = formatTime(state.shifts.shift1.closeTime);
+      els.shift2OpenTime.textContent = formatTime(state.shifts.shift2.openTime);
+      els.shift2CloseTime.textContent = formatTime(state.shifts.shift2.closeTime);
+      // Summary
+      els.shift1Today.textContent = state.shifts.shift1.openedToday ? 
+        (state.shifts.shift1.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
+      els.shift2Today.textContent = state.shifts.shift2.openedToday ? 
+        (state.shifts.shift2.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
+      // Current shift
+      if (state.shifts.shift1.open) els.currentShift.textContent = "Current Shift: Shift 1 (Morning)";
+      else if (state.shifts.shift2.open) els.currentShift.textContent = "Current Shift: Shift 2 (Evening)";
+      else els.currentShift.textContent = "No shift active";
+    }
+
+  </script>
+
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 20px; }
     h2 { text-align: center; color: #333; }
@@ -26,7 +203,7 @@
   <div class="container">
     <h2>Shift Management</h2>
 
-    <div class="shift-box" id="shift1Box">
+    <div class="shift-box">
       <div class="shift-header">Shift 1 (Morning)</div>
       <div class="shift-info">Status: <span id="shift1Status" class="closed">CLOSED</span></div>
       <div class="shift-info">Open Time: <span id="shift1OpenTime">-</span></div>
@@ -36,7 +213,7 @@
       <button class="btn-close" id="shift1CloseBtn" disabled>Close Shift 1</button>
     </div>
 
-    <div class="shift-box" id="shift2Box">
+    <div class="shift-box">
       <div class="shift-header">Shift 2 (Evening)</div>
       <div class="shift-info">Status: <span id="shift2Status" class="closed">CLOSED</span></div>
       <div class="shift-info">Open Time: <span id="shift2OpenTime">-</span></div>
@@ -60,175 +237,5 @@
       <button onclick="closeModal()">Cancel</button>
     </div>
   </div>
-
-  <script>
-    const SUPERVISOR_PASSWORD = "1234"; // change to real password
-
-    let state = {
-      shifts: {
-        shift1: { open: false, openTime: null, closeTime: null, openedToday: false, closedToday: false, name: "Shift 1" },
-        shift2: { open: false, openTime: null, closeTime: null, openedToday: false, closedToday: false, name: "Shift 2" }
-      },
-      pendingAction: null
-    };
-
-    const elements = {
-      shift1Status: document.getElementById("shift1Status"),
-      shift1OpenTime: document.getElementById("shift1OpenTime"),
-      shift1CloseTime: document.getElementById("shift1CloseTime"),
-      shift1Today: document.getElementById("shift1Today"),
-      shift1OpenBtn: document.getElementById("shift1OpenBtn"),
-      shift1CloseBtn: document.getElementById("shift1CloseBtn"),
-      shift2Status: document.getElementById("shift2Status"),
-      shift2OpenTime: document.getElementById("shift2OpenTime"),
-      shift2CloseTime: document.getElementById("shift2CloseTime"),
-      shift2Today: document.getElementById("shift2Today"),
-      shift2OpenBtn: document.getElementById("shift2OpenBtn"),
-      shift2CloseBtn: document.getElementById("shift2CloseBtn"),
-      currentShift: document.getElementById("currentShift"),
-      passwordModal: document.getElementById("passwordModal"),
-      supervisorPassword: document.getElementById("supervisorPassword"),
-      modalAction: document.getElementById("modalAction")
-    };
-
-    // Utility
-    function formatTime(date) {
-      if (!date) return "-";
-      return date.toLocaleTimeString();
-    }
-
-    // Modal
-    function showPasswordModal(shiftId, action) {
-      state.pendingAction = { shiftId, action };
-      elements.modalAction.textContent = `Supervisor approval required to ${action} ${state.shifts[shiftId].name}`;
-      elements.supervisorPassword.value = "";
-      elements.passwordModal.style.display = "flex";
-    }
-    function closeModal() { elements.passwordModal.style.display = "none"; }
-    function submitPassword() {
-      if (elements.supervisorPassword.value === SUPERVISOR_PASSWORD) {
-        const { shiftId, action } = state.pendingAction;
-        if (action === "open") openShift(shiftId);
-        else closeShift(shiftId);
-        closeModal();
-      } else {
-        alert("Incorrect password!");
-      }
-    }
-
-    // Open shift
-    function handleOpenShift(shiftId) {
-      const shift = state.shifts[shiftId];
-
-      if (shiftId === "shift2" && !state.shifts.shift1.closedToday) {
-        alert("You must complete Shift 1 before opening Shift 2.");
-        return;
-      }
-
-      if (shift.open) {
-        alert(`${shift.name} is already open!`);
-        return;
-      }
-
-      if (shift.openedToday) {
-        showPasswordModal(shiftId, "open");
-        return;
-      }
-
-      openShift(shiftId);
-    }
-
-    function openShift(shiftId) {
-      const shift = state.shifts[shiftId];
-      shift.open = true;
-      shift.openTime = new Date();
-      shift.openedToday = true;
-      updateUI();
-    }
-
-    // Close shift
-    function handleCloseShift(shiftId) {
-      const shift = state.shifts[shiftId];
-
-      if (!shift.open) {
-        alert(`${shift.name} is not open!`);
-        return;
-      }
-
-      if (shift.closedToday) {
-        showPasswordModal(shiftId, "close");
-        return;
-      }
-
-      closeShift(shiftId);
-    }
-
-    function closeShift(shiftId) {
-      const shift = state.shifts[shiftId];
-      shift.open = false;
-      shift.closeTime = new Date();
-      shift.closedToday = true;
-      updateUI();
-    }
-
-    // UI update
-    function updateUI() {
-      // Shift 1
-      if (state.shifts.shift1.open) {
-        elements.shift1Status.textContent = "OPEN";
-        elements.shift1Status.className = "shift-info open";
-        elements.shift1OpenBtn.disabled = true;
-        elements.shift1CloseBtn.disabled = false;
-      } else {
-        elements.shift1Status.textContent = "CLOSED";
-        elements.shift1Status.className = "shift-info closed";
-        elements.shift1OpenBtn.disabled = state.shifts.shift1.openedToday;
-        elements.shift1CloseBtn.disabled = true;
-      }
-
-      // Shift 2
-      if (state.shifts.shift2.open) {
-        elements.shift2Status.textContent = "OPEN";
-        elements.shift2Status.className = "shift-info open";
-        elements.shift2OpenBtn.disabled = true;
-        elements.shift2CloseBtn.disabled = false;
-      } else {
-        elements.shift2Status.textContent = "CLOSED";
-        elements.shift2Status.className = "shift-info closed";
-        elements.shift2OpenBtn.disabled = !state.shifts.shift1.closedToday || state.shifts.shift2.openedToday;
-        elements.shift2CloseBtn.disabled = true;
-      }
-
-      // Times
-      elements.shift1OpenTime.textContent = formatTime(state.shifts.shift1.openTime);
-      elements.shift1CloseTime.textContent = formatTime(state.shifts.shift1.closeTime);
-      elements.shift2OpenTime.textContent = formatTime(state.shifts.shift2.openTime);
-      elements.shift2CloseTime.textContent = formatTime(state.shifts.shift2.closeTime);
-
-      // Today summary
-      elements.shift1Today.textContent = state.shifts.shift1.openedToday ?
-        (state.shifts.shift1.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
-
-      elements.shift2Today.textContent = state.shifts.shift2.openedToday ?
-        (state.shifts.shift2.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
-
-      // Current shift indicator
-      if (state.shifts.shift1.open) {
-        elements.currentShift.textContent = "Current Shift: Shift 1 (Morning)";
-      } else if (state.shifts.shift2.open) {
-        elements.currentShift.textContent = "Current Shift: Shift 2 (Evening)";
-      } else {
-        elements.currentShift.textContent = "No shift active";
-      }
-    }
-
-    // Button listeners
-    elements.shift1OpenBtn.addEventListener("click", () => handleOpenShift("shift1"));
-    elements.shift1CloseBtn.addEventListener("click", () => handleCloseShift("shift1"));
-    elements.shift2OpenBtn.addEventListener("click", () => handleOpenShift("shift2"));
-    elements.shift2CloseBtn.addEventListener("click", () => handleCloseShift("shift2"));
-
-    updateUI();
-  </script>
 </body>
 </html>
