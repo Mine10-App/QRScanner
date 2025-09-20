@@ -434,19 +434,23 @@
     </div>
 
     <!-- Firebase App -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    
-    <script>
-        // Firebase configuration - replace with your actual config
-        const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-project-id.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project-id.appspot.com",
-            messagingSenderId: "your-sender-id",
-            appId: "your-app-id"
-        };
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// Wait for the external files to load
+window.addEventListener('load', function() {
+  // Initialize Firebase with your configuration from fire2.js
+  if (typeof firebaseConfig !== 'undefined') {
+    try {
+      firebase.initializeApp(firebaseConfig);
+      console.log("Firebase initialized successfully");
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+    }
+  } else {
+    console.error("Firebase configuration not found in fire2.js");
+  }
+  
         
         // Initialize Firebase
         let db;
