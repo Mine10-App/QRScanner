@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Payment System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
         :root {
             --primary: #4361ee;
@@ -269,7 +272,7 @@
                     <h2 class="card-title">
                         <i class="fas fa-bell"></i>
                         Notifications
-                        <span id="notificationCount" class="notification-badge">3</span>
+                        <span id="notificationCount" class="notification-badge">0</span>
                     </h2>
                     <span class="view-all">View All</span>
                 </div>
@@ -285,7 +288,15 @@
                 </div>
                 
                 <div id="notificationsContainer">
-                    <!-- Notifications will be added here dynamically -->
+                    <!-- Notifications will be added here dynamically from Firebase -->
+                    <div class="notification-item">
+                        <div class="notification-header">
+                            <div class="notification-title">
+                                <i class="fas fa-sync-alt"></i>
+                                Loading notifications...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -346,36 +357,19 @@
     </div>
 
     <script>
-        // Sample data for incomplete card payments
-        const incompletePayments = [
-            {
-                receiptNo: '1001',
-                name: 'John Doe',
-                flight: 'TK123',
-                paymentType: 'Visa',
-                amount: 150.00,
-                currency: 'USD',
-                timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
-            },
-            {
-                receiptNo: '1005',
-                name: 'Michael Brown',
-                flight: 'CX345',
-                paymentType: 'MasterCard',
-                amount: 190.00,
-                currency: 'USD',
-                timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000) // 4 hours ago
-            },
-            {
-                receiptNo: '1007',
-                name: 'David Wilson',
-                flight: 'BA901',
-                paymentType: 'Amex',
-                amount: 165.50,
-                currency: 'USD',
-                timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000) // 5 hours ago
-            }
-        ];
+        // Firebase configuration - replace with your own config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         // Function to format time
         function formatTime(date) {
@@ -383,7 +377,10 @@
         }
 
         // Function to format relative time
-        function formatRelativeTime(date) {
+        function formatRelativeTime(timestamp) {
+            if (!timestamp) return "Just now";
+            
+            const date = timestamp.toDate();
             const now = new Date();
             const diffMs = now - date;
             const diffMins = Math.round(diffMs / (1000 * 60));
@@ -396,52 +393,121 @@
             }
         }
 
-        // Function to render notifications
-        function renderNotifications() {
+        // Function to render notifications from Firebase
+        function renderNotifications(notifications) {
             const notificationsContainer = document.getElementById('notificationsContainer');
             const notificationCount = document.getElementById('notificationCount');
             
             // Update notification count
-            notificationCount.textContent = incompletePayments.length;
+            notificationCount.textContent = notifications.length;
             
             // Clear container
             notificationsContainer.innerHTML = '';
             
-            // Add notifications for incomplete payments
-            incompletePayments.forEach(payment => {
-                const notification = document.createElement('div');
-                notification.className = 'notification-item';
-                notification.innerHTML = `
+            if (notifications.length === 0) {
+                notificationsContainer.innerHTML = `
+                    <div class="notification-item">
+                        <div class="notification-header">
+                            <div class="notification-title">
+                                <i class="fas fa-check-circle"></i>
+                                No notifications
+                            </div>
+                        </div>
+                        <div class="notification-content">
+                            You're all caught up! No pending notifications.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Add notifications from Firebase
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('div');
+                notificationElement.className = 'notification-item';
+                notificationElement.innerHTML = `
                     <div class="notification-header">
                         <div class="notification-title">
                             <i class="fas fa-exclamation-triangle"></i>
-                            Payment Update Required
+                            ${notification.title || 'Notification'}
                         </div>
-                        <div class="notification-time">${formatRelativeTime(payment.timestamp)}</div>
+                        <div class="notification-time">${formatRelativeTime(notification.timestamp)}</div>
                     </div>
                     <div class="notification-content">
-                        <strong>Receipt #${payment.receiptNo}</strong>: ${payment.name} (${payment.flight})<br>
-                        ${payment.paymentType} payment missing approval code and batch number.
+                        ${notification.message || 'No details available'}
                     </div>
                 `;
                 
-                // Add click event to redirect to update payments page
-                notification.addEventListener('click', () => {
-                    window.location.href = 'updatePayments.html';
+                // Add click event to redirect to edit_booking.html
+                notificationElement.addEventListener('click', () => {
+                    window.location.href = 'edit_booking.html';
                 });
                 
-                notificationsContainer.appendChild(notification);
+                notificationsContainer.appendChild(notificationElement);
             });
+        }
+
+        // Function to fetch notifications from Firebase
+        function fetchNotifications() {
+            // Replace 'notifications' with your actual collection name
+            db.collection('notifications')
+                .orderBy('timestamp', 'desc')
+                .limit(5) // Get the 5 most recent notifications
+                .get()
+                .then((querySnapshot) => {
+                    const notifications = [];
+                    querySnapshot.forEach((doc) => {
+                        notifications.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderNotifications(notifications);
+                })
+                .catch((error) => {
+                    console.error("Error fetching notifications: ", error);
+                    // Fallback to sample data if Firebase fails
+                    renderSampleNotifications();
+                });
+        }
+
+        // Fallback function with sample notifications if Firebase fails
+        function renderSampleNotifications() {
+            const sampleNotifications = [
+                {
+                    title: "Payment Update Required",
+                    message: "Receipt #1001: John Doe (TK123) - Visa payment missing approval code.",
+                    timestamp: { toDate: () => new Date(Date.now() - 2 * 60 * 60 * 1000) }
+                },
+                {
+                    title: "System Update",
+                    message: "New payment processing features are now available.",
+                    timestamp: { toDate: () => new Date(Date.now() - 5 * 60 * 60 * 1000) }
+                }
+            ];
+            
+            renderNotifications(sampleNotifications);
         }
 
         // Add event listener to Update Payments button
         document.getElementById('updatePaymentsBtn').addEventListener('click', () => {
-            window.location.href = 'updatePayments.html';
+            window.location.href = 'edit_booking.html';
         });
 
         // Initialize the dashboard
         document.addEventListener('DOMContentLoaded', () => {
-            renderNotifications();
+            fetchNotifications();
+            
+            // Set up real-time listener for new notifications
+            db.collection('notifications')
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .onSnapshot((querySnapshot) => {
+                    const notifications = [];
+                    querySnapshot.forEach((doc) => {
+                        notifications.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderNotifications(notifications);
+                }, (error) => {
+                    console.error("Error setting up real-time listener: ", error);
+                });
         });
     </script>
 </body>
