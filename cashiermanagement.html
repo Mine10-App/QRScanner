@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cashier Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <!-- Firebase Configuration -->
+    <script src="fire2.js"></script>
+    <!-- Users Configuration -->
+    <script src="users.js"></script>
     <style>
         :root {
             --primary: #4361ee;
@@ -323,6 +331,56 @@
             gap: 15px;
             justify-content: center;
         }
+
+        .auth-form {
+            margin: 20px 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .supervisor-panel {
+            background: #f8f9fc;
+            padding: 15px;
+            border-radius: var(--radius);
+            margin-top: 20px;
+            border-left: 4px solid var(--info);
+        }
+
+        .supervisor-panel h4 {
+            margin-bottom: 10px;
+            color: var(--info);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pettycash-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 576px) {
+            .pettycash-controls {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -335,6 +393,7 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title"><i class="fas fa-money-bill-wave"></i> Cash Denomination Count</h2>
+                <span id="cashierStatus" class="tally-status tally-error">Cashier: Closed</span>
             </div>
 
             <div class="currency-section">
@@ -509,13 +568,57 @@
                 </div>
             </div>
 
+            <div class="supervisor-panel">
+                <h4><i class="fas fa-user-shield"></i> Supervisor Controls</h4>
+                <div class="pettycash-controls">
+                    <div class="form-group">
+                        <label for="usd-petty-adjust">USD Petty Cash:</label>
+                        <input type="number" min="0" step="0.01" id="usd-petty-adjust" value="500.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="mvr-petty-adjust">MVR Petty Cash:</label>
+                        <input type="number" min="0" step="0.01" id="mvr-petty-adjust" value="2000.00">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="update-petty-btn" style="margin-top: 10px;">
+                    <i class="fas fa-save"></i> Update Petty Cash
+                </button>
+            </div>
+
             <div class="action-buttons">
-                <button class="btn btn-primary" id="calculate-btn">
-                    <i class="fas fa-calculator"></i> Calculate Totals
+                <button class="btn btn-success" id="open-cashier-btn">
+                    <i class="fas fa-lock-open"></i> Open Cashier
                 </button>
-                <button class="btn btn-success" id="close-cashier-btn" disabled>
-                    <i class="fas fa-check-circle"></i> Close Cashier
+                <button class="btn btn-danger" id="close-cashier-btn" disabled>
+                    <i class="fas fa-lock"></i> Close Cashier
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div class="modal" id="auth-modal">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-user-lock"></i>
+            </div>
+            <h2 id="auth-title">Authentication Required</h2>
+            <p id="auth-message">Please enter your credentials to proceed</p>
+            
+            <div class="auth-form">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="Enter your username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Enter your password">
+                </div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-danger" id="auth-cancel-btn">Cancel</button>
+                <button class="btn btn-success" id="auth-submit-btn">Submit</button>
             </div>
         </div>
     </div>
@@ -526,8 +629,8 @@
             <div class="modal-icon success-icon">
                 <i class="fas fa-check-circle"></i>
             </div>
-            <h2>Cashier Closed Successfully!</h2>
-            <p>All cash counts are accurate. The cashier has been closed.</p>
+            <h2 id="success-title">Operation Successful</h2>
+            <p id="success-message"></p>
             <div class="modal-buttons">
                 <button class="btn btn-primary" id="success-ok-btn">OK</button>
             </div>
@@ -540,8 +643,8 @@
             <div class="modal-icon error-icon">
                 <i class="fas fa-exclamation-circle"></i>
             </div>
-            <h2>Cash Count Discrepancy</h2>
-            <p id="error-message">The counted cash does not match the expected amount.</p>
+            <h2>Operation Failed</h2>
+            <p id="error-message"></p>
             <div class="modal-buttons">
                 <button class="btn btn-danger" id="error-ok-btn">OK</button>
             </div>
@@ -549,12 +652,24 @@
     </div>
 
     <script>
-        // Mock data for demonstration
-        const mockData = {
-            usdSales: 1245.75,
-            mvrSales: 18732.50,
+        // Firebase initialization (should be in fire2.js)
+        // For this example, we'll simulate Firebase
+        
+        // Mock users data (should be in users.js)
+        const users = {
+            "admin": { password: "admin123", role: "supervisor" },
+            "cashier1": { password: "cashier123", role: "cashier" },
+            "supervisor1": { password: "super123", role: "supervisor" }
+        };
+
+        // Current application state
+        let appState = {
+            cashierOpen: false,
+            usdSales: 0,
+            mvrSales: 0,
             usdPetty: 500.00,
-            mvrPetty: 2000.00
+            mvrPetty: 2000.00,
+            currentAction: null // 'open' or 'close'
         };
 
         // DOM Elements
@@ -584,17 +699,29 @@
         let usdCountedTotal = 0;
         let mvrCountedTotal = 0;
 
-        // Fetch data from Firebase (mock for demonstration)
+        // Fetch sales data from Firebase
         function fetchSalesData() {
             // In a real scenario, this would come from Firebase
-            document.getElementById('usd-sales').textContent = `$${mockData.usdSales.toFixed(2)}`;
-            document.getElementById('mvr-sales').textContent = `${mockData.mvrSales.toFixed(2)} MVR`;
-            document.getElementById('usd-petty').textContent = `$${mockData.usdPetty.toFixed(2)}`;
-            document.getElementById('mvr-petty').textContent = `${mockData.mvrPetty.toFixed(2)} MVR`;
+            // For demo purposes, we'll use random data
+            const today = new Date();
+            const isWeekend = today.getDay() === 0 || today.getDay() === 6;
+            
+            appState.usdSales = isWeekend ? 1845.25 : 1245.75;
+            appState.mvrSales = isWeekend ? 22567.80 : 18732.50;
+            
+            // Update UI
+            document.getElementById('usd-sales').textContent = `$${appState.usdSales.toFixed(2)}`;
+            document.getElementById('mvr-sales').textContent = `${appState.mvrSales.toFixed(2)} MVR`;
+            document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
+            document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
+            
+            // Set petty cash adjustment inputs
+            document.getElementById('usd-petty-adjust').value = appState.usdPetty.toFixed(2);
+            document.getElementById('mvr-petty-adjust').value = appState.mvrPetty.toFixed(2);
             
             // Calculate expected totals
-            const usdExpected = mockData.usdSales + mockData.usdPetty;
-            const mvrExpected = mockData.mvrSales + mockData.mvrPetty;
+            const usdExpected = appState.usdSales + appState.usdPetty;
+            const mvrExpected = appState.mvrSales + appState.mvrPetty;
             
             document.getElementById('usd-expected').textContent = `$${usdExpected.toFixed(2)}`;
             document.getElementById('mvr-expected').textContent = `${mvrExpected.toFixed(2)} MVR`;
@@ -679,6 +806,7 @@
             const usdTallyElement = document.getElementById('usd-tally');
             const mvrTallyElement = document.getElementById('mvr-tally');
             const closeButton = document.getElementById('close-cashier-btn');
+            const openButton = document.getElementById('open-cashier-btn');
             
             // USD Tally Status
             if (usdDifference === 0) {
@@ -698,12 +826,15 @@
                 mvrTallyElement.className = 'tally-status tally-error';
             }
             
-            // Enable close button only if both currencies tally
-            if (usdDifference === 0 && mvrDifference === 0) {
+            // Enable close button only if cashier is open and both currencies tally
+            if (appState.cashierOpen && usdDifference === 0 && mvrDifference === 0) {
                 closeButton.disabled = false;
             } else {
                 closeButton.disabled = true;
             }
+            
+            // Enable open button only if cashier is closed
+            openButton.disabled = appState.cashierOpen;
             
             return {
                 usdDifference,
@@ -721,24 +852,82 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Event Listeners
-        document.getElementById('calculate-btn').addEventListener('click', () => {
+        // Authenticate user
+        function authenticateUser(username, password) {
+            return new Promise((resolve, reject) => {
+                // Simulate authentication
+                setTimeout(() => {
+                    if (users[username] && users[username].password === password) {
+                        resolve(users[username]);
+                    } else {
+                        reject(new Error("Invalid username or password"));
+                    }
+                }, 500);
+            });
+        }
+
+        // Update petty cash amounts
+        function updatePettyCash(usdAmount, mvrAmount) {
+            appState.usdPetty = parseFloat(usdAmount);
+            appState.mvrPetty = parseFloat(mvrAmount);
+            
+            // Update UI
+            document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
+            document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
+            
+            // Recalculate expected totals
             const { usdExpected, mvrExpected } = fetchSalesData();
+            calculateDifferences(usdExpected, mvrExpected);
+        }
+
+        // Open cashier
+        function openCashier() {
+            appState.cashierOpen = true;
+            document.getElementById('cashierStatus').textContent = "Cashier: Open";
+            document.getElementById('cashierStatus').className = 'tally-status tally-success';
+            document.getElementById('open-cashier-btn').disabled = true;
+            
+            // Reset counts
+            Object.values(usdInputs).forEach(input => {
+                if (input.id !== 'usd-coins') {
+                    input.value = '0';
+                } else {
+                    input.value = '0.00';
+                }
+            });
+            
+            Object.values(mvrInputs).forEach(input => {
+                input.value = '0';
+            });
+            
             calculateUSDTotal();
             calculateMVRTotal();
+            const { usdExpected, mvrExpected } = fetchSalesData();
             calculateDifferences(usdExpected, mvrExpected);
-        });
+        }
 
-        document.getElementById('close-cashier-btn').addEventListener('click', () => {
+        // Close cashier
+        function closeCashier() {
+            appState.cashierOpen = false;
+            document.getElementById('cashierStatus').textContent = "Cashier: Closed";
+            document.getElementById('cashierStatus').className = 'tally-status tally-error';
+            document.getElementById('close-cashier-btn').disabled = true;
+        }
+
+        // Event Listeners
+        document.getElementById('open-cashier-btn').addEventListener('click', () => {
             const { usdExpected, mvrExpected } = fetchSalesData();
             calculateUSDTotal();
             calculateMVRTotal();
             const { usdDifference, mvrDifference } = calculateDifferences(usdExpected, mvrExpected);
             
             if (usdDifference === 0 && mvrDifference === 0) {
-                showModal('success-modal');
+                appState.currentAction = 'open';
+                document.getElementById('auth-title').textContent = "Open Cashier";
+                document.getElementById('auth-message').textContent = "Enter your credentials to open the cashier";
+                showModal('auth-modal');
             } else {
-                let errorMsg = "The counted cash does not match the expected amount.";
+                let errorMsg = "Cannot open cashier. Cash counts must tally first.";
                 if (usdDifference !== 0) {
                     errorMsg += ` USD is ${usdDifference > 0 ? 'over' : 'under'} by $${Math.abs(usdDifference).toFixed(2)}.`;
                 }
@@ -748,6 +937,100 @@
                 document.getElementById('error-message').textContent = errorMsg;
                 showModal('error-modal');
             }
+        });
+
+        document.getElementById('close-cashier-btn').addEventListener('click', () => {
+            const { usdExpected, mvrExpected } = fetchSalesData();
+            calculateUSDTotal();
+            calculateMVRTotal();
+            const { usdDifference, mvrDifference } = calculateDifferences(usdExpected, mvrExpected);
+            
+            if (usdDifference === 0 && mvrDifference === 0) {
+                appState.currentAction = 'close';
+                document.getElementById('auth-title').textContent = "Close Cashier";
+                document.getElementById('auth-message').textContent = "Enter your credentials to close the cashier";
+                showModal('auth-modal');
+            } else {
+                let errorMsg = "Cannot close cashier. Cash counts must tally first.";
+                if (usdDifference !== 0) {
+                    errorMsg += ` USD is ${usdDifference > 0 ? 'over' : 'under'} by $${Math.abs(usdDifference).toFixed(2)}.`;
+                }
+                if (mvrDifference !== 0) {
+                    errorMsg += ` MVR is ${mvrDifference > 0 ? 'over' : 'under'} by ${Math.abs(mvrDifference).toFixed(2)} MVR.`;
+                }
+                document.getElementById('error-message').textContent = errorMsg;
+                showModal('error-modal');
+            }
+        });
+
+        document.getElementById('update-petty-btn').addEventListener('click', () => {
+            const usdAmount = document.getElementById('usd-petty-adjust').value;
+            const mvrAmount = document.getElementById('mvr-petty-adjust').value;
+            
+            appState.currentAction = 'update_petty';
+            document.getElementById('auth-title').textContent = "Update Petty Cash";
+            document.getElementById('auth-message').textContent = "Supervisor credentials required to update petty cash";
+            showModal('auth-modal');
+        });
+
+        document.getElementById('auth-submit-btn').addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            authenticateUser(username, password)
+                .then(user => {
+                    hideModal('auth-modal');
+                    
+                    // Clear auth fields
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                    
+                    if (appState.currentAction === 'open') {
+                        if (user.role === 'supervisor' || user.role === 'cashier') {
+                            openCashier();
+                            document.getElementById('success-title').textContent = "Cashier Opened";
+                            document.getElementById('success-message').textContent = "The cashier has been successfully opened.";
+                            showModal('success-modal');
+                        } else {
+                            document.getElementById('error-message').textContent = "You don't have permission to open the cashier.";
+                            showModal('error-modal');
+                        }
+                    } 
+                    else if (appState.currentAction === 'close') {
+                        if (user.role === 'supervisor' || user.role === 'cashier') {
+                            closeCashier();
+                            document.getElementById('success-title').textContent = "Cashier Closed";
+                            document.getElementById('success-message').textContent = "The cashier has been successfully closed.";
+                            showModal('success-modal');
+                        } else {
+                            document.getElementById('error-message').textContent = "You don't have permission to close the cashier.";
+                            showModal('error-modal');
+                        }
+                    }
+                    else if (appState.currentAction === 'update_petty') {
+                        if (user.role === 'supervisor') {
+                            const usdAmount = document.getElementById('usd-petty-adjust').value;
+                            const mvrAmount = document.getElementById('mvr-petty-adjust').value;
+                            updatePettyCash(usdAmount, mvrAmount);
+                            document.getElementById('success-title').textContent = "Petty Cash Updated";
+                            document.getElementById('success-message').textContent = "Petty cash amounts have been successfully updated.";
+                            showModal('success-modal');
+                        } else {
+                            document.getElementById('error-message').textContent = "Only supervisors can update petty cash amounts.";
+                            showModal('error-modal');
+                        }
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('error-message').textContent = error.message;
+                    showModal('error-modal');
+                });
+        });
+
+        document.getElementById('auth-cancel-btn').addEventListener('click', () => {
+            hideModal('auth-modal');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
         });
 
         document.getElementById('success-ok-btn').addEventListener('click', () => {
