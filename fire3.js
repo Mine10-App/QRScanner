@@ -8,5 +8,12 @@ const firebaseConfig = {
   measurementId: "G-XL5YJR6L74"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const firebaseConnected = true;
+
+// Update Firebase status indicator in UI
+document.getElementById('firebase-status-icon').className = 'fas fa-plug connected';
+document.getElementById('firebase-status-text').textContent = 'Firebase connected successfully';
+document.getElementById('firebase-setup').style.display = 'none';
