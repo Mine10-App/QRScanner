@@ -287,11 +287,11 @@
                 </div>
                 
                 <div class="quick-actions">
-                    <button class="action-btn">
+                    <button class="action-btn"  id="newpaymentbtn">
                         <i class="fas fa-money-bill-wave"></i>
                         New Payment
                     </button>
-                    <button class="action-btn">
+                    <button class="action-btn" id="viewreport">
                         <i class="fas fa-receipt"></i>
                         View Reports
                     </button>
@@ -299,7 +299,7 @@
                         <i class="fas fa-edit"></i>
                         Update Payments
                     </button>
-                    <button class="action-btn btn-danger">
+                    <button class="action-btn btn-danger" id="void">
                         <i class="fas fa-ban"></i>
                         Void Payment
                     </button>
@@ -431,10 +431,22 @@
                     </div>
                 `;
                 
-                // Add click event to redirect to edit_booking.html
-                notificationElement.addEventListener('click', () => {
-                    window.location.href = 'edit_booking.html';
-                });
+                        // Add event listeners to buttons for page redirects
+            document.getElementById('newpaymentbtn').addEventListener('click', () => {
+                window.location.href = 'newpayment.html';
+            });
+        
+            document.getElementById('viewreport').addEventListener('click', () => {
+                window.location.href = 'DReport.html';
+            });
+        
+            document.getElementById('updatePaymentsBtn').addEventListener('click', () => {
+                window.location.href = 'updatePayments.html';
+            });
+        
+            document.getElementById('void').addEventListener('click', () => {
+                window.location.href = 'edit_payments.html';
+            });
                 
                 notificationsContainer.appendChild(notificationElement);
             });
