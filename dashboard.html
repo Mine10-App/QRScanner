@@ -17,6 +17,7 @@
             --success: #4cc9f0;
             --warning: #ff9500;
             --danger: #e74c3c;
+            --info: #17a2b8;
             --light: #f8f9fa;
             --dark: #212529;
             --gray: #6c757d;
@@ -259,6 +260,22 @@
             background: #c0392b;
         }
 
+        .btn-info {
+            background: var(--info);
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-success:hover {
+            background: #3aafd3;
+        }
+
         @media (max-width: 768px) {
             .dashboard {
                 grid-template-columns: 1fr;
@@ -287,7 +304,7 @@
                 </div>
                 
                 <div class="quick-actions">
-                    <button class="action-btn"  id="newpaymentbtn">
+                    <button class="action-btn" id="newpaymentbtn">
                         <i class="fas fa-money-bill-wave"></i>
                         New Payment
                     </button>
@@ -302,6 +319,14 @@
                     <button class="action-btn btn-danger" id="void">
                         <i class="fas fa-ban"></i>
                         Void Payment
+                    </button>
+                    <button class="action-btn btn-info" id="shiftManagementBtn">
+                        <i class="fas fa-calendar-alt"></i>
+                        Shift Management
+                    </button>
+                    <button class="action-btn btn-success" id="cashierManagementBtn">
+                        <i class="fas fa-cash-register"></i>
+                        Cashier Management
                     </button>
                 </div>
                 
@@ -431,22 +456,10 @@
                     </div>
                 `;
                 
-                        // Add event listeners to buttons for page redirects
-            document.getElementById('newpaymentbtn').addEventListener('click', () => {
-                window.location.href = 'newpayment.html';
-            });
-        
-            document.getElementById('viewreport').addEventListener('click', () => {
-                window.location.href = 'DReport.html';
-            });
-        
-            document.getElementById('updatePaymentsBtn').addEventListener('click', () => {
-                window.location.href = 'updatePayments.html';
-            });
-        
-            document.getElementById('void').addEventListener('click', () => {
-                window.location.href = 'edit_payments.html';
-            });
+                // Add click event to redirect to edit_booking.html
+                notificationElement.addEventListener('click', () => {
+                    window.location.href = 'edit_booking.html';
+                });
                 
                 notificationsContainer.appendChild(notificationElement);
             });
@@ -531,17 +544,26 @@
         document.getElementById('newpaymentbtn').addEventListener('click', () => {
             window.location.href = 'newpayment.html';
         });
-    
+
         document.getElementById('viewreport').addEventListener('click', () => {
             window.location.href = 'DReport.html';
         });
-    
+
         document.getElementById('updatePaymentsBtn').addEventListener('click', () => {
             window.location.href = 'updatePayments.html';
         });
-    
+
         document.getElementById('void').addEventListener('click', () => {
             window.location.href = 'edit_payments.html';
+        });
+
+        // Add event listeners for the new buttons
+        document.getElementById('shiftManagementBtn').addEventListener('click', () => {
+            window.location.href = 'shiftmanagement.html';
+        });
+
+        document.getElementById('cashierManagementBtn').addEventListener('click', () => {
+            window.location.href = 'cashiermanagement.html';
         });
 
         // Initialize the dashboard
