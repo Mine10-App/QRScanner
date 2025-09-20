@@ -381,8 +381,6 @@
             </div>
         </header>
         
-        
-        
         <div class="dashboard">
             <div class="shift-card shift1">
                 <h2 class="shift-title"><i class="fas fa-sun"></i> Shift 1 (Morning)</h2>
@@ -455,18 +453,19 @@
         </div>
     </div>
 
-    <!-- Firebase App (initialized in fire1.js) -->
+    <!-- Firebase App (initialized in fire2.js) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
-    <!-- Your Firebase config file -->
-    <script src="fire1.js"></script>
+    <!-- Your Firebase config file - updated to fire2.js -->
+    <script src="fire2.js"></script>
     
     <script>
-        // Initialize Firebase (assuming fire1.js contains the config)
+        // Initialize Firebase (assuming fire2.js contains the config)
+        let db;
         if (typeof firebaseConfig !== 'undefined') {
             firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
+            db = firebase.firestore();
             
             // Update Firebase status
             const updateFirebaseStatus = (connected) => {
@@ -492,7 +491,7 @@
                     console.error("Firebase connection error:", error);
                 });
         } else {
-            console.error("Firebase configuration not found. Please ensure fire1.js is loaded and contains your Firebase config.");
+            console.error("Firebase configuration not found. Please ensure fire2.js is loaded and contains your Firebase config.");
             document.getElementById('firebase-status-text').innerHTML = 
                 '<span class="disconnected">Firebase config not found</span>';
         }
@@ -789,7 +788,7 @@
                 elements.shift1Status.textContent = 'OPEN';
                 elements.shift1Status.className = 'shift-info open';
                 elements.shift1OpenBtn.disabled = true;
-                elements.shift1CloseBtn.disabled = false;
+                elements.shift1CloseBtn.disabled = false; // Enable close button when shift is open
             } else {
                 elements.shift1Status.textContent = 'CLOSED';
                 elements.shift1Status.className = 'shift-info closed';
@@ -802,7 +801,7 @@
                 elements.shift2Status.textContent = 'OPEN';
                 elements.shift2Status.className = 'shift-info open';
                 elements.shift2OpenBtn.disabled = true;
-                elements.shift2CloseBtn.disabled = false;
+                elements.shift2CloseBtn.disabled = false; // Enable close button when shift is open
             } else {
                 elements.shift2Status.textContent = 'CLOSED';
                 elements.shift2Status.className = 'shift-info closed';
@@ -890,13 +889,36 @@
             }
             
             updateHistoryUI();
+            updateUI(); // Make sure UI reflects the loaded state
         }
 
         // Save state to Firebase
         function saveToFirebase() {
             if (typeof db === 'undefined') return;
             
-            db.collection("shiftSystem").doc("state").set(state)
+            // Convert Date objects to Firebase Timestamps
+            const firebaseState = {
+                shifts: {
+                    shift1: {
+                        ...state.shifts.shift1,
+                        openTime: state.shifts.shift1.openTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift1.openTime) : null,
+                        closeTime: state.shifts.shift1.closeTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift1.closeTime) : null
+                    },
+                    shift2: {
+                        ...state.shifts.shift2,
+                        openTime: state.shifts.shift2.openTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift2.openTime) : null,
+                        closeTime: state.shifts.shift2.closeTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift2.closeTime) : null
+                    }
+                },
+                adminPassword: state.adminPassword,
+                history: state.history.map(item => ({
+                    message: item.message,
+                    timestamp: firebase.firestore.Timestamp.fromDate(item.timestamp)
+                })),
+                currentShift: state.currentShift
+            };
+            
+            db.collection("shiftSystem").doc("state").set(firebaseState)
                 .then(() => {
                     console.log("State successfully saved to Firebase");
                 })
@@ -921,14 +943,14 @@
                         
                         // Restore state with date objects
                         state.shifts.shift1.open = data.shifts.shift1.open;
-                        state.shifts.shift1.openTime = data.shifts.shift1.openTime ? new Date(data.shifts.shift1.openTime.seconds * 1000) : null;
-                        state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? new Date(data.shifts.shift1.closeTime.seconds * 1000) : null;
+                        state.shifts.shift1.openTime = data.shifts.shift1.openTime ? data.shifts.shift1.openTime.toDate() : null;
+                        state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? data.shifts.shift1.closeTime.toDate() : null;
                         state.shifts.shift1.openedToday = data.shifts.shift1.openedToday || false;
                         state.shifts.shift1.closedToday = data.shifts.shift1.closedToday || false;
                         
                         state.shifts.shift2.open = data.shifts.shift2.open;
-                        state.shifts.shift2.openTime = data.shifts.shift2.openTime ? new Date(data.shifts.shift2.openTime.seconds * 1000) : null;
-                        state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? new Date(data.shifts.shift2.closeTime.seconds * 1000) : null;
+                        state.shifts.shift2.openTime = data.shifts.shift2.openTime ? data.shifts.shift2.openTime.toDate() : null;
+                        state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? data.shifts.shift2.closeTime.toDate() : null;
                         state.shifts.shift2.openedToday = data.shifts.shift2.openedToday || false;
                         state.shifts.shift2.closedToday = data.shifts.shift2.closedToday || false;
                         
@@ -937,10 +959,11 @@
                         // Restore history with date objects
                         state.history = data.history.map(item => ({
                             message: item.message,
-                            timestamp: new Date(item.timestamp.seconds * 1000)
+                            timestamp: item.timestamp.toDate()
                         })) || [];
                         
                         updateHistoryUI();
+                        updateUI(); // Make sure UI reflects the loaded state
                         console.log("State successfully loaded from Firebase");
                     } else {
                         console.log("No Firebase document found, loading from localStorage");
