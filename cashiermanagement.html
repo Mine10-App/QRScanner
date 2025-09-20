@@ -3,15 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashier Management</title>
+    <title>Shift Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- Firebase Configuration -->
-    <script src="fire2.js"></script>
-    <!-- Users Configuration -->
-    <script src="users.js"></script>
     <style>
         :root {
             --primary: #4361ee;
@@ -96,7 +89,7 @@
             gap: 10px;
         }
 
-        .shift-info {
+        .shift-status {
             display: flex;
             align-items: center;
             gap: 15px;
@@ -125,6 +118,10 @@
             background: var(--warning);
         }
 
+        .shift-inactive {
+            background: var(--gray);
+        }
+
         .shift-details h3 {
             margin-bottom: 5px;
             color: var(--dark);
@@ -135,128 +132,87 @@
             font-size: 14px;
         }
 
-        .currency-section {
+        .shift-controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
 
-        @media (max-width: 992px) {
-            .currency-section {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .denomination-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-
-        .denomination-table th {
-            text-align: left;
-            padding: 8px;
-            font-weight: 600;
-            color: var(--dark);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .denomination-table td {
-            padding: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .denom-input {
-            width: 70px;
-            padding: 6px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            text-align: center;
-        }
-
-        .denom-total {
-            width: 100px;
-            padding: 6px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            text-align: center;
-            background-color: #f8f9fa;
-        }
-
-        .total-display {
-            background: #f8f9fc;
-            padding: 15px;
-            border-radius: var(--radius);
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .total-amount {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
         @media (max-width: 768px) {
-            .summary-grid {
+            .shift-controls {
                 grid-template-columns: 1fr;
             }
         }
 
-        .summary-card {
+        .shift-option {
             background: #f8f9fc;
             padding: 20px;
             border-radius: var(--radius);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
         }
 
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
+        .shift-option:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
         }
 
-        .summary-label {
-            font-weight: 600;
+        .shift-option h3 {
+            margin-bottom: 10px;
             color: var(--dark);
         }
 
-        .summary-value {
-            font-weight: 700;
-            font-size: 18px;
+        .shift-option p {
+            color: var(--gray);
+            margin-bottom: 15px;
+            font-size: 14px;
         }
 
-        .usd-summary .summary-value {
-            color: var(--primary);
+        .shift-history {
+            margin-top: 30px;
         }
 
-        .mvr-summary .summary-value {
-            color: var(--info);
-        }
-
-        .tally-status {
-            text-align: center;
-            padding: 10px;
-            border-radius: var(--radius);
+        .shift-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 15px;
+        }
+
+        .shift-table th {
+            background: #f8f9fc;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .shift-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .shift-table tr:hover {
+            background: #f8f9fc;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 600;
         }
 
-        .tally-success {
+        .status-active {
             background: #d4edda;
             color: #155724;
         }
 
-        .tally-error {
+        .status-closed {
             background: #f8d7da;
             color: #721c24;
         }
@@ -316,6 +272,14 @@
 
         .btn-danger:hover {
             background: #c0392b;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+        }
+
+        .btn-warning:hover {
+            background: #e67e00;
         }
 
         .modal {
@@ -392,34 +356,6 @@
             border-radius: var(--radius);
         }
 
-        .supervisor-panel {
-            background: #f8f9fc;
-            padding: 15px;
-            border-radius: var(--radius);
-            margin-top: 20px;
-            border-left: 4px solid var(--info);
-        }
-
-        .supervisor-panel h4 {
-            margin-bottom: 10px;
-            color: var(--info);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .pettycash-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        @media (max-width: 576px) {
-            .pettycash-controls {
-                grid-template-columns: 1fr;
-            }
-        }
-
         .loading {
             display: flex;
             justify-content: center;
@@ -440,236 +376,103 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-cash-register"></i> Cashier Management</h1>
-            <p>Count and verify cash denominations for current shift</p>
+            <h1><i class="fas fa-calendar-alt"></i> Shift Management</h1>
+            <p>Manage and monitor shift operations</p>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title"><i class="fas fa-money-bill-wave"></i> Cash Denomination Count</h2>
-                <span id="cashierStatus" class="tally-status tally-error">Cashier: Closed</span>
+                <h2 class="card-title"><i class="fas fa-info-circle"></i> Current Shift Status</h2>
+                <span id="lastUpdated">Last updated: Just now</span>
             </div>
 
-            <div class="shift-info">
-                <div class="shift-icon shift-morning">
-                    <i class="fas fa-sun"></i>
+            <div class="shift-status">
+                <div class="shift-icon" id="currentShiftIcon">
+                    <i class="fas fa-moon"></i>
                 </div>
                 <div class="shift-details">
-                    <h3 id="currentShift">Morning Shift (Active)</h3>
-                    <p id="shiftTiming">Started at 08:00 AM</p>
+                    <h3 id="currentShiftTitle">No Active Shift</h3>
+                    <p id="currentShiftDetails">All shifts are currently closed. Please open a new shift to begin operations.</p>
+                    <p id="currentShiftTimer">Duration: --:--:--</p>
                 </div>
             </div>
 
-            <div class="currency-section">
-                <!-- USD Denomination -->
-                <div class="usd-denomination">
-                    <h3><i class="fas fa-dollar-sign"></i> USD Count</h3>
-                    <table class="denomination-table">
-                        <thead>
-                            <tr>
-                                <th>Denomination</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>$100 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-100" value="0"></td>
-                                <td><input type="text" class="denom-total" id="usd-100-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$50 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-50" value="0"></td>
-                                <td><input type="text" class="denom-total" id="usd-50-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$20 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-20" value="0"></td>
-                                <td><input type="text" class="denom-total" id="usd-20-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$10 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-10" value="0"></td>
-                                <td><input type="text" class="denom-total" id="usd-10-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$5 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-5" value="0"></td>
-                                <td><input type="text" class="denom-total" id="usd-5-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$1 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-1" value="0"></td>
-                                <td><input type="text" class="denom-total" id="usd-1-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>Coins</td>
-                                <td><input type="number" min="0" step="0.01" class="denom-input" id="usd-coins" value="0.00"></td>
-                                <td><input type="text" class="denom-total" id="usd-coins-total" value="$0.00" readonly></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="total-display">
-                        <p>Total USD Counted</p>
-                        <div class="total-amount" id="usd-total">$0.00</div>
-                    </div>
+            <div class="shift-controls">
+                <div class="shift-option" data-shift="morning">
+                    <h3><i class="fas fa-sun"></i> Morning Shift</h3>
+                    <p>8:00 AM - 4:00 PM</p>
+                    <button class="btn btn-primary" data-action="open" data-shift="morning">
+                        <i class="fas fa-lock-open"></i> Open Shift
+                    </button>
                 </div>
+                <div class="shift-option" data-shift="evening">
+                    <h3><i class="fas fa-moon"></i> Evening Shift</h3>
+                    <p>4:00 PM - 12:00 AM</p>
+                    <button class="btn btn-primary" data-action="open" data-shift="evening">
+                        <i class="fas fa-lock-open"></i> Open Shift
+                    </button>
+                </div>
+            </div>
 
-                <!-- MVR Denomination -->
-                <div class="mvr-denomination">
-                    <h3><i class="fas fa-ruble-sign"></i> MVR Count</h3>
-                    <table class="denomination-table">
-                        <thead>
-                            <tr>
-                                <th>Denomination</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1000 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-1000" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-1000-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>500 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-500" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-500-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>100 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-100" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-100-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>50 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-50" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-50-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>20 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-20" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-20-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>10 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-10" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-10-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>5 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-5" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-5-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>2 Rufiyaa (Coins)</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-2" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-2-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>1 Rufiyaa (Coins)</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-1" value="0"></td>
-                                <td><input type="text" class="denom-total" id="mvr-1-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="total-display">
-                        <p>Total MVR Counted</p>
-                        <div class="total-amount" id="mvr-total">0.00 MVR</div>
-                    </div>
-                </div>
+            <div class="action-buttons">
+                <button class="btn btn-danger" id="closeShiftBtn" disabled>
+                    <i class="fas fa-lock"></i> Close Current Shift
+                </button>
+                <button class="btn btn-warning" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Refresh Status
+                </button>
             </div>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title"><i class="fas fa-calculator"></i> Cash Reconciliation</h2>
-                <button class="btn btn-primary" id="refresh-sales-btn">
-                    <i class="fas fa-sync-alt"></i> Refresh Sales Data
-                </button>
+                <h2 class="card-title"><i class="fas fa-history"></i> Shift History</h2>
             </div>
 
-            <div id="sales-loading" class="loading">
+            <div id="shiftHistoryLoading" class="loading">
                 <div class="loading-spinner"></div>
-                <span style="margin-left: 10px;">Loading sales data...</span>
+                <span style="margin-left: 10px;">Loading shift history...</span>
             </div>
 
-            <div id="sales-content" style="display: none;">
-                <div class="summary-grid">
-                    <div class="summary-card usd-summary">
-                        <h3><i class="fas fa-dollar-sign"></i> USD Summary</h3>
-                        <div class="summary-item">
-                            <span class="summary-label">Cash Sales:</span>
-                            <span class="summary-value" id="usd-sales">$0.00</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Petty Cash:</span>
-                            <span class="summary-value" id="usd-petty">$0.00</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Expected Total:</span>
-                            <span class="summary-value" id="usd-expected">$0.00</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Counted Total:</span>
-                            <span class="summary-value" id="usd-counted">$0.00</span>
-                        </div>
-                        <div id="usd-tally" class="tally-status tally-error">Not Tallying</div>
-                    </div>
+            <div id="shiftHistoryContent" style="display: none;">
+                <table class="shift-table">
+                    <thead>
+                        <tr>
+                            <th>Shift</th>
+                            <th>Date</th>
+                            <th>Opened By</th>
+                            <th>Opened At</th>
+                            <th>Closed By</th>
+                            <th>Closed At</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shiftHistoryBody">
+                        <!-- Shift history will be populated here -->
+                    </tbody>
+                </table>
 
-                    <div class="summary-card mvr-summary">
-                        <h3><i class="fas fa-ruble-sign"></i> MVR Summary</h3>
-                        <div class="summary-item">
-                            <span class="summary-label">Cash Sales:</span>
-                            <span class="summary-value" id="mvr-sales">0.00 MVR</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Petty Cash:</span>
-                            <span class="summary-value" id="mvr-petty">0.00 MVR</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Expected Total:</span>
-                            <span class="summary-value" id="mvr-expected">0.00 MVR</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Counted Total:</span>
-                            <span class="summary-value" id="mvr-counted">0.00 MVR</span>
-                        </div>
-                        <div id="mvr-tally" class="tally-status tally-error">Not Tallying</div>
-                    </div>
-                </div>
-
-                <div class="supervisor-panel">
-                    <h4><i class="fas fa-user-shield"></i> Supervisor Controls</h4>
-                    <div class="pettycash-controls">
-                        <div class="form-group">
-                            <label for="usd-petty-adjust">USD Petty Cash:</label>
-                            <input type="number" min="0" step="0.01" id="usd-petty-adjust" value="500.00">
-                        </div>
-                        <div class="form-group">
-                            <label for="mvr-petty-adjust">MVR Petty Cash:</label>
-                            <input type="number" min="0" step="0.01" id="mvr-petty-adjust" value="2000.00">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" id="update-petty-btn" style="margin-top: 10px;">
-                        <i class="fas fa-save"></i> Update Petty Cash
-                    </button>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-success" id="open-cashier-btn">
-                        <i class="fas fa-lock-open"></i> Open Cashier
-                    </button>
-                    <button class="btn btn-danger" id="close-cashier-btn" disabled>
-                        <i class="fas fa-lock"></i> Close Cashier
-                    </button>
+                <div id="emptyHistory" class="empty-state" style="display: none;">
+                    <i class="fas fa-history"></i>
+                    <h3>No Shift History</h3>
+                    <p>No shifts have been recorded yet.</p>
                 </div>
             </div>
         </div>
@@ -731,270 +534,233 @@
     </div>
 
     <script>
-        // Firebase initialization (should be in fire2.js)
-        // For this example, we'll simulate Firebase
-        
         // Mock users data (should be in users.js)
         const users = {
-            "admin": { password: "admin123", role: "supervisor" },
-            "cashier1": { password: "cashier123", role: "cashier" },
-            "supervisor1": { password: "super123", role: "supervisor" }
+            "admin": { password: "admin123", role: "supervisor", name: "Admin User" },
+            "cashier1": { password: "cashier123", role: "cashier", name: "John Doe" },
+            "supervisor1": { password: "super123", role: "supervisor", name: "Jane Smith" }
         };
 
-        // Current application state
-        let appState = {
-            cashierOpen: false,
-            usdSales: 0,
-            mvrSales: 0,
-            usdPetty: 500.00,
-            mvrPetty: 2000.00,
-            currentAction: null, // 'open' or 'close'
-            currentShift: "morning", // 'morning' or 'evening'
-            shiftStartTime: new Date()
+        // Current user session
+        let currentUser = null;
+
+        // Shift data structure
+        let shiftData = {
+            currentShift: null,
+            history: []
         };
 
-        // Set shift start time based on current time
-        function setShiftTiming() {
+        // Initialize the application
+        function initApp() {
+            loadShiftData();
+            updateUI();
+            startShiftTimer();
+            
+            // Check shift status every minute
+            setInterval(updateUI, 60000);
+        }
+
+        // Load shift data from localStorage (simulating database)
+        function loadShiftData() {
+            const savedData = localStorage.getItem('shiftData');
+            if (savedData) {
+                shiftData = JSON.parse(savedData);
+            }
+        }
+
+        // Save shift data to localStorage (simulating database)
+        function saveShiftData() {
+            localStorage.setItem('shiftData', JSON.stringify(shiftData));
+            updateLastUpdated();
+        }
+
+        // Update the UI based on current shift state
+        function updateUI() {
+            const shiftIcon = document.getElementById('currentShiftIcon');
+            const shiftTitle = document.getElementById('currentShiftTitle');
+            const shiftDetails = document.getElementById('currentShiftDetails');
+            const closeBtn = document.getElementById('closeShiftBtn');
+            
+            if (shiftData.currentShift) {
+                // There is an active shift
+                const isMorning = shiftData.currentShift.type === 'morning';
+                
+                shiftIcon.className = isMorning ? 'shift-icon shift-morning' : 'shift-icon shift-evening';
+                shiftIcon.innerHTML = isMorning ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                
+                shiftTitle.textContent = `${isMorning ? 'Morning' : 'Evening'} Shift (Active)`;
+                shiftDetails.textContent = `Opened by ${shiftData.currentShift.openedBy} at ${formatTime(shiftData.currentShift.openedAt)}`;
+                
+                closeBtn.disabled = false;
+                
+                // Update timer
+                updateShiftTimer();
+            } else {
+                // No active shift
+                shiftIcon.className = 'shift-icon shift-inactive';
+                shiftIcon.innerHTML = '<i class="fas fa-clock"></i>';
+                
+                shiftTitle.textContent = 'No Active Shift';
+                shiftDetails.textContent = 'All shifts are currently closed. Please open a new shift to begin operations.';
+                
+                document.getElementById('currentShiftTimer').textContent = 'Duration: --:--:--';
+                closeBtn.disabled = true;
+            }
+            
+            // Update history display
+            updateShiftHistory();
+        }
+
+        // Update the shift timer
+        function updateShiftTimer() {
+            if (!shiftData.currentShift) return;
+            
             const now = new Date();
-            const hours = now.getHours();
+            const openedAt = new Date(shiftData.currentShift.openedAt);
+            const diff = now - openedAt;
             
-            if (hours >= 6 && hours < 14) {
-                // Morning shift: 6 AM to 2 PM
-                appState.currentShift = "morning";
-                appState.shiftStartTime = new Date(now);
-                appState.shiftStartTime.setHours(6, 0, 0, 0);
-                document.getElementById('currentShift').textContent = "Morning Shift (Active)";
-                document.getElementById('shiftTiming').textContent = `Started at ${formatTime(appState.shiftStartTime)}`;
-            } else {
-                // Evening shift: 2 PM to 10 PM
-                appState.currentShift = "evening";
-                appState.shiftStartTime = new Date(now);
-                if (hours < 6) {
-                    // If it's before 6 AM, it's still previous day's evening shift
-                    appState.shiftStartTime.setDate(appState.shiftStartTime.getDate() - 1);
-                }
-                appState.shiftStartTime.setHours(14, 0, 0, 0);
-                document.getElementById('currentShift').textContent = "Evening Shift (Active)";
-                document.getElementById('shiftTiming').textContent = `Started at ${formatTime(appState.shiftStartTime)}`;
-                
-                // Update shift icon
-                document.querySelector('.shift-icon').className = "shift-icon shift-evening";
-                document.querySelector('.shift-icon i').className = "fas fa-moon";
-            }
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            document.getElementById('currentShiftTimer').textContent = 
+                `Duration: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
-        // Format time to HH:MM AM/PM
-        function formatTime(date) {
-            let hours = date.getHours();
-            let minutes = date.getMinutes();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12; // the hour '0' should be '12'
-            minutes = minutes < 10 ? '0'+minutes : minutes;
-            return hours + ':' + minutes + ' ' + ampm;
+        // Start the shift timer
+        function startShiftTimer() {
+            setInterval(updateShiftTimer, 1000);
         }
 
-        // Format date to YYYY-MM-DD
-        function formatDate(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        // DOM Elements
-        const usdInputs = {
-            100: document.getElementById('usd-100'),
-            50: document.getElementById('usd-50'),
-            20: document.getElementById('usd-20'),
-            10: document.getElementById('usd-10'),
-            5: document.getElementById('usd-5'),
-            1: document.getElementById('usd-1'),
-            coins: document.getElementById('usd-coins')
-        };
-
-        const mvrInputs = {
-            1000: document.getElementById('mvr-1000'),
-            500: document.getElementById('mvr-500'),
-            100: document.getElementById('mvr-100'),
-            50: document.getElementById('mvr-50'),
-            20: document.getElementById('mvr-20'),
-            10: document.getElementById('mvr-10'),
-            5: document.getElementById('mvr-5'),
-            2: document.getElementById('mvr-2'),
-            1: document.getElementById('mvr-1')
-        };
-
-        // Initialize totals
-        let usdCountedTotal = 0;
-        let mvrCountedTotal = 0;
-
-        // Fetch sales data from Firebase for current shift
-        function fetchSalesData() {
-            showLoading(true);
+        // Update the shift history display
+        function updateShiftHistory() {
+            const historyBody = document.getElementById('shiftHistoryBody');
+            const emptyHistory = document.getElementById('emptyHistory');
+            const historyContent = document.getElementById('shiftHistoryContent');
+            const historyLoading = document.getElementById('shiftHistoryLoading');
             
-            // In a real scenario, this would come from Firebase
-            // For demo purposes, we'll use random data based on shift
-            setTimeout(() => {
-                const isMorningShift = appState.currentShift === "morning";
-                
-                // Different sales amounts for different shifts
-                appState.usdSales = isMorningShift ? 1245.75 : 1845.25;
-                appState.mvrSales = isMorningShift ? 18732.50 : 22567.80;
-                
-                // Update UI
-                document.getElementById('usd-sales').textContent = `$${appState.usdSales.toFixed(2)}`;
-                document.getElementById('mvr-sales').textContent = `${appState.mvrSales.toFixed(2)} MVR`;
-                document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
-                document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
-                
-                // Set petty cash adjustment inputs
-                document.getElementById('usd-petty-adjust').value = appState.usdPetty.toFixed(2);
-                document.getElementById('mvr-petty-adjust').value = appState.mvrPetty.toFixed(2);
-                
-                // Calculate expected totals
-                const usdExpected = appState.usdSales + appState.usdPetty;
-                const mvrExpected = appState.mvrSales + appState.mvrPetty;
-                
-                document.getElementById('usd-expected').textContent = `$${usdExpected.toFixed(2)}`;
-                document.getElementById('mvr-expected').textContent = `${mvrExpected.toFixed(2)} MVR`;
-                
-                // Update differences
-                calculateDifferences(usdExpected, mvrExpected);
-                
-                showLoading(false);
-                
-                return {
-                    usdExpected,
-                    mvrExpected
-                };
-            }, 1000);
-        }
-
-        // Show/hide loading indicator
-        function showLoading(show) {
-            document.getElementById('sales-loading').style.display = show ? 'flex' : 'none';
-            document.getElementById('sales-content').style.display = show ? 'none' : 'block';
-        }
-
-        // Calculate USD total
-        function calculateUSDTotal() {
-            let total = 0;
+            // Hide loading, show content
+            historyLoading.style.display = 'none';
+            historyContent.style.display = 'block';
             
-            // Calculate each denomination
-            const usd100 = parseInt(usdInputs[100].value) * 100;
-            const usd50 = parseInt(usdInputs[50].value) * 50;
-            const usd20 = parseInt(usdInputs[20].value) * 20;
-            const usd10 = parseInt(usdInputs[10].value) * 10;
-            const usd5 = parseInt(usdInputs[5].value) * 5;
-            const usd1 = parseInt(usdInputs[1].value) * 1;
-            const usdCoins = parseFloat(usdInputs.coins.value);
+            // Clear existing rows
+            historyBody.innerHTML = '';
             
-            total = usd100 + usd50 + usd20 + usd10 + usd5 + usd1 + usdCoins;
-            
-            // Update individual totals
-            document.getElementById('usd-100-total').value = `$${usd100.toFixed(2)}`;
-            document.getElementById('usd-50-total').value = `$${usd50.toFixed(2)}`;
-            document.getElementById('usd-20-total').value = `$${usd20.toFixed(2)}`;
-            document.getElementById('usd-10-total').value = `$${usd10.toFixed(2)}`;
-            document.getElementById('usd-5-total').value = `$${usd5.toFixed(2)}`;
-            document.getElementById('usd-1-total').value = `$${usd1.toFixed(2)}`;
-            document.getElementById('usd-coins-total').value = `$${usdCoins.toFixed(2)}`;
-            
-            usdCountedTotal = total;
-            document.getElementById('usd-total').textContent = `$${total.toFixed(2)}`;
-            document.getElementById('usd-counted').textContent = `$${total.toFixed(2)}`;
-            
-            return total;
-        }
-
-        // Calculate MVR total
-        function calculateMVRTotal() {
-            let total = 0;
-            
-            // Calculate each denomination
-            const mvr1000 = parseInt(mvrInputs[1000].value) * 1000;
-            const mvr500 = parseInt(mvrInputs[500].value) * 500;
-            const mvr100 = parseInt(mvrInputs[100].value) * 100;
-            const mvr50 = parseInt(mvrInputs[50].value) * 50;
-            const mvr20 = parseInt(mvrInputs[20].value) * 20;
-            const mvr10 = parseInt(mvrInputs[10].value) * 10;
-            const mvr5 = parseInt(mvrInputs[5].value) * 5;
-            const mvr2 = parseInt(mvrInputs[2].value) * 2;
-            const mvr1 = parseInt(mvrInputs[1].value) * 1;
-            
-            total = mvr1000 + mvr500 + mvr100 + mvr50 + mvr20 + mvr10 + mvr5 + mvr2 + mvr1;
-            
-            // Update individual totals
-            document.getElementById('mvr-1000-total').value = `${mvr1000.toFixed(2)} MVR`;
-            document.getElementById('mvr-500-total').value = `${mvr500.toFixed(2)} MVR`;
-            document.getElementById('mvr-100-total').value = `${mvr100.toFixed(2)} MVR`;
-            document.getElementById('mvr-50-total').value = `${mvr50.toFixed(2)} MVR`;
-            document.getElementById('mvr-20-total').value = `${mvr20.toFixed(2)} MVR`;
-            document.getElementById('mvr-10-total').value = `${mvr10.toFixed(2)} MVR`;
-            document.getElementById('mvr-5-total').value = `${mvr5.toFixed(2)} MVR`;
-            document.getElementById('mvr-2-total').value = `${mvr2.toFixed(2)} MVR`;
-            document.getElementById('mvr-1-total').value = `${mvr1.toFixed(2)} MVR`;
-            
-            mvrCountedTotal = total;
-            document.getElementById('mvr-total').textContent = `${total.toFixed(2)} MVR`;
-            document.getElementById('mvr-counted').textContent = `${total.toFixed(2)} MVR`;
-            
-            return total;
-        }
-
-        // Calculate differences and update tally status
-        function calculateDifferences(usdExpected, mvrExpected) {
-            const usdDifference = usdCountedTotal - usdExpected;
-            const mvrDifference = mvrCountedTotal - mvrExpected;
-            
-            const usdTallyElement = document.getElementById('usd-tally');
-            const mvrTallyElement = document.getElementById('mvr-tally');
-            const closeButton = document.getElementById('close-cashier-btn');
-            const openButton = document.getElementById('open-cashier-btn');
-            
-            // USD Tally Status
-            if (usdDifference === 0) {
-                usdTallyElement.textContent = "Tallying";
-                usdTallyElement.className = 'tally-status tally-success';
-            } else {
-                usdTallyElement.textContent = `Off by $${Math.abs(usdDifference).toFixed(2)}`;
-                usdTallyElement.className = 'tally-status tally-error';
+            if (shiftData.history.length === 0) {
+                emptyHistory.style.display = 'block';
+                return;
             }
             
-            // MVR Tally Status
-            if (mvrDifference === 0) {
-                mvrTallyElement.textContent = "Tallying";
-                mvrTallyElement.className = 'tally-status tally-success';
-            } else {
-                mvrTallyElement.textContent = `Off by ${Math.abs(mvrDifference).toFixed(2)} MVR`;
-                mvrTallyElement.className = 'tally-status tally-error';
+            emptyHistory.style.display = 'none';
+            
+            // Add history rows (show latest 10 entries)
+            const recentHistory = shiftData.history.slice(-10).reverse();
+            
+            recentHistory.forEach(shift => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${shift.type === 'morning' ? '<i class="fas fa-sun"></i> Morning' : '<i class="fas fa-moon"></i> Evening'}</td>
+                    <td>${formatDate(shift.openedAt)}</td>
+                    <td>${shift.openedBy}</td>
+                    <td>${formatTime(shift.openedAt)}</td>
+                    <td>${shift.closedBy || '--'}</td>
+                    <td>${shift.closedAt ? formatTime(shift.closedAt) : '--'}</td>
+                    <td>${shift.duration || '--'}</td>
+                    <td><span class="status-badge ${shift.closedAt ? 'status-closed' : 'status-active'}">${shift.closedAt ? 'Closed' : 'Active'}</span></td>
+                `;
+                
+                historyBody.appendChild(row);
+            });
+        }
+
+        // Open a new shift
+        function openShift(shiftType) {
+            if (shiftData.currentShift) {
+                showError('Cannot open shift', 'There is already an active shift. Please close it first before opening a new one.');
+                return;
             }
             
-            // Enable close button only if cashier is open and both currencies tally
-            if (appState.cashierOpen && usdDifference === 0 && mvrDifference === 0) {
-                closeButton.disabled = false;
-            } else {
-                closeButton.disabled = true;
-            }
-            
-            // Enable open button only if cashier is closed
-            openButton.disabled = appState.cashierOpen;
-            
-            return {
-                usdDifference,
-                mvrDifference
+            const newShift = {
+                type: shiftType,
+                openedAt: new Date().toISOString(),
+                openedBy: currentUser.name,
+                status: 'active'
             };
+            
+            shiftData.currentShift = newShift;
+            saveShiftData();
+            updateUI();
+            
+            showSuccess('Shift Opened', `${shiftType === 'morning' ? 'Morning' : 'Evening'} shift has been successfully opened.`);
         }
 
-        // Show modal
-        function showModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
+        // Close the current shift
+        function closeShift() {
+            if (!shiftData.currentShift) {
+                showError('Cannot close shift', 'There is no active shift to close.');
+                return;
+            }
+            
+            const now = new Date();
+            const openedAt = new Date(shiftData.currentShift.openedAt);
+            const duration = calculateDuration(openedAt, now);
+            
+            // Add to history
+            shiftData.history.push({
+                ...shiftData.currentShift,
+                closedAt: now.toISOString(),
+                closedBy: currentUser.name,
+                duration: duration
+            });
+            
+            // Clear current shift
+            shiftData.currentShift = null;
+            saveShiftData();
+            updateUI();
+            
+            showSuccess('Shift Closed', `Shift has been successfully closed. Duration: ${duration}`);
         }
 
-        // Hide modal
-        function hideModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+        // Calculate duration between two dates
+        function calculateDuration(start, end) {
+            const diff = end - start;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        // Format time for display
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated() {
+            document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Show authentication modal
+        function showAuthModal(action, shiftType = null) {
+            document.getElementById('auth-title').textContent = "Authentication Required";
+            document.getElementById('auth-message').textContent = "Please enter your credentials to proceed";
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            
+            // Store the action and shift type for later use
+            document.getElementById('auth-submit-btn').dataset.action = action;
+            if (shiftType) {
+                document.getElementById('auth-submit-btn').dataset.shiftType = shiftType;
+            }
+            
+            showModal('auth-modal');
         }
 
         // Authenticate user
@@ -1011,175 +777,72 @@
             });
         }
 
-        // Update petty cash amounts
-        function updatePettyCash(usdAmount, mvrAmount) {
-            appState.usdPetty = parseFloat(usdAmount);
-            appState.mvrPetty = parseFloat(mvrAmount);
-            
-            // Update UI
-            document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
-            document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
-            
-            // Recalculate expected totals
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateDifferences(usdExpected, mvrExpected);
+        // Show modal
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
         }
 
-        // Open cashier
-        function openCashier() {
-            appState.cashierOpen = true;
-            document.getElementById('cashierStatus').textContent = "Cashier: Open";
-            document.getElementById('cashierStatus').className = 'tally-status tally-success';
-            document.getElementById('open-cashier-btn').disabled = true;
-            
-            // Reset counts
-            Object.values(usdInputs).forEach(input => {
-                if (input.id !== 'usd-coins') {
-                    input.value = '0';
-                } else {
-                    input.value = '0.00';
-                }
-            });
-            
-            Object.values(mvrInputs).forEach(input => {
-                input.value = '0';
-            });
-            
-            calculateUSDTotal();
-            calculateMVRTotal();
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateDifferences(usdExpected, mvrExpected);
+        // Hide modal
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
         }
 
-        // Close cashier
-        function closeCashier() {
-            appState.cashierOpen = false;
-            document.getElementById('cashierStatus').textContent = "Cashier: Closed";
-            document.getElementById('cashierStatus').className = 'tally-status tally-error';
-            document.getElementById('close-cashier-btn').disabled = true;
+        // Show success message
+        function showSuccess(title, message) {
+            document.getElementById('success-title').textContent = title;
+            document.getElementById('success-message').textContent = message;
+            showModal('success-modal');
+        }
+
+        // Show error message
+        function showError(title, message) {
+            document.getElementById('error-message').textContent = message;
+            showModal('error-modal');
         }
 
         // Event Listeners
-        document.getElementById('open-cashier-btn').addEventListener('click', () => {
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateUSDTotal();
-            calculateMVRTotal();
-            const { usdDifference, mvrDifference } = calculateDifferences(usdExpected, mvrExpected);
-            
-            if (usdDifference === 0 && mvrDifference === 0) {
-                appState.currentAction = 'open';
-                document.getElementById('auth-title').textContent = "Open Cashier";
-                document.getElementById('auth-message').textContent = "Enter your credentials to open the cashier";
-                showModal('auth-modal');
-            } else {
-                let errorMsg = "Cannot open cashier. Cash counts must tally first.";
-                if (usdDifference !== 0) {
-                    errorMsg += ` USD is ${usdDifference > 0 ? 'over' : 'under'} by $${Math.abs(usdDifference).toFixed(2)}.`;
-                }
-                if (mvrDifference !== 0) {
-                    errorMsg += ` MVR is ${mvrDifference > 0 ? 'over' : 'under'} by ${Math.abs(mvrDifference).toFixed(2)} MVR.`;
-                }
-                document.getElementById('error-message').textContent = errorMsg;
-                showModal('error-modal');
-            }
+        document.querySelectorAll('[data-action="open"]').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const shiftType = e.target.closest('.shift-option').dataset.shift;
+                showAuthModal('open', shiftType);
+            });
         });
 
-        document.getElementById('close-cashier-btn').addEventListener('click', () => {
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateUSDTotal();
-            calculateMVRTotal();
-            const { usdDifference, mvrDifference } = calculateDifferences(usdExpected, mvrExpected);
-            
-            if (usdDifference === 0 && mvrDifference === 0) {
-                appState.currentAction = 'close';
-                document.getElementById('auth-title').textContent = "Close Cashier";
-                document.getElementById('auth-message').textContent = "Enter your credentials to close the cashier";
-                showModal('auth-modal');
-            } else {
-                let errorMsg = "Cannot close cashier. Cash counts must tally first.";
-                if (usdDifference !== 0) {
-                    errorMsg += ` USD is ${usdDifference > 0 ? 'over' : 'under'} by $${Math.abs(usdDifference).toFixed(2)}.`;
-                }
-                if (mvrDifference !== 0) {
-                    errorMsg += ` MVR is ${mvrDifference > 0 ? 'over' : 'under'} by ${Math.abs(mvrDifference).toFixed(2)} MVR.`;
-                }
-                document.getElementById('error-message').textContent = errorMsg;
-                showModal('error-modal');
-            }
+        document.getElementById('closeShiftBtn').addEventListener('click', () => {
+            showAuthModal('close');
         });
 
-        document.getElementById('update-petty-btn').addEventListener('click', () => {
-            const usdAmount = document.getElementById('usd-petty-adjust').value;
-            const mvrAmount = document.getElementById('mvr-petty-adjust').value;
-            
-            appState.currentAction = 'update_petty';
-            document.getElementById('auth-title').textContent = "Update Petty Cash";
-            document.getElementById('auth-message').textContent = "Supervisor credentials required to update petty cash";
-            showModal('auth-modal');
-        });
-
-        document.getElementById('refresh-sales-btn').addEventListener('click', () => {
-            fetchSalesData();
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            loadShiftData();
+            updateUI();
+            showSuccess('Refreshed', 'Shift data has been refreshed.');
         });
 
         document.getElementById('auth-submit-btn').addEventListener('click', () => {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const action = document.getElementById('auth-submit-btn').dataset.action;
+            const shiftType = document.getElementById('auth-submit-btn').dataset.shiftType;
             
             authenticateUser(username, password)
                 .then(user => {
+                    currentUser = user;
                     hideModal('auth-modal');
                     
-                    // Clear auth fields
-                    document.getElementById('username').value = '';
-                    document.getElementById('password').value = '';
-                    
-                    if (appState.currentAction === 'open') {
-                        if (user.role === 'supervisor' || user.role === 'cashier') {
-                            openCashier();
-                            document.getElementById('success-title').textContent = "Cashier Opened";
-                            document.getElementById('success-message').textContent = "The cashier has been successfully opened.";
-                            showModal('success-modal');
-                        } else {
-                            document.getElementById('error-message').textContent = "You don't have permission to open the cashier.";
-                            showModal('error-modal');
-                        }
-                    } 
-                    else if (appState.currentAction === 'close') {
-                        if (user.role === 'supervisor' || user.role === 'cashier') {
-                            closeCashier();
-                            document.getElementById('success-title').textContent = "Cashier Closed";
-                            document.getElementById('success-message').textContent = "The cashier has been successfully closed.";
-                            showModal('success-modal');
-                        } else {
-                            document.getElementById('error-message').textContent = "You don't have permission to close the cashier.";
-                            showModal('error-modal');
-                        }
-                    }
-                    else if (appState.currentAction === 'update_petty') {
-                        if (user.role === 'supervisor') {
-                            const usdAmount = document.getElementById('usd-petty-adjust').value;
-                            const mvrAmount = document.getElementById('mvr-petty-adjust').value;
-                            updatePettyCash(usdAmount, mvrAmount);
-                            document.getElementById('success-title').textContent = "Petty Cash Updated";
-                            document.getElementById('success-message').textContent = "Petty cash amounts have been successfully updated.";
-                            showModal('success-modal');
-                        } else {
-                            document.getElementById('error-message').textContent = "Only supervisors can update petty cash amounts.";
-                            showModal('error-modal');
-                        }
+                    if (action === 'open') {
+                        openShift(shiftType);
+                    } else if (action === 'close') {
+                        closeShift();
                     }
                 })
                 .catch(error => {
-                    document.getElementById('error-message').textContent = error.message;
-                    showModal('error-modal');
+                    showError('Authentication Failed', error.message);
                 });
         });
 
         document.getElementById('auth-cancel-btn').addEventListener('click', () => {
             hideModal('auth-modal');
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
         });
 
         document.getElementById('success-ok-btn').addEventListener('click', () => {
@@ -1190,30 +853,8 @@
             hideModal('error-modal');
         });
 
-        // Add input event listeners to auto-calculate
-        Object.values(usdInputs).forEach(input => {
-            input.addEventListener('input', () => {
-                calculateUSDTotal();
-                const { usdExpected, mvrExpected } = fetchSalesData();
-                calculateDifferences(usdExpected, mvrExpected);
-            });
-        });
-
-        Object.values(mvrInputs).forEach(input => {
-            input.addEventListener('input', () => {
-                calculateMVRTotal();
-                const { usdExpected, mvrExpected } = fetchSalesData();
-                calculateDifferences(usdExpected, mvrExpected);
-            });
-        });
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            setShiftTiming();
-            fetchSalesData();
-            calculateUSDTotal();
-            calculateMVRTotal();
-        });
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
