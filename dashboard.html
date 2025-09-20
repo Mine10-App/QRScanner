@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Management Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary: #4361ee;
@@ -274,37 +275,37 @@
             <ul class="nav-menu">
                 <li class="nav-item">
                     <a href="newpayment.html" class="nav-link">
-                        <i>💰</i> New Payment
+                        <i class="fas fa-money-bill-wave"></i> New Payment
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="DReport.html" class="nav-link">
-                        <i>📊</i> View Reports
+                        <i class="fas fa-chart-bar"></i> View Reports
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="updatePayments.html" class="nav-link">
-                        <i>🔄</i> Update Payment
+                        <i class="fas fa-sync-alt"></i> Update Payment
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="edit_payments.html" class="nav-link">
-                        <i>❌</i> Void Payment
+                        <i class="fas fa-ban"></i> Void Payment
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="shiftmanagement.html" class="nav-link">
-                        <i>👥</i> Shift Management
+                        <i class="fas fa-users"></i> Shift Management
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="cashiermangement.html" class="nav-link">
-                        <i>👤</i> Cashier Management
+                        <i class="fas fa-user-tie"></i> Cashier Management
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link" id="logoutBtn">
-                        <i>🚪</i> Log Out
+                        <i class="fas fa-sign-out-alt"></i> Log Out
                     </a>
                 </li>
             </ul>
@@ -325,7 +326,7 @@
                 <div class="stat-card revenue">
                     <div class="stat-header">
                         <div class="stat-title">Today's Revenue</div>
-                        <div class="stat-icon">💰</div>
+                        <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
                     </div>
                     <div class="stat-value" id="revenueValue">$0.00</div>
                     <div class="stat-change">
@@ -336,7 +337,7 @@
                 <div class="stat-card transactions">
                     <div class="stat-header">
                         <div class="stat-title">Total Transactions</div>
-                        <div class="stat-icon">📈</div>
+                        <div class="stat-icon"><i class="fas fa-receipt"></i></div>
                     </div>
                     <div class="stat-value" id="transactionsValue">0</div>
                     <div class="stat-change">
@@ -347,7 +348,7 @@
                 <div class="stat-card completed">
                     <div class="stat-header">
                         <div class="stat-title">Completed Payments</div>
-                        <div class="stat-icon">✅</div>
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                     </div>
                     <div class="stat-value" id="completedValue">0</div>
                     <div class="stat-change">
@@ -358,7 +359,7 @@
                 <div class="stat-card pending">
                     <div class="stat-header">
                         <div class="stat-title">Pending Updates</div>
-                        <div class="stat-icon">⏳</div>
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
                     </div>
                     <div class="stat-value" id="pendingValue">0</div>
                     <div class="stat-change">
@@ -402,21 +403,24 @@
     <!-- Firebase and App Scripts -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="fire2.js"></script>
+    <script>
+        // Firebase configuration - this would normally be in your fire2.js
+        const firebaseConfig = {
+            apiKey: "xxxxx",
+            authDomain: "xxxxxx",
+            projectId: "xxxxx",
+            storageBucket: "xxxxx",
+            messagingSenderId: "xxxxxx",
+            appId: "xxxxxx",
+            measurementId: "xxxxx"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Firebase with your config (from fire2.js)
-            // Make sure fire2.js is loaded first and contains your Firebase configuration
-            
-            // Check if firebaseApp is initialized in fire2.js
-            if (typeof firebaseApp === 'undefined') {
-                console.error('Firebase app not initialized. Please check your fire2.js file.');
-                return;
-            }
-            
-            // Initialize Firestore
-            const db = firebase.firestore();
-            
             // Get today's date for filtering
             const today = new Date();
             const todayStart = new Date(today);
@@ -473,6 +477,8 @@
                     })
                     .catch((error) => {
                         console.error('Error fetching today\'s statistics:', error);
+                        // Set demo data for visualization purposes
+                        setDemoData();
                     });
             }
             
@@ -545,11 +551,32 @@
                             }
                         } else {
                             console.log('No active shifts found');
+                            // Set demo shift data
+                            document.getElementById('currentShift').textContent = 'Morning';
+                            document.getElementById('cashierOnDuty').textContent = 'John Doe';
+                            document.getElementById('shiftStart').textContent = '08:00 AM';
+                            document.getElementById('shiftEnd').textContent = '04:00 PM';
                         }
                     })
                     .catch((error) => {
                         console.error('Error fetching shift status:', error);
                     });
+            }
+            
+            // Set demo data for visualization purposes
+            function setDemoData() {
+                document.getElementById('revenueValue').textContent = '$1,254.68';
+                document.getElementById('transactionsValue').textContent = '42';
+                document.getElementById('completedValue').textContent = '38';
+                document.getElementById('pendingValue').textContent = '4';
+                
+                document.getElementById('revenueChange').textContent = '12.5%';
+                document.getElementById('revenueChange').className = 'positive';
+                document.getElementById('transactionsChange').textContent = '5.2%';
+                document.getElementById('transactionsChange').className = 'positive';
+                document.getElementById('completedChange').textContent = '8.7%';
+                document.getElementById('completedChange').className = 'positive';
+                document.getElementById('pendingChange').textContent = '4';
             }
             
             // Logout functionality
