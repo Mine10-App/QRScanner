@@ -1,999 +1,490 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Management System</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: #333;
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 25px;
-            text-align: center;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .current-shift-indicator {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #e74c3c;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 30px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        
-        .shift-card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            transition: transform 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .shift-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .shift-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-        }
-        
-        .shift-card.shift1::before {
-            background-color: #3498db;
-        }
-        
-        .shift-card.shift2::before {
-            background-color: #2ecc71;
-        }
-        
-        .shift-title {
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            color: #2c3e50;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        .shift-info {
-            margin: 15px 0;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 1.1rem;
-        }
-        
-        .open {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border-left: 5px solid #2e7d32;
-        }
-        
-        .closed {
-            background-color: #ffebee;
-            color: #c62828;
-            border-left: 5px solid #c62828;
-        }
-        
-        .shift-times {
-            background-color: #f1f8ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            text-align: left;
-        }
-        
-        .time-entry {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-        }
-        
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            margin: 10px 5px;
-        }
-        
-        .btn-primary {
-            background-color: #3498db;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background-color: #2980b9;
-            transform: scale(1.05);
-        }
-        
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background-color: #c0392b;
-            transform: scale(1.05);
-        }
-        
-        .btn-success {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background-color: #27ae60;
-            transform: scale(1.05);
-        }
-        
-        .btn:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .shift-history {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-        }
-        
-        .history-title {
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            color: #2c3e50;
-            text-align: center;
-        }
-        
-        .history-list {
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 10px;
-        }
-        
-        .history-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .history-item:last-child {
-            border-bottom: none;
-        }
-        
-        .timestamp {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-            min-width: 180px;
-            text-align: right;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 450px;
-            max-width: 90%;
-            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        .modal-title {
-            margin-bottom: 20px;
-            text-align: center;
-            color: #2c3e50;
-            font-size: 1.5rem;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        
-        .form-group input:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        
-        .firebase-status {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-        }
-        
-        .connected {
-            color: #2ecc71;
-        }
-        
-        .disconnected {
-            color: #e74c3c;
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 768px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            
-            .history-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .timestamp {
-                margin-top: 5px;
-                align-self: flex-end;
-            }
-            
-            .current-shift-indicator {
-                position: relative;
-                top: 0;
-                right: 0;
-                margin-top: 15px;
-                justify-content: center;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Duty Change Request</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  :root {
+    --primary: #4361ee;
+    --secondary: #3a0ca3;
+    --success: #4cc9f0;
+    --danger: #f72585;
+    --warning: #fca311;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --gray: #6c757d;
+    --border: #dee2e6;
+    --card-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  }
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--dark);
+  }
+
+  .app-container {
+    width: 100%;
+    max-width: 800px;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+  }
+
+  .app-header {
+    background: var(--primary);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .app-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .app-title i {
+    font-size: 1.8rem;
+  }
+
+  .app-title h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .top-buttons {
+    display: flex;
+    gap: 10px;
+  }
+
+  .top-buttons button {
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .top-buttons button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .app-body {
+    padding: 25px;
+  }
+
+  .form-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+  }
+
+  .form-section {
+    background: var(--light);
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary);
+  }
+
+  .form-section h3 {
+    margin-bottom: 18px;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.2rem;
+  }
+
+  .form-row {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  input, select {
+    padding: 12px 14px;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 100%;
+    transition: all 0.3s;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+  }
+
+  input[readonly] {
+    background-color: #f1f3f9;
+    color: var(--gray);
+  }
+
+  .submit-area {
+    grid-column: span 2;
+    text-align: center;
+    margin-top: 15px;
+  }
+
+  button[type="submit"] {
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+  }
+
+  button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+  }
+
+  #confirmation {
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #d4edda;
+    color: #155724;
+    text-align: center;
+    font-weight: 600;
+    display: none;
+  }
+
+  .info-text {
+    font-size: 0.85rem;
+    color: var(--gray);
+    margin-top: 5px;
+    font-style: italic;
+  }
+
+  /* Select2 customization */
+  .select2-container--default .select2-selection--single {
+    height: 46px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+  }
+
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 44px;
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .form-container {
+      grid-template-columns: 1fr;
+    }
+    
+    .submit-area {
+      grid-column: span 1;
+    }
+    
+    .app-header {
+      flex-direction: column;
+      gap: 15px;
+      text-align: center;
+    }
+    
+    .top-buttons {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    body {
+      padding: 10px;
+    }
+    
+    .app-body {
+      padding: 15px;
+    }
+    
+    .app-title h1 {
+      font-size: 1.4rem;
+    }
+    
+    .form-section {
+      padding: 15px;
+    }
+    
+    button[type="submit"] {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-clock"></i> Shift Management System</h1>
-            <p id="current-date">Current Date: Loading...</p>
-            <div id="current-shift-indicator" class="current-shift-indicator" style="display: none;">
-                <i class="fas fa-exclamation-circle"></i>
-                <span id="current-shift-text">No Active Shift</span>
-            </div>
-        </header>
-        
-        <div class="dashboard">
-            <div class="shift-card shift1">
-                <h2 class="shift-title"><i class="fas fa-sun"></i> Shift 1 (Morning)</h2>
-                <div id="shift1-status" class="shift-info">Loading status...</div>
-                <div id="shift1-times" class="shift-times">
-                    <div class="time-entry">
-                        <span>Opened at:</span>
-                        <span id="shift1-open-time">--:--:--</span>
-                    </div>
-                    <div class="time-entry">
-                        <span>Closed at:</span>
-                        <span id="shift1-close-time">--:--:--</span>
-                    </div>
-                    <div class="time-entry">
-                        <span>Today's Status:</span>
-                        <span id="shift1-today">Not opened today</span>
-                    </div>
-                </div>
-                <button id="shift1-open-btn" class="btn btn-success">Open Shift</button>
-                <button id="shift1-close-btn" class="btn btn-danger">Close Shift</button>
-            </div>
-            
-            <div class="shift-card shift2">
-                <h2 class="shift-title"><i class="fas fa-moon"></i> Shift 2 (Evening)</h2>
-                <div id="shift2-status" class="shift-info">Loading status...</div>
-                <div id="shift2-times" class="shift-times">
-                    <div class="time-entry">
-                        <span>Opened at:</span>
-                        <span id="shift2-open-time">--:--:--</span>
-                    </div>
-                    <div class="time-entry">
-                        <span>Closed at:</span>
-                        <span id="shift2-close-time">--:--:--</span>
-                    </div>
-                    <div class="time-entry">
-                        <span>Today's Status:</span>
-                        <span id="shift2-today">Not opened today</span>
-                    </div>
-                </div>
-                <button id="shift2-open-btn" class="btn btn-success">Open Shift</button>
-                <button id="shift2-close-btn" class="btn btn-danger">Close Shift</button>
-            </div>
-        </div>
-        
-        <div class="firebase-status">
-            <i id="firebase-status-icon" class="fas fa-plug"></i>
-            <span id="firebase-status-text">Connecting to Firebase...</span>
-        </div>
-        
-        <div class="shift-history">
-            <h2 class="history-title">Shift History</h2>
-            <div id="history-list" class="history-list">
-                <!-- History items will be added here dynamically -->
-            </div>
-        </div>
+<div class="app-container">
+  <div class="app-header">
+    <div class="app-title">
+      <i class="fas fa-exchange-alt"></i>
+      <h1>Duty Change Request</h1>
     </div>
     
-    <!-- Modal for password entry -->
-    <div id="password-modal" class="modal">
-        <div class="modal-content">
-            <h2 class="modal-title">Enter Supervisor Password</h2>
-            <div class="form-group">
-                <label for="password-input">Password</label>
-                <input type="password" id="password-input" placeholder="Enter supervisor password">
-            </div>
-            <div class="modal-buttons">
-                <button id="cancel-btn" class="btn btn-danger">Cancel</button>
-                <button id="confirm-btn" class="btn btn-success">Confirm</button>
-            </div>
-        </div>
+    <div class="top-buttons">
+      <button onclick="goToDashboard()"><i class="fas fa-home"></i> Home</button>
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </div>
+  </div>
 
-    <!-- Firebase App -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    
-    <script>
-        // Firebase configuration - replace with your actual config
-        const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-project-id.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project-id.appspot.com",
-            messagingSenderId: "your-sender-id",
-            appId: "your-app-id"
-        };
+  <div class="app-body">
+    <form id="dutyChangeForm">
+      <div class="form-container">
+        <div class="form-section">
+          <h3><i class="fas fa-user-clock"></i> Your Details</h3>
+          
+          <div class="form-row">
+            <label for="requestedStaff"><i class="fas fa-user"></i> Requested Staff:</label>
+            <input type="text" id="requestedStaff" readonly>
+          </div>
+
+          <div class="form-row">
+            <label for="RCNo1"><i class="fas fa-id-card"></i> RCNo:</label>
+            <input type="text" id="RCNo1" readonly>
+          </div>
+
+          <div class="form-row">
+            <label for="date"><i class="fas fa-calendar-day"></i> Date:</label>
+            <input type="date" id="date" required>
+          </div>
+
+          <div class="form-row">
+            <label for="dutyTime1"><i class="fas fa-clock"></i> Duty Time:</label>
+            <input type="time" id="dutyTime1" required>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3><i class="fas fa-user-friends"></i> Recipient Details</h3>
+          
+          <div class="form-row">
+            <label for="recipient"><i class="fas fa-users"></i> Recipient Staff:</label>
+            <select id="recipient" required>
+              <option value="">-- Select Staff --</option>
+            </select>
+            <p class="info-text">Only staff from your work location are shown</p>
+          </div>
+
+          <div class="form-row">
+            <label for="RcNo2"><i class="fas fa-id-card"></i> RCNo:</label>
+            <input type="text" id="RcNo2" readonly>
+          </div>
+
+          <div class="form-row">
+            <label for="dutyTime2"><i class="fas fa-clock"></i> Duty Time:</label>
+            <input type="time" id="dutyTime2" required>
+          </div>
+        </div>
         
-        // Initialize Firebase
-        let db;
-        if (typeof firebaseConfig !== 'undefined') {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            
-            // Update Firebase status
-            const updateFirebaseStatus = (connected) => {
-                const statusIcon = document.getElementById('firebase-status-icon');
-                const statusText = document.getElementById('firebase-status-text');
-                
-                if (connected) {
-                    statusIcon.className = 'fas fa-plug connected';
-                    statusText.innerHTML = 'Connected to <span class="connected">Firebase</span>';
-                } else {
-                    statusIcon.className = 'fas fa-plug disconnected';
-                    statusText.innerHTML = 'Disconnected from <span class="disconnected">Firebase</span>';
-                }
-            };
-            
-            // Monitor connection state
-            firebase.firestore().enableNetwork()
-                .then(() => {
-                    updateFirebaseStatus(true);
-                })
-                .catch((error) => {
-                    updateFirebaseStatus(false);
-                    console.error("Firebase connection error:", error);
-                });
-        } else {
-            console.error("Firebase configuration not found.");
-            document.getElementById('firebase-status-text').innerHTML = 
-                '<span class="disconnected">Firebase config not found</span>';
-        }
+        <div class="submit-area">
+          <button type="submit"><i class="fas fa-paper-plane"></i> Send Request</button>
+        </div>
+      </div>
+    </form>
 
-        // System state
-        const state = {
-            shifts: {
-                shift1: { 
-                    id: 1, 
-                    name: "Shift 1 (Morning)", 
-                    open: false, 
-                    openTime: null, 
-                    closeTime: null,
-                    openedToday: false,
-                    closedToday: false
-                },
-                shift2: { 
-                    id: 2, 
-                    name: "Shift 2 (Evening)", 
-                    open: false, 
-                    openTime: null, 
-                    closeTime: null,
-                    openedToday: false,
-                    closedToday: false
-                }
-            },
-            adminPassword: "super123", // Supervisor password
-            history: [],
-            currentShift: null
-        };
+    <div id="confirmation"></div>
+  </div>
+</div>
 
-        // DOM Elements
-        const elements = {
-            shift1Status: document.getElementById('shift1-status'),
-            shift2Status: document.getElementById('shift2-status'),
-            shift1OpenTime: document.getElementById('shift1-open-time'),
-            shift1CloseTime: document.getElementById('shift1-close-time'),
-            shift2OpenTime: document.getElementById('shift2-open-time'),
-            shift2CloseTime: document.getElementById('shift2-close-time'),
-            shift1Today: document.getElementById('shift1-today'),
-            shift2Today: document.getElementById('shift2-today'),
-            shift1OpenBtn: document.getElementById('shift1-open-btn'),
-            shift1CloseBtn: document.getElementById('shift1-close-btn'),
-            shift2OpenBtn: document.getElementById('shift2-open-btn'),
-            shift2CloseBtn: document.getElementById('shift2-close-btn'),
-            historyList: document.getElementById('history-list'),
-            currentDate: document.getElementById('current-date'),
-            currentShiftIndicator: document.getElementById('current-shift-indicator'),
-            currentShiftText: document.getElementById('current-shift-text'),
-            passwordModal: document.getElementById('password-modal'),
-            passwordInput: document.getElementById('password-input'),
-            cancelBtn: document.getElementById('cancel-btn'),
-            confirmBtn: document.getElementById('confirm-btn')
-        };
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="sca.js"></script> 
+<script src="aqj.js"></script> 
 
-        // Initialize the application
-        function init() {
-            // Try to load from Firebase first, then fallback to localStorage
-            if (typeof db !== 'undefined') {
-                loadFromFirebase();
-            } else {
-                loadFromLocalStorage();
-            }
-            
-            updateUI();
-            setupEventListeners();
-            updateCurrentDate();
-            checkDayChange();
-            
-            // Set up real-time listener for shift changes
-            setupFirebaseListener();
-        }
+<!-- Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-        // Set up Firebase real-time listener
-        function setupFirebaseListener() {
-            if (typeof db === 'undefined') return;
-            
-            db.collection("shiftSystem").doc("state")
-                .onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        updateStateFromFirebase(data);
-                        updateUI();
-                    }
-                });
-        }
+<script>
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-        // Update state from Firebase data
-        function updateStateFromFirebase(data) {
-            // Restore state with date objects
-            state.shifts.shift1.open = data.shifts.shift1.open;
-            state.shifts.shift1.openTime = data.shifts.shift1.openTime ? data.shifts.shift1.openTime.toDate() : null;
-            state.shifts.shift1.closeTime = data.shifts.shift1.closeTime ? data.shifts.shift1.closeTime.toDate() : null;
-            state.shifts.shift1.openedToday = data.shifts.shift1.openedToday || false;
-            state.shifts.shift1.closedToday = data.shifts.shift1.closedToday || false;
-            
-            state.shifts.shift2.open = data.shifts.shift2.open;
-            state.shifts.shift2.openTime = data.shifts.shift2.openTime ? data.shifts.shift2.openTime.toDate() : null;
-            state.shifts.shift2.closeTime = data.shifts.shift2.closeTime ? data.shifts.shift2.closeTime.toDate() : null;
-            state.shifts.shift2.openedToday = data.shifts.shift2.openedToday || false;
-            state.shifts.shift2.closedToday = data.shifts.shift2.closedToday || false;
-            
-            state.currentShift = data.currentShift || null;
-            
-            // Restore history with date objects
-            state.history = data.history.map(item => ({
-                message: item.message,
-                timestamp: item.timestamp.toDate()
-            })) || [];
-            
-            updateHistoryUI();
-        }
+  const currentUser = localStorage.getItem("currentUser");
+  if (!currentUser) {
+    alert("Please login first!");
+    window.location.href = "index.html";
+  } else {
+    document.getElementById("requestedStaff").value = currentUser;
+    const currentUserObj = users.find(u => u.name === currentUser);
+    if (currentUserObj) {
+      document.getElementById("RCNo1").value = currentUserObj.rcNo;
+    }
+  }
 
-        // Update current date display
-        function updateCurrentDate() {
-            const now = new Date();
-            elements.currentDate.textContent = `Current Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-            
-            // Update every minute
-            setTimeout(updateCurrentDate, 60000);
-        }
+  function goToDashboard(){
+    window.location.href = "dashboard.html";
+  }
 
-        // Check if day has changed since last activity
-        function checkDayChange() {
-            const today = new Date().toLocaleDateString();
-            const lastActivityDate = localStorage.getItem('lastActivityDate');
-            
-            if (lastActivityDate !== today) {
-                // Day has changed, reset today's flags
-                state.shifts.shift1.openedToday = false;
-                state.shifts.shift1.closedToday = false;
-                state.shifts.shift2.openedToday = false;
-                state.shifts.shift2.closedToday = false;
-                
-                // Save the new date
-                localStorage.setItem('lastActivityDate', today);
-                
-                // Update UI
-                updateUI();
-                
-                // Save to Firebase if available
-                if (typeof db !== 'undefined') {
-                    saveToFirebase();
-                } else {
-                    saveToLocalStorage();
-                }
-            }
-        }
+  function logout(){
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+  }
 
-        // Set up event listeners
-        function setupEventListeners() {
-            elements.shift1OpenBtn.addEventListener('click', () => handleOpenShift('shift1'));
-            elements.shift1CloseBtn.addEventListener('click', () => handleCloseShift('shift1'));
-            elements.shift2OpenBtn.addEventListener('click', () => handleOpenShift('shift2'));
-            elements.shift2CloseBtn.addEventListener('click', () => handleCloseShift('shift2'));
-            elements.cancelBtn.addEventListener('click', closeModal);
-            elements.confirmBtn.addEventListener('click', handlePasswordConfirm);
-        }
+  // Populate recipient dropdown based on same WP
+  const recipientSelect = document.getElementById("recipient");
+  const currentUserObj = users.find(u => u.name === currentUser);
+  if(currentUserObj){
+    const currentWP = currentUserObj.WP;
 
-        // Handle open shift button clicks
-        function handleOpenShift(shiftId) {
-            const shift = state.shifts[shiftId];
-            
-            // Check if shift is already open
-            if (shift.open) {
-                alert(`Shift ${shift.id} is already open!`);
-                return;
-            }
-            
-            // Check if trying to open shift 2 while shift 1 is open
-            if (shiftId === 'shift2' && state.shifts.shift1.open) {
-                alert("Cannot open Shift 2 while Shift 1 is still open!");
-                return;
-            }
-            
-            // Check if trying to open shift 2 before shift 1 has been closed today
-            if (shiftId === 'shift2' && !state.shifts.shift1.closedToday) {
-                alert("Shift 1 must be closed before opening Shift 2!");
-                return;
-            }
-            
-            // Check if shift was already opened today
-            if (shift.openedToday) {
-                showPasswordModal(shiftId, 'open');
-                return;
-            }
-            
-            openShift(shiftId);
-        }
+    users.forEach(user => {
+      if(user.name !== currentUser && user.WP === currentWP){
+        const option = document.createElement("option");
+        option.value = user.name;
+        option.textContent = user.name;
+        option.dataset.rcno = user.rcNo;
+        recipientSelect.appendChild(option);
+      }
+    });
+  }
 
-        // Handle close shift button clicks
-        function handleCloseShift(shiftId) {
-            const shift = state.shifts[shiftId];
-            
-            // Check if shift is already closed
-            if (!shift.open) {
-                alert(`Shift ${shift.id} is already closed!`);
-                return;
-            }
-            
-            // Check if shift was already closed today
-            if (shift.closedToday) {
-                showPasswordModal(shiftId, 'close');
-                return;
-            }
-            
-            closeShift(shiftId);
-        }
+  // Activate Select2 and auto-fill RcNo2
+  $(document).ready(function() {
+    $('#recipient').select2({
+      placeholder: "-- Select Staff --",
+      width: "100%"
+    });
 
-        // Open a shift
-        function openShift(shiftId) {
-            const shift = state.shifts[shiftId];
-            shift.open = true;
-            shift.openTime = new Date();
-            shift.openedToday = true;
-            
-            // Set as current shift
-            state.currentShift = shiftId;
-            updateCurrentShiftIndicator();
-            
-            addToHistory(`Shift ${shift.id} opened at ${formatTime(shift.openTime)}`);
-            
-            // Save to Firebase if available
-            if (typeof db !== 'undefined') {
-                saveToFirebase();
-            } else {
-                saveToLocalStorage();
-            }
-            
-            updateUI();
-        }
+    $('#recipient').on('change', function () {
+      const selectedOption = this.options[this.selectedIndex];
+      document.getElementById("RcNo2").value = selectedOption ? selectedOption.dataset.rcno : "";
+    });
+  });
 
-        // Close a shift
-        function closeShift(shiftId) {
-            const shift = state.shifts[shiftId];
-            shift.open = false;
-            shift.closeTime = new Date();
-            shift.closedToday = true;
-            
-            // Clear current shift if this was the active one
-            if (state.currentShift === shiftId) {
-                state.currentShift = null;
-                updateCurrentShiftIndicator();
-            }
-            
-            addToHistory(`Shift ${shift.id} closed at ${formatTime(shift.closeTime)}`);
-            
-            // Save to Firebase if available
-            if (typeof db !== 'undefined') {
-                saveToFirebase();
-            } else {
-                saveToLocalStorage();
-            }
-            
-            updateUI();
-        }
+  // Form submit
+  document.getElementById("dutyChangeForm").addEventListener("submit", async function(e){
+    e.preventDefault();
 
-        // Update current shift indicator
-        function updateCurrentShiftIndicator() {
-            if (state.currentShift) {
-                const shift = state.shifts[state.currentShift];
-                elements.currentShiftText.textContent = `${shift.name} is Active`;
-                elements.currentShiftIndicator.style.display = 'flex';
-                
-                // Set color based on shift
-                if (state.currentShift === 'shift1') {
-                    elements.currentShiftIndicator.style.backgroundColor = '#3498db';
-                } else {
-                    elements.currentShiftIndicator.style.backgroundColor = '#2ecc71';
-                }
-            } else {
-                elements.currentShiftIndicator.style.display = 'none';
-            }
-        }
+    const requestedStaff = document.getElementById("requestedStaff").value;
+    const RCNo1 = document.getElementById("RCNo1").value;
+    const dutyTime1 = document.getElementById("dutyTime1").value;
+    const recipient = document.getElementById("recipient").value;
+    const dateInput = document.getElementById("date").value;
+    const RCNo2 = document.getElementById("RcNo2").value;
+    const dutyTime2 = document.getElementById("dutyTime2").value;
 
-        // Show password modal for reopening
-        function showPasswordModal(shiftId, action) {
-            // Show password modal
-            elements.passwordModal.style.display = 'flex';
-            currentAction = { shiftId, action };
-        }
+    if(!recipient){ alert("Please select a recipient staff."); return; }
+    if(!dateInput){ alert("Please select a date."); return; }
+    if(requestedStaff === recipient){ alert("You cannot send request to yourself."); return; }
 
-        // Handle password confirmation
-        function handlePasswordConfirm() {
-            if (currentAction && elements.passwordInput.value === state.adminPassword) {
-                if (currentAction.action === 'open') {
-                    openShift(currentAction.shiftId);
-                } else if (currentAction.action === 'close') {
-                    closeShift(currentAction.shiftId);
-                }
-                closeModal();
-            } else {
-                alert("Incorrect password. Please try again.");
-                elements.passwordInput.value = '';
-            }
-        }
+    const reqDate = new Date(dateInput);
+    const reqTimestamp = firebase.firestore.Timestamp.fromDate(reqDate);
 
-        // Close modal
-        function closeModal() {
-            elements.passwordModal.style.display = 'none';
-            elements.passwordInput.value = '';
-            currentAction = null;
-        }
+    const year = reqDate.getFullYear();
+    const month = reqDate.getMonth();
+    let startDate, endDate;
+    if (reqDate.getDate() <= 15) {
+      startDate = new Date(year, month, 1);
+      endDate   = new Date(year, month, 15, 23, 59, 59);
+    } else {
+      startDate = new Date(year, month, 16);
+      endDate   = new Date(year, month + 1, 0, 23, 59, 59);
+    }
 
-        // Add entry to history
-        function addToHistory(message) {
-            const now = new Date();
-            state.history.unshift({
-                message,
-                timestamp: now
-            });
-            
-            // Keep only the last 50 history items
-            if (state.history.length > 50) {
-                state.history.pop();
-            }
-            
-            updateHistoryUI();
-        }
+    const startTimestamp = firebase.firestore.Timestamp.fromDate(startDate);
+    const endTimestamp   = firebase.firestore.Timestamp.fromDate(endDate);
 
-        // Format time for display
-        function formatTime(date) {
-            if (!date) return '--:--:--';
-            return date.toLocaleTimeString();
-        }
+    try {
+      const sameDateSnap = await db.collection("dutyRequests")
+        .where("requestedStaff", "==", requestedStaff)
+        .where("date", "==", reqTimestamp)
+        .get();
 
-        // Format date for display
-        function formatDate(date) {
-            if (!date) return '--/--/----';
-            return date.toLocaleDateString();
-        }
+      if (!sameDateSnap.empty) {
+        alert("⚠️ You already made a request for this date.");
+        return;
+      }
 
-        // Update the UI based on current state
-        function updateUI() {
-            // Update shift 1
-            if (state.shifts.shift1.open) {
-                elements.shift1Status.textContent = 'OPEN';
-                elements.shift1Status.className = 'shift-info open';
-                elements.shift1OpenBtn.disabled = true;
-                elements.shift1CloseBtn.disabled = false; // Enable close button when shift is open
-            } else {
-                elements.shift1Status.textContent = 'CLOSED';
-                elements.shift1Status.className = 'shift-info closed';
-                elements.shift1OpenBtn.disabled = false;
-                elements.shift1CloseBtn.disabled = true;
-            }
-            
-            // Update shift 2
-            if (state.shifts.shift2.open) {
-                elements.shift2Status.textContent = 'OPEN';
-                elements.shift2Status.className = 'shift-info open';
-                elements.shift2OpenBtn.disabled = true;
-                elements.shift2CloseBtn.disabled = false; // Enable close button when shift is open
-            } else {
-                elements.shift2Status.textContent = 'CLOSED';
-                elements.shift2Status.className = 'shift-info closed';
-                elements.shift2OpenBtn.disabled = false;
-                elements.shift2CloseBtn.disabled = true;
-            }
-            
-            // Update times
-            elements.shift1OpenTime.textContent = formatTime(state.shifts.shift1.openTime);
-            elements.shift1CloseTime.textContent = formatTime(state.shifts.shift1.closeTime);
-            elements.shift2OpenTime.textContent = formatTime(state.shifts.shift2.openTime);
-            elements.shift2CloseTime.textContent = formatTime(state.shifts.shift2.closeTime);
-            
-            // Update today's status
-            elements.shift1Today.textContent = state.shifts.shift1.openedToday ? 
-                (state.shifts.shift1.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
-                
-            elements.shift2Today.textContent = state.shifts.shift2.openedToday ? 
-                (state.shifts.shift2.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
-            
-            // Enable/disable buttons based on rules
-            if (state.shifts.shift1.open) {
-                elements.shift2OpenBtn.disabled = true;
-            }
-            
-            // Disable shift 2 open button if shift 1 hasn't been closed today
-            if (!state.shifts.shift1.closedToday) {
-                elements.shift2OpenBtn.disabled = true;
-            }
-            
-            // Update current shift indicator
-            updateCurrentShiftIndicator();
-        }
+      const snapshot = await db.collection("dutyRequests")
+        .where("requestedStaff", "==", requestedStaff)
+        .where("date", ">=", startTimestamp)
+        .where("date", "<=", endTimestamp)
+        .get();
 
-        // Update history UI
-        function updateHistoryUI() {
-            elements.historyList.innerHTML = '';
-            
-            state.history.forEach(item => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                historyItem.innerHTML = `
-                    <div>${item.message}</div>
-                    <div class="timestamp">${item.timestamp.toLocaleString()}</div>
-                `;
-                elements.historyList.appendChild(historyItem);
-            });
-        }
+      if (snapshot.size >= 2) {
+        alert("⚠️ You can only make 2 requests per half-month (1–15 or 16–end).");
+        return;
+      }
 
-        // Save state to localStorage
-        function saveToLocalStorage() {
-            localStorage.setItem('shiftSystemState', JSON.stringify(state));
-        }
+      await db.collection("dutyRequests").add({
+        requestedStaff, RCNo1, dutyTime1,
+        recipient, RCNo2, dutyTime2,
+        date: reqTimestamp,
+        status: "pending",
+        applied: false,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
 
-        // Load state from localStorage
-        function loadFromLocalStorage() {
-            const savedState = localStorage.getItem('shiftSystemState');
-            
-            if (savedState) {
-                const parsedState = JSON.parse(savedState);
-                
-                // Restore state with date objects
-                state.shifts.shift1.open = parsedState.shifts.shift1.open;
-                state.shifts.shift1.openTime = parsedState.shifts.shift1.openTime ? new Date(parsedState.shifts.shift1.openTime) : null;
-                state.shifts.shift1.closeTime = parsedState.shifts.shift1.closeTime ? new Date(parsedState.shifts.shift1.closeTime) : null;
-                state.shifts.shift1.openedToday = parsedState.shifts.shift1.openedToday || false;
-                state.shifts.shift1.closedToday = parsedState.shifts.shift1.closedToday || false;
-                
-                state.shifts.shift2.open = parsedState.shifts.shift2.open;
-                state.shifts.shift2.openTime = parsedState.shifts.shift2.openTime ? new Date(parsedState.shifts.shift2.openTime) : null;
-                state.shifts.shift2.closeTime = parsedState.shifts.shift2.closeTime ? new Date(parsedState.shifts.shift2.closeTime) : null;
-                state.shifts.shift2.openedToday = parsedState.shifts.shift2.openedToday || false;
-                state.shifts.shift2.closedToday = parsedState.shifts.shift2.closedToday || false;
-                
-                state.currentShift = parsedState.currentShift || null;
-                
-                // Restore history with date objects
-                state.history = parsedState.history.map(item => ({
-                    message: item.message,
-                    timestamp: new Date(item.timestamp)
-                })) || [];
-            } else {
-                // Add initial history entry if no saved state
-                addToHistory("System initialized");
-            }
-            
-            updateHistoryUI();
-            updateUI(); // Make sure UI reflects the loaded state
-        }
-
-        // Save state to Firebase
-        function saveToFirebase() {
-            if (typeof db === 'undefined') return;
-            
-            // Convert Date objects to Firebase Timestamps
-            const firebaseState = {
-                shifts: {
-                    shift1: {
-                        ...state.shifts.shift1,
-                        openTime: state.shifts.shift1.openTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift1.openTime) : null,
-                        closeTime: state.shifts.shift1.closeTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift1.closeTime) : null
-                    },
-                    shift2: {
-                        ...state.shifts.shift2,
-                        openTime: state.shifts.shift2.openTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift2.openTime) : null,
-                        closeTime: state.shifts.shift2.closeTime ? firebase.firestore.Timestamp.fromDate(state.shifts.shift2.closeTime) : null
-                    }
-                },
-                adminPassword: state.adminPassword,
-                history: state.history.map(item => ({
-                    message: item.message,
-                    timestamp: firebase.firestore.Timestamp.fromDate(item.timestamp)
-                })),
-                currentShift: state.currentShift
-            };
-            
-            db.collection("shiftSystem").doc("state").set(firebaseState)
-                .then(() => {
-                    console.log("State successfully saved to Firebase");
-                })
-                .catch((error) => {
-                    console.error("Error saving state to Firebase: ", error);
-                    // Fallback to localStorage
-                    saveToLocalStorage();
-                });
-        }
-
-        // Load state from Firebase
-        function loadFromFirebase() {
-            if (typeof db === 'undefined') {
-                loadFromLocalStorage();
-                return;
-            }
-            
-            // Show loading status
-            elements.shift1Status.textContent = "Loading from Firebase...";
-            elements.shift2Status.textContent = "Loading from Firebase...";
-            
-            db.collection("shiftSystem").doc("state").get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        updateStateFromFirebase(data);
-                        updateUI(); // Make sure UI reflects the loaded state
-                        console.log("State successfully loaded from Firebase");
-                    } else {
-                        console.log("No Firebase document found, loading from localStorage");
-                        loadFromLocalStorage();
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error loading state from Firebase: ", error);
-                    // Fallback to localStorage
-                    loadFromLocalStorage();
-                });
-        }
-
-        // Global variable for current action (used in password modal)
-        let currentAction = null;
-
-        // Initialize the application when the page loads
-        window.addEventListener('load', init);
-    </script>
+      const confirmation = document.getElementById("confirmation");
+      confirmation.innerText = `✅ Request successfully sent to ${recipient}.`;
+      confirmation.style.display = "block";
+      
+      // Hide confirmation after 5 seconds
+      setTimeout(() => {
+        confirmation.style.display = "none";
+      }, 5000);
+      
+      document.getElementById("dutyChangeForm").reset();
+      document.getElementById("requestedStaff").value = currentUser;
+      const currentUserObj = users.find(u => u.name === currentUser);
+      if (currentUserObj) {
+        document.getElementById("RCNo1").value = currentUserObj.rcNo;
+      }
+      $("#recipient").val(null).trigger("change");
+      document.getElementById("RcNo2").value = "";
+    } catch (error) {
+      console.error("Error sending request:", error);
+      alert("Error sending request. Check console.");
+    }
+  });
+</script>
 </body>
 </html>
