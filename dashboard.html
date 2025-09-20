@@ -142,6 +142,10 @@
             background: var(--warning);
         }
 
+        .shift-inactive {
+            background: var(--gray);
+        }
+
         .shift-details h3 {
             margin-bottom: 5px;
             color: var(--dark);
@@ -276,6 +280,26 @@
             background: #3aafd3;
         }
 
+        .firebase-status {
+            background: white;
+            padding: 15px;
+            border-radius: var(--radius);
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        .connected {
+            color: #2ecc71;
+        }
+
+        .disconnected {
+            color: #e74c3c;
+        }
+
         @media (max-width: 768px) {
             .dashboard {
                 grid-template-columns: 1fr;
@@ -366,13 +390,13 @@
                     </h2>
                 </div>
                 
-                <div class="shift-info">
-                    <div class="shift-icon shift-morning">
-                        <i class="fas fa-sun"></i>
+                <div id="shiftInfoContainer" class="shift-info">
+                    <div class="shift-icon shift-inactive">
+                        <i class="fas fa-question"></i>
                     </div>
                     <div class="shift-details">
-                        <h3>Morning Shift (Active)</h3>
-                        <p>Started at 08:00 AM</p>
+                        <h3>Loading shift status...</h3>
+                        <p>Connecting to Firebase</p>
                     </div>
                 </div>
                 
@@ -389,9 +413,32 @@
                 </div>
             </div>
         </div>
+
+        <div class="firebase-status">
+            <i id="firebase-status-icon" class="fas fa-plug disconnected"></i>
+            <span id="firebase-status-text">Connecting to Firebase...</span>
+        </div>
     </div>
 
     <script>
+        // Initialize Firebase
+        let db;
+        let shiftListener = null;
+        
+        // Function to update Firebase status display
+        function updateFirebaseStatus(connected) {
+            const statusIcon = document.getElementById('firebase-status-icon');
+            const statusText = document.getElementById('firebase-status-text');
+            
+            if (connected) {
+                statusIcon.className = 'fas fa-plug connected';
+                statusText.innerHTML = 'Connected to <span class="connected">Firebase</span>';
+            } else {
+                statusIcon.className = 'fas fa-plug disconnected';
+                statusText.innerHTML = 'Disconnected from <span class="disconnected">Firebase</span>';
+            }
+        }
+
         // Function to format time
         function formatTime(date) {
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -412,6 +459,56 @@
             } else {
                 return `${diffHrs} hours ago`;
             }
+        }
+
+        // Function to update shift information in the UI
+        function updateShiftInfo(shiftData) {
+            const shiftInfoContainer = document.getElementById('shiftInfoContainer');
+            
+            if (!shiftData) {
+                shiftInfoContainer.innerHTML = `
+                    <div class="shift-icon shift-inactive">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="shift-details">
+                        <h3>No Shift Data</h3>
+                        <p>Unable to load shift information</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const shifts = shiftData.shifts;
+            let activeShift = null;
+            let shiftName = "No Active Shift";
+            let shiftStatus = "All shifts are closed";
+            let shiftIcon = "shift-inactive";
+            let iconClass = "fas fa-moon";
+            
+            // Check which shift is active
+            if (shifts.shift1.open) {
+                activeShift = shifts.shift1;
+                shiftName = "Morning Shift (Active)";
+                shiftStatus = `Started at ${formatTime(activeShift.openTime)}`;
+                shiftIcon = "shift-morning";
+                iconClass = "fas fa-sun";
+            } else if (shifts.shift2.open) {
+                activeShift = shifts.shift2;
+                shiftName = "Evening Shift (Active)";
+                shiftStatus = `Started at ${formatTime(activeShift.openTime)}`;
+                shiftIcon = "shift-evening";
+                iconClass = "fas fa-moon";
+            }
+            
+            shiftInfoContainer.innerHTML = `
+                <div class="shift-icon ${shiftIcon}">
+                    <i class="${iconClass}"></i>
+                </div>
+                <div class="shift-details">
+                    <h3>${shiftName}</h3>
+                    <p>${shiftStatus}</p>
+                </div>
+            `;
         }
 
         // Function to render notifications from Firebase
@@ -453,6 +550,9 @@
                             ${notification.title || 'Notification'}
                         </div>
                         <div class="notification-time">${formatRelativeTime(notification.timestamp)}</div>
+                    </div>
+                    <div class="notification-content">
+                        ${notification.message || 'No additional details'}
                     </div>
                 `;
                 
@@ -524,15 +624,42 @@
                 });
         }
 
+        // Function to set up real-time shift listener
+        function setupShiftListener() {
+            if (shiftListener) {
+                // Remove existing listener if any
+                shiftListener();
+            }
+            
+            // Set up real-time listener for shift data
+            shiftListener = db.collection("shiftSystem").doc("state")
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const shiftData = doc.data();
+                        updateShiftInfo(shiftData);
+                        updateFirebaseStatus(true);
+                    } else {
+                        console.log("No shift document found");
+                        updateShiftInfo(null);
+                    }
+                }, (error) => {
+                    console.error("Error setting up shift listener: ", error);
+                    updateFirebaseStatus(false);
+                    updateShiftInfo(null);
+                });
+        }
+
         // Fallback function with sample notifications if Firebase fails
         function renderSampleNotifications() {
             const sampleNotifications = [
                 {
                     title: "Payment Update Required",
+                    message: "5 payments need status updates",
                     timestamp: { toDate: () => new Date(Date.now() - 2 * 60 * 60 * 1000) }
                 },
                 {
                     title: "System Update Available",
+                    message: "New version v2.3.1 is ready to install",
                     timestamp: { toDate: () => new Date(Date.now() - 5 * 60 * 60 * 1000) }
                 }
             ];
@@ -568,37 +695,57 @@
 
         // Initialize the dashboard
         document.addEventListener('DOMContentLoaded', () => {
-            // Wait for Firebase to be initialized from fire2.js
-            setTimeout(() => {
-                fetchNotifications();
-                fetchTodaysStats();
-                
-                // Set up real-time listener for new notifications
-                db.collection('notifications')
-                    .orderBy('timestamp', 'desc')
-                    .limit(5)
-                    .onSnapshot((querySnapshot) => {
-                        const notifications = [];
-                        querySnapshot.forEach((doc) => {
-                            notifications.push({ id: doc.id, ...doc.data() });
-                        });
-                        renderNotifications(notifications);
-                    }, (error) => {
-                        console.error("Error setting up real-time listener: ", error);
-                    });
+            // Initialize Firebase
+            try {
+                if (typeof firebaseConfig !== 'undefined') {
+                    firebase.initializeApp(firebaseConfig);
+                    db = firebase.firestore();
                     
-                // Set up real-time listener for today's stats
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                    // Set up real-time listeners
+                    setupShiftListener();
+                    fetchNotifications();
+                    fetchTodaysStats();
+                    
+                    // Set up real-time listener for new notifications
+                    db.collection('notifications')
+                        .orderBy('timestamp', 'desc')
+                        .limit(5)
+                        .onSnapshot((querySnapshot) => {
+                            const notifications = [];
+                            querySnapshot.forEach((doc) => {
+                                notifications.push({ id: doc.id, ...doc.data() });
+                            });
+                            renderNotifications(notifications);
+                        }, (error) => {
+                            console.error("Error setting up real-time listener: ", error);
+                        });
+                        
+                    // Set up real-time listener for today's stats
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    db.collection('transactions')
+                        .where('date', '>=', today)
+                        .onSnapshot((querySnapshot) => {
+                            fetchTodaysStats();
+                        }, (error) => {
+                            console.error("Error setting up stats listener: ", error);
+                        });
+                } else {
+                    throw new Error("Firebase configuration not found");
+                }
+            } catch (error) {
+                console.error("Firebase initialization error: ", error);
+                updateFirebaseStatus(false);
+                updateShiftInfo(null);
+                renderSampleNotifications();
                 
-                db.collection('transactions')
-                    .where('date', '>=', today)
-                    .onSnapshot((querySnapshot) => {
-                        fetchTodaysStats();
-                    }, (error) => {
-                        console.error("Error setting up stats listener: ", error);
-                    });
-            }, 500);
+                // Set sample stats
+                document.getElementById('todayRevenue').textContent = '$1,245.80';
+                document.getElementById('todayTransactions').textContent = '42';
+                document.getElementById('completedPayments').textContent = '38';
+                document.getElementById('pendingUpdates').textContent = '4';
+            }
         });
     </script>
 </body>
