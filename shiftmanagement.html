@@ -1,207 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Shift Management</title>
+  <meta charset="utf-8" />
+  <title>Shift Management — Firestore Live</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 20px; }
-    h2 { text-align: center; color: #333; }
-    .shift-box { 
-      border: 1px solid #ccc; 
-      padding: 20px; 
-      margin: 20px auto; 
-      border-radius: 10px; 
-      background: #fff; 
-      max-width: 400px;
-    }
-    .shift-info { margin: 10px 0; font-weight: bold; }
-    .open { color: green; }
-    .closed { color: red; }
-    button { 
-      padding: 10px 20px; 
-      margin: 5px; 
-      border: none; 
-      border-radius: 8px; 
-      cursor: pointer; 
-    }
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    .open-btn { background: #28a745; color: #fff; }
-    .close-btn { background: #dc3545; color: #fff; }
-    #currentShift { text-align: center; font-size: 18px; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; background:#f4f6f9; padding:20px; }
+    .box { max-width:800px; margin:16px auto; background:#fff; padding:18px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.06); }
+    h1 { text-align:center; margin-bottom:8px; }
+    .grid { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+    .shift { width:320px; border-radius:8px; padding:14px; border:1px solid #eee; background:#fff; }
+    .status { font-weight:700; margin-bottom:8px; }
+    .status.open { color: #1b8f4e; }
+    .status.closed { color: #b02a2a; }
+    button { padding:10px 14px; margin-right:8px; border-radius:8px; border:none; cursor:pointer; }
+    button:disabled { background:#ddd; cursor:not-allowed; }
+    .openBtn { background:#28a745; color:white; }
+    .closeBtn { background:#dc3545; color:white; }
+    .meta { font-size:0.9rem; color:#555; margin-top:8px; }
+    #current { text-align:center; margin-top:12px; font-size:1.05rem; }
+    .loading { text-align:center; padding:12px; color:#666; }
+    .firebase-status { text-align:center; margin-top:8px; font-weight:600; }
   </style>
 </head>
 <body>
-  <h2>Shift Management</h2>
+  <div class="box">
+    <h1>Shift Management (Live with Firestore)</h1>
+    <div id="firebaseStatus" class="firebase-status">Connecting to Firebase...</div>
 
-  <div class="shift-box">
-    <h3>Shift 1 (Morning)</h3>
-    <div id="shift1Status" class="shift-info closed">CLOSED</div>
-    <div>Opened: <span id="shift1OpenTime">--</span></div>
-    <div>Closed: <span id="shift1CloseTime">--</span></div>
-    <div>Today: <span id="shift1Today">Not opened today</span></div>
-    <button id="shift1OpenBtn" class="open-btn">Open Shift 1</button>
-    <button id="shift1CloseBtn" class="close-btn" disabled>Close Shift 1</button>
+    <div id="loading" class="loading">Loading shifts…</div>
+
+    <div class="grid" id="grid" style="display:none">
+      <div class="shift" id="shift1Card">
+        <h3>Shift 1 (Morning)</h3>
+        <div id="shift1Status" class="status closed">CLOSED</div>
+        <div>Opened: <span id="shift1OpenTime">--</span></div>
+        <div>Closed: <span id="shift1CloseTime">--</span></div>
+        <div class="meta">Today: <span id="shift1Today">Not opened today</span></div>
+        <div style="margin-top:10px">
+          <button id="shift1Open" class="openBtn">Open Shift 1</button>
+          <button id="shift1Close" class="closeBtn" disabled>Close Shift 1</button>
+        </div>
+      </div>
+
+      <div class="shift" id="shift2Card">
+        <h3>Shift 2 (Evening)</h3>
+        <div id="shift2Status" class="status closed">CLOSED</div>
+        <div>Opened: <span id="shift2OpenTime">--</span></div>
+        <div>Closed: <span id="shift2CloseTime">--</span></div>
+        <div class="meta">Today: <span id="shift2Today">Not opened today</span></div>
+        <div style="margin-top:10px">
+          <button id="shift2Open" class="openBtn" disabled>Open Shift 2</button>
+          <button id="shift2Close" class="closeBtn" disabled>Close Shift 2</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="current">No shift active</div>
+    <p style="font-size:0.85rem;color:#666;text-align:center;margin-top:8px">
+      Tip: open/close a shift in one browser tab and watch other tabs update instantly.
+    </p>
   </div>
 
-  <div class="shift-box">
-    <h3>Shift 2 (Evening)</h3>
-    <div id="shift2Status" class="shift-info closed">CLOSED</div>
-    <div>Opened: <span id="shift2OpenTime">--</span></div>
-    <div>Closed: <span id="shift2CloseTime">--</span></div>
-    <div>Today: <span id="shift2Today">Not opened today</span></div>
-    <button id="shift2OpenBtn" class="open-btn" disabled>Open Shift 2</button>
-    <button id="shift2CloseBtn" class="close-btn" disabled>Close Shift 2</button>
-  </div>
-
-  <div id="currentShift">No shift active</div>
-
-  <!-- Firebase SDK -->
+  <!-- Firebase compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // TODO: Replace with your Firebase config
+    /*************************************************************************
+     *  IMPORTANT: Replace firebaseConfig below with your project's config
+     *  (from Firebase console -> project settings).
+     *************************************************************************/
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
       projectId: "YOUR_PROJECT_ID",
+      // other fields (optional): storageBucket, messagingSenderId, appId
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    // Initialize
+    try {
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      document.getElementById('firebaseStatus').textContent = 'Connected to Firebase';
+      runApp(db);
+    } catch (err) {
+      console.error('Firebase init error', err);
+      document.getElementById('firebaseStatus').textContent = 'Firebase init error — check config (see console)';
+      document.getElementById('loading').textContent = 'Cannot initialize Firebase. See console for details.';
+    }
 
-    // State object
-    const state = {
-      shifts: {
-        shift1: { name: "Shift 1", open: false, openTime: null, closeTime: null, openedToday: false, closedToday: false },
-        shift2: { name: "Shift 2", open: false, openTime: null, closeTime: null, openedToday: false, closedToday: false }
+    function runApp(db) {
+      // DOM refs
+      const ui = {
+        loading: document.getElementById('loading'),
+        grid: document.getElementById('grid'),
+        current: document.getElementById('current'),
+        // Shift1
+        shift1Status: document.getElementById('shift1Status'),
+        shift1OpenTime: document.getElementById('shift1OpenTime'),
+        shift1CloseTime: document.getElementById('shift1CloseTime'),
+        shift1Today: document.getElementById('shift1Today'),
+        shift1Open: document.getElementById('shift1Open'),
+        shift1Close: document.getElementById('shift1Close'),
+        // Shift2
+        shift2Status: document.getElementById('shift2Status'),
+        shift2OpenTime: document.getElementById('shift2OpenTime'),
+        shift2CloseTime: document.getElementById('shift2CloseTime'),
+        shift2Today: document.getElementById('shift2Today'),
+        shift2Open: document.getElementById('shift2Open'),
+        shift2Close: document.getElementById('shift2Close'),
+      };
+
+      // state
+      const state = {
+        loaded: { shift1: false, shift2: false },
+        shifts: {
+          shift1: null,
+          shift2: null
+        }
+      };
+
+      // Firestore doc refs
+      const shift1Ref = db.collection('shifts').doc('shift1');
+      const shift2Ref = db.collection('shifts').doc('shift2');
+
+      // default doc object
+      function defaultShiftObj() {
+        return {
+          open: false,
+          openTime: null,
+          closeTime: null,
+          openedToday: false,
+          closedToday: false
+        };
       }
-    };
 
-    // UI Elements
-    const elements = {
-      shift1Status: document.getElementById("shift1Status"),
-      shift1OpenBtn: document.getElementById("shift1OpenBtn"),
-      shift1CloseBtn: document.getElementById("shift1CloseBtn"),
-      shift1OpenTime: document.getElementById("shift1OpenTime"),
-      shift1CloseTime: document.getElementById("shift1CloseTime"),
-      shift1Today: document.getElementById("shift1Today"),
-
-      shift2Status: document.getElementById("shift2Status"),
-      shift2OpenBtn: document.getElementById("shift2OpenBtn"),
-      shift2CloseBtn: document.getElementById("shift2CloseBtn"),
-      shift2OpenTime: document.getElementById("shift2OpenTime"),
-      shift2CloseTime: document.getElementById("shift2CloseTime"),
-      shift2Today: document.getElementById("shift2Today"),
-
-      currentShift: document.getElementById("currentShift")
-    };
-
-    // Format time
-    function formatTime(date) {
-      return date ? new Date(date).toLocaleTimeString() : "--";
-    }
-
-    // Save shift to Firestore
-    function saveShift(shiftId) {
-      const shift = state.shifts[shiftId];
-      db.collection("shifts").doc(shiftId).set({
-        open: shift.open,
-        openTime: shift.openTime ? shift.openTime.toISOString() : null,
-        closeTime: shift.closeTime ? shift.closeTime.toISOString() : null,
-        openedToday: shift.openedToday,
-        closedToday: shift.closedToday
-      });
-    }
-
-    // Open shift
-    function openShift(shiftId) {
-      if (shiftId === "shift2" && !state.shifts.shift1.closedToday) {
-        alert("You must close Shift 1 before opening Shift 2.");
-        return;
+      // Format time helper — accepts firebase Timestamp, ISO string, or Date
+      function formatTime(val) {
+        if (!val) return '--:--:--';
+        try {
+          if (val.toDate) return val.toDate().toLocaleTimeString();
+          if (typeof val === 'string') return new Date(val).toLocaleTimeString();
+          return new Date(val).toLocaleTimeString();
+        } catch (e) {
+          return '--:--:--';
+        }
       }
-      const shift = state.shifts[shiftId];
-      if (shift.open) { alert(`${shift.name} already open`); return; }
-      shift.open = true;
-      shift.openTime = new Date();
-      shift.openedToday = true;
-      shift.closedToday = false;
-      saveShift(shiftId);
-    }
 
-    // Close shift
-    function closeShift(shiftId) {
-      const shift = state.shifts[shiftId];
-      if (!shift.open) { alert(`${shift.name} is not open`); return; }
-      shift.open = false;
-      shift.closeTime = new Date();
-      shift.closedToday = true;
-      saveShift(shiftId);
-    }
+      // Update UI (only uses state.shifts)
+      function updateUI() {
+        // wait until at least one doc loaded (prefer both)
+        const anyLoaded = state.loaded.shift1 || state.loaded.shift2;
+        if (!anyLoaded) return;
 
-    // Update UI
-    function updateUI() {
-      const s1 = state.shifts.shift1;
-      const s2 = state.shifts.shift2;
+        // hide loading when both have attempted to load (even if missing created)
+        if (state.loaded.shift1 && state.loaded.shift2) {
+          ui.loading.style.display = 'none';
+          ui.grid.style.display = 'flex';
+        }
 
-      // Shift 1 UI
-      elements.shift1Status.textContent = s1.open ? "OPEN" : "CLOSED";
-      elements.shift1Status.className = "shift-info " + (s1.open ? "open" : "closed");
-      elements.shift1OpenBtn.disabled = s1.open;
-      elements.shift1CloseBtn.disabled = !s1.open;
-      elements.shift1OpenTime.textContent = formatTime(s1.openTime);
-      elements.shift1CloseTime.textContent = formatTime(s1.closeTime);
-      elements.shift1Today.textContent = s1.openedToday ? (s1.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
+        const s1 = state.shifts.shift1 || defaultShiftObj();
+        const s2 = state.shifts.shift2 || defaultShiftObj();
 
-      // Shift 2 UI
-      elements.shift2Status.textContent = s2.open ? "OPEN" : "CLOSED";
-      elements.shift2Status.className = "shift-info " + (s2.open ? "open" : "closed");
-      elements.shift2OpenBtn.disabled = !s1.closedToday || s2.open;
-      elements.shift2CloseBtn.disabled = !s2.open;
-      elements.shift2OpenTime.textContent = formatTime(s2.openTime);
-      elements.shift2CloseTime.textContent = formatTime(s2.closeTime);
-      elements.shift2Today.textContent = s2.openedToday ? (s2.closedToday ? "Opened and closed today" : "Opened today") : "Not opened today";
+        // Shift1 UI
+        ui.shift1Status.textContent = s1.open ? 'OPEN' : 'CLOSED';
+        ui.shift1Status.className = 'status ' + (s1.open ? 'open' : 'closed');
+        ui.shift1OpenTime.textContent = formatTime(s1.openTime);
+        ui.shift1CloseTime.textContent = formatTime(s1.closeTime);
+        ui.shift1Today.textContent = s1.openedToday ? (s1.closedToday ? 'Opened and closed today' : 'Opened today') : 'Not opened today';
 
-      // Current shift
-      if (s1.open) {
-        elements.currentShift.textContent = "Current shift: Shift 1 (Morning)";
-      } else if (s2.open) {
-        elements.currentShift.textContent = "Current shift: Shift 2 (Evening)";
-      } else {
-        elements.currentShift.textContent = "No shift active";
+        ui.shift1Open.disabled = s1.open === true ? true : false;
+        ui.shift1Close.disabled = s1.open === true ? false : true;
+
+        // Shift2 UI
+        ui.shift2Status.textContent = s2.open ? 'OPEN' : 'CLOSED';
+        ui.shift2Status.className = 'status ' + (s2.open ? 'open' : 'closed');
+        ui.shift2OpenTime.textContent = formatTime(s2.openTime);
+        ui.shift2CloseTime.textContent = formatTime(s2.closeTime);
+        ui.shift2Today.textContent = s2.openedToday ? (s2.closedToday ? 'Opened and closed today' : 'Opened today') : 'Not opened today';
+
+        // Shift2 open is allowed only if shift1.closedToday === true and shift2 is not already open
+        ui.shift2Open.disabled = !(s1.closedToday === true) || s2.open === true;
+        ui.shift2Close.disabled = s2.open === true ? false : true;
+
+        // Current shift indicator
+        if (s1.open) ui.current.textContent = 'Current shift: Shift 1 (Morning)';
+        else if (s2.open) ui.current.textContent = 'Current shift: Shift 2 (Evening)';
+        else ui.current.textContent = 'No shift active';
       }
-    }
 
-    // Realtime listener
-    function listenToShifts() {
-      db.collection("shifts").onSnapshot(snapshot => {
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const shift = state.shifts[doc.id];
-          if (shift) {
-            shift.open = data.open;
-            shift.openTime = data.openTime ? new Date(data.openTime) : null;
-            shift.closeTime = data.closeTime ? new Date(data.closeTime) : null;
-            shift.openedToday = data.openedToday;
-            shift.closedToday = data.closedToday;
+      // Listen to a single document (create default if missing)
+      function listenDoc(docRef, key) {
+        docRef.onSnapshot(async (docSnap) => {
+          if (!docSnap.exists) {
+            console.log(`${key} document missing — creating default document.`);
+            try {
+              // create default doc — use merge:false to create simple object
+              await docRef.set(defaultShiftObj());
+            } catch (err) {
+              console.error(`Error creating default doc ${key}:`, err);
+              alert('Firestore write error — check console and security rules');
+            }
+            // after creation the onSnapshot will trigger again, so return
+            state.loaded[key] = true; // mark attempted load so UI won't hang forever
+            updateUI();
+            return;
           }
+
+          const data = docSnap.data();
+          state.shifts[key] = {
+            open: !!data.open,
+            openTime: data.openTime || null,
+            closeTime: data.closeTime || null,
+            openedToday: !!data.openedToday,
+            closedToday: !!data.closedToday
+          };
+          state.loaded[key] = true;
+          updateUI();
+        }, (err) => {
+          console.error('onSnapshot error for', key, err);
+          document.getElementById('firebaseStatus').textContent = 'Realtime listener error — see console';
+          state.loaded[key] = true;
+          updateUI();
         });
-        updateUI();
+      }
+
+      // Setup listeners for both shift docs
+      listenDoc(shift1Ref, 'shift1');
+      listenDoc(shift2Ref, 'shift2');
+
+      // Open / Close functions writing to Firestore
+      async function setShiftOpen(docRef, shiftKey) {
+        try {
+          const payload = {
+            open: true,
+            openTime: firebase.firestore.Timestamp.fromDate(new Date()),
+            closeTime: null,
+            openedToday: true,
+            closedToday: false
+          };
+          await docRef.set(payload, { merge: true });
+          console.log(shiftKey, 'opened -> saved to Firestore');
+        } catch (err) {
+          console.error('Error opening shift', err);
+          alert('Error saving open action — see console');
+        }
+      }
+
+      async function setShiftClose(docRef, shiftKey) {
+        try {
+          const payload = {
+            open: false,
+            closeTime: firebase.firestore.Timestamp.fromDate(new Date()),
+            closedToday: true
+          };
+          await docRef.set(payload, { merge: true });
+          console.log(shiftKey, 'closed -> saved to Firestore');
+        } catch (err) {
+          console.error('Error closing shift', err);
+          alert('Error saving close action — see console');
+        }
+      }
+
+      // UI button handlers
+      ui.shift1Open.addEventListener('click', () => {
+        // prevent double-open if already open
+        if (state.shifts.shift1 && state.shifts.shift1.open) return;
+        setShiftOpen(shift1Ref, 'shift1');
       });
-    }
+      ui.shift1Close.addEventListener('click', () => {
+        if (!(state.shifts.shift1 && state.shifts.shift1.open)) return;
+        setShiftClose(shift1Ref, 'shift1');
+      });
 
-    // Init
-    function init() {
-      elements.shift1OpenBtn.addEventListener("click", () => openShift("shift1"));
-      elements.shift1CloseBtn.addEventListener("click", () => closeShift("shift1"));
-      elements.shift2OpenBtn.addEventListener("click", () => openShift("shift2"));
-      elements.shift2CloseBtn.addEventListener("click", () => closeShift("shift2"));
+      ui.shift2Open.addEventListener('click', () => {
+        // only allowed if shift1.closedToday is true
+        if (!(state.shifts.shift1 && state.shifts.shift1.closedToday)) {
+          alert('Shift 1 must be closed for Shift 2 to open.');
+          return;
+        }
+        if (state.shifts.shift2 && state.shifts.shift2.open) return;
+        setShiftOpen(shift2Ref, 'shift2');
+      });
+      ui.shift2Close.addEventListener('click', () => {
+        if (!(state.shifts.shift2 && state.shifts.shift2.open)) return;
+        setShiftClose(shift2Ref, 'shift2');
+      });
 
-      listenToShifts();
-      updateUI();
-    }
-
-    window.onload = init;
+      // final note to user: check console for errors
+      console.log('Realtime listeners attached for shifts/shift1 and shifts/shift2');
+    } // runApp end
   </script>
 </body>
 </html>
