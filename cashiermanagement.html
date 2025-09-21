@@ -1,1336 +1,634 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashier Management</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --success: #4cc9f0;
-            --warning: #ff9500;
-            --danger: #e74c3c;
-            --info: #17a2b8;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --gray: #6c757d;
-            --border: #dee2e6;
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --radius: 8px;
-            --transition: all 0.3s ease;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: white;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-        }
-
-        .header h1 {
-            color: var(--primary);
-            font-weight: 700;
-            margin-bottom: 8px;
-            font-size: 28px;
-        }
-
-        .header p {
-            color: var(--gray);
-            font-size: 16px;
-        }
-
-        .card {
-            background: white;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .card-title {
-            font-weight: 600;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .shift-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: #f8f9fc;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-        }
-
-        .shift-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: white;
-        }
-
-        .shift-morning {
-            background: var(--primary);
-        }
-
-        .shift-evening {
-            background: var(--warning);
-        }
-
-        .shift-inactive {
-            background: var(--gray);
-        }
-
-        .shift-details h3 {
-            margin-bottom: 5px;
-            color: var(--dark);
-        }
-
-        .shift-details p {
-            color: var(--gray);
-            font-size: 14px;
-        }
-
-        .currency-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 992px) {
-            .currency-section {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .denomination-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-
-        .denomination-table th {
-            text-align: left;
-            padding: 8px;
-            font-weight: 600;
-            color: var(--dark);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .denomination-table td {
-            padding: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .denom-input {
-            width: 70px;
-            padding: 6px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            text-align: center;
-        }
-
-        .denom-total {
-            width: 100px;
-            padding: 6px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            text-align: center;
-            background-color: #f8f9fa;
-        }
-
-        .total-display {
-            background: #f8f9fc;
-            padding: 15px;
-            border-radius: var(--radius);
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .total-amount {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .summary-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .summary-card {
-            background: #f8f9fc;
-            padding: 20px;
-            border-radius: var(--radius);
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .summary-label {
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .summary-value {
-            font-weight: 700;
-            font-size: 18px;
-        }
-
-        .usd-summary .summary-value {
-            color: var(--primary);
-        }
-
-        .mvr-summary .summary-value {
-            color: var(--info);
-        }
-
-        .tally-status {
-            text-align: center;
-            padding: 10px;
-            border-radius: var(--radius);
-            margin-top: 15px;
-            font-weight: 600;
-        }
-
-        .tally-success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .tally-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        @media (max-width: 576px) {
-            .action-buttons {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .btn {
-            padding: 15px;
-            color: white;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        .btn-primary {
-            background: var(--primary);
-        }
-
-        .btn-primary:hover {
-            background: var(--secondary);
-        }
-
-        .btn-success {
-            background: var(--success);
-        }
-
-        .btn-success:hover {
-            background: #3aafd3;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-        }
-
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-
-        .btn-warning {
-            background: var(--warning);
-        }
-
-        .btn-warning:hover {
-            background: #e67e00;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .modal-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-
-        .success-icon {
-            color: var(--success);
-        }
-
-        .error-icon {
-            color: var(--danger);
-        }
-
-        .modal h2 {
-            margin-bottom: 15px;
-            color: var(--dark);
-        }
-
-        .modal p {
-            margin-bottom: 20px;
-            color: var(--gray);
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .auth-form {
-            margin: 20px 0;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-        }
-
-        .supervisor-panel {
-            background: #f8f9fc;
-            padding: 15px;
-            border-radius: var(--radius);
-            margin-top: 20px;
-            border-left: 4px solid var(--info);
-        }
-
-        .supervisor-panel h4 {
-            margin-bottom: 10px;
-            color: var(--info);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .pettycash-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        @media (max-width: 576px) {
-            .pettycash-controls {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .shift-controls {
-            display: flex;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .notification {
-            padding: 15px;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .notification-warning {
-            background: #fff3cd;
-            color: #856404;
-            border-left: 4px solid var(--warning);
-        }
-
-        .notification-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-left: 4px solid var(--info);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash & Petty Cash Management</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="fire2.js"></script> <!-- Firebase config -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --primary: #2c3e50;
+  --secondary: #3498db;
+  --success: #2ecc71;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --light: #ecf0f1;
+  --dark: #2c3e50;
+  --gray: #95a5a6;
+  --card-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+  color: #333;
+  line-height: 1.6;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 25px;
+  box-shadow: var(--card-shadow);
+}
+
+.header h1 {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-item strong {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.info-item span {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+  transition: var(--transition);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.card-header h2 {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-content {
+  min-height: 100px;
+}
+
+.amount {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--secondary);
+  margin: 10px 0;
+}
+
+.currency {
+  font-size: 0.9rem;
+  color: var(--gray);
+}
+
+.tables-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.denomination-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.denomination-table th {
+  background-color: var(--primary);
+  color: white;
+  padding: 12px;
+  text-align: center;
+}
+
+.denomination-table td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.denomination-table tr:last-child td {
+  border-bottom: none;
+}
+
+.denomination-table input {
+  width: 70px;
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.denomination-table input:focus {
+  border-color: var(--secondary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.total-row {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.summary {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 25px;
+}
+
+.summary h2 {
+  color: var(--primary);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.summary-item.total {
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+}
+
+.cashier-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.cashier-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: var(--secondary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2980b9;
+}
+
+.btn-success {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #27ae60;
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c0392b;
+}
+
+.btn:disabled {
+  background-color: var(--gray);
+  cursor: not-allowed;
+}
+
+.status-message {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.status-success {
+  background-color: rgba(46, 204, 113, 0.2);
+  color: var(--success);
+}
+
+.status-error {
+  background-color: rgba(231, 76, 60, 0.2);
+  color: var(--danger);
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+  
+  .tables-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-info {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1><i class="fas fa-cash-register"></i> Cashier Management</h1>
-            <p>Count and verify cash denominations for current shift</p>
-        </div>
+<div class="container">
+  <header class="header">
+    <h1><i class="fas fa-cash-register"></i> Cash & Petty Cash Management</h1>
+    <div class="header-info">
+      <div class="info-item">
+        <strong>Current Date</strong>
+        <span id="currentDate">Loading...</span>
+      </div>
+      <div class="info-item">
+        <strong>Current Shift No</strong>
+        <span id="shiftNo">Loading...</span>
+      </div>
+      <div class="info-item">
+        <strong>Logged in User</strong>
+        <span id="sidebarUsername">Loading...</span>
+      </div>
+      <div class="info-item">
+        <strong>Level</strong>
+        <span id="sidebarLevel">Loading...</span>
+      </div>
+    </div>
+  </header>
 
-        <div id="noShiftNotification" class="notification notification-warning">
-            <i class="fas fa-exclamation-triangle"></i>
-            <div>
-                <strong>No Active Shift</strong>
-                <p>There is no active shift. Please open a shift in the Shift Management system to begin cashier operations.</p>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title"><i class="fas fa-money-bill-wave"></i> Cash Denomination Count</h2>
-                <span id="cashierStatus" class="tally-status tally-error">Cashier: Closed</span>
-            </div>
-
-            <div class="shift-info">
-                <div class="shift-icon" id="currentShiftIcon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="shift-details">
-                    <h3 id="currentShiftTitle">No Active Shift</h3>
-                    <p id="currentShiftDetails">All shifts are currently closed. Please open a shift in the Shift Management system.</p>
-                    <p id="currentShiftTimer">Duration: --:--:--</p>
-                </div>
-            </div>
-
-            <div class="currency-section">
-                <!-- USD Denomination -->
-                <div class="usd-denomination">
-                    <h3><i class="fas fa-dollar-sign"></i> USD Count</h3>
-                    <table class="denomination-table">
-                        <thead>
-                            <tr>
-                                <th>Denomination</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>$100 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-100" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="usd-100-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$50 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-50" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="usd-50-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$20 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-20" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="usd-20-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$10 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-10" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="usd-10-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$5 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-5" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="usd-5-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>$1 Bills</td>
-                                <td><input type="number" min="0" class="denom-input" id="usd-1" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="usd-1-total" value="$0.00" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>Coins</td>
-                                <td><input type="number" min="0" step="0.01" class="denom-input" id="usd-coins" value="0.00" disabled></td>
-                                <td><input type="text" class="denom-total" id="usd-coins-total" value="$0.00" readonly></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="total-display">
-                        <p>Total USD Counted</p>
-                        <div class="total-amount" id="usd-total">$0.00</div>
-                    </div>
-                </div>
-
-                <!-- MVR Denomination -->
-                <div class="mvr-denomination">
-                    <h3><i class="fas fa-ruble-sign"></i> MVR Count</h3>
-                    <table class="denomination-table">
-                        <thead>
-                            <tr>
-                                <th>Denomination</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1000 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-1000" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-1000-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>500 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-500" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-500-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>100 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-100" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-100-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>50 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-50" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-50-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>20 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-20" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-20-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>10 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-10" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-10-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>5 Rufiyaa</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-5" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-5-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>2 Rufiyaa (Coins)</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-2" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-2-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                            <tr>
-                                <td>1 Rufiyaa (Coins)</td>
-                                <td><input type="number" min="0" class="denom-input" id="mvr-1" value="0" disabled></td>
-                                <td><input type="text" class="denom-total" id="mvr-1-total" value="0.00 MVR" readonly></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="total-display">
-                        <p>Total MVR Counted</p>
-                        <div class="total-amount" id="mvr-total">0.00 MVR</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title"><i class="fas fa-calculator"></i> Cash Reconciliation</h2>
-                <button class="btn btn-primary" id="refresh-sales-btn">
-                    <i class="fas fa-sync-alt"></i> Refresh Sales Data
-                </button>
-            </div>
-
-            <div id="sales-loading" class="loading">
-                <div class="loading-spinner"></div>
-                <span style="margin-left: 10px;">Loading sales data...</span>
-            </div>
-
-            <div id="sales-content" style="display: none;">
-                <div id="shiftSalesInfo" class="notification notification-info">
-                    <i class="fas fa-info-circle"></i>
-                    <div>
-                        <strong>Shift Sales</strong>
-                        <p>Showing sales data for the current active shift.</p>
-                    </div>
-                </div>
-
-                <div class="summary-grid">
-                    <div class="summary-card usd-summary">
-                        <h3><i class="fas fa-dollar-sign"></i> USD Summary</h3>
-                        <div class="summary-item">
-                            <span class="summary-label">Cash Sales:</span>
-                            <span class="summary-value" id="usd-sales">$0.00</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Petty Cash:</span>
-                            <span class="summary-value" id="usd-petty">$0.00</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Expected Total:</span>
-                            <span class="summary-value" id="usd-expected">$0.00</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Counted Total:</span>
-                            <span class="summary-value" id="usd-counted">$0.00</span>
-                        </div>
-                        <div id="usd-tally" class="tally-status tally-error">Not Tallying</div>
-                    </div>
-
-                    <div class="summary-card mvr-summary">
-                        <h3><i class="fas fa-ruble-sign"></i> MVR Summary</h3>
-                        <div class="summary-item">
-                            <span class="summary-label">Cash Sales:</span>
-                            <span class="summary-value" id="mvr-sales">0.00 MVR</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Petty Cash:</span>
-                            <span class="summary-value" id="mvr-petty">0.00 MVR</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Expected Total:</span>
-                            <span class="summary-value" id="mvr-expected">0.00 MVR</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Counted Total:</span>
-                            <span class="summary-value" id="mvr-counted">0.00 MVR</span>
-                        </div>
-                        <div id="mvr-tally" class="tally-status tally-error">Not Tallying</div>
-                    </div>
-                </div>
-
-                <div class="supervisor-panel">
-                    <h4><i class="fas fa-user-shield"></i> Supervisor Controls</h4>
-                    <div class="pettycash-controls">
-                        <div class="form-group">
-                            <label for="usd-petty-adjust">USD Petty Cash:</label>
-                            <input type="number" min="0" step="0.01" id="usd-petty-adjust" value="500.00">
-                        </div>
-                        <div class="form-group">
-                            <label for="mvr-petty-adjust">MVR Petty Cash:</label>
-                            <input type="number" min="0" step="0.01" id="mvr-petty-adjust" value="2000.00">
-                        </div>
-                    </div>
-                    <div class="shift-controls">
-                        <button class="btn btn-primary" id="update-petty-btn">
-                            <i class="fas fa-save"></i> Update Petty Cash
-                        </button>
-                        <button class="btn btn-warning" id="view-shift-management">
-                            <i class="fas fa-external-link-alt"></i> Open Shift Management
-                        </button>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-success" id="open-cashier-btn">
-                        <i class="fas fa-lock-open"></i> Open Cashier
-                    </button>
-                    <button class="btn btn-danger" id="close-cashier-btn" disabled>
-                        <i class="fas fa-lock"></i> Close Cashier
-                    </button>
-                </div>
-            </div>
-        </div>
+  <div class="dashboard">
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-money-bill-wave"></i> Cash Payments</h2>
+      </div>
+      <div class="card-content">
+        <p>Total USD Cash: <span class="amount" id="totalUSD">0.00</span> <span class="currency">USD</span></p>
+        <p>Total MVR Cash: <span class="amount" id="totalMVR">0.00</span> <span class="currency">MVR</span></p>
+      </div>
     </div>
 
-    <!-- Authentication Modal -->
-    <div class="modal" id="auth-modal">
-        <div class="modal-content">
-            <div class="modal-icon">
-                <i class="fas fa-user-lock"></i>
-            </div>
-            <h2 id="auth-title">Authentication Required</h2>
-            <p id="auth-message">Please enter your credentials to proceed</p>
-            
-            <div class="auth-form">
-                <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" placeholder="Enter your username">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" placeholder="Enter your password">
-                </div>
-            </div>
-            
-            <div class="modal-buttons">
-                <button class="btn btn-danger" id="auth-cancel-btn">Cancel</button>
-                <button class="btn btn-success" id="auth-submit-btn">Submit</button>
-            </div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-wallet"></i> Petty Cash (Live)</h2>
+      </div>
+      <div class="card-content">
+        <p>USD: <span class="amount" id="pettyUSD">0.00</span> <span class="currency">USD</span></p>
+        <p>MVR: <span class="amount" id="pettyMVR">0.00</span> <span class="currency">MVR</span></p>
+      </div>
     </div>
 
-    <!-- Success Modal -->
-    <div class="modal" id="success-modal">
-        <div class="modal-content">
-            <div class="modal-icon success-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <h2 id="success-title">Operation Successful</h2>
-            <p id="success-message"></p>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" id="success-ok-btn">OK</button>
-            </div>
+    <div class="card cashier-card">
+      <div class="card-header">
+        <h2><i class="fas fa-user-tie"></i> Cashier Status</h2>
+      </div>
+      <div class="card-content">
+        <div class="cashier-info">
+          <div>
+            <p>Status: <span id="cashierStatus">Loading...</span></p>
+          </div>
+          <button id="cashierBtn" class="btn" disabled>Loading...</button>
         </div>
+        <div id="cashierMsg" class="status-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tables-section">
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-coins"></i> Cash Count - USD</h2>
+      </div>
+      <table class="denomination-table" id="usdTable">
+        <thead><tr><th>Denomination USD</th><th>Count</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr class="total-row"><td colspan="2">Grand Total</td><td id="usdGrandTotal">0.00</td></tr></tfoot>
+      </table>
     </div>
 
-    <!-- Error Modal -->
-    <div class="modal" id="error-modal">
-        <div class="modal-content">
-            <div class="modal-icon error-icon">
-                <i class="fas fa-exclamation-circle"></i>
-            </div>
-            <h2>Operation Failed</h2>
-            <p id="error-message"></p>
-            <div class="modal-buttons">
-                <button class="btn btn-danger" id="error-ok-btn">OK</button>
-            </div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-coins"></i> Cash Count - MVR</h2>
+      </div>
+      <table class="denomination-table" id="mvrTable">
+        <thead><tr><th>Denomination MVR</th><th>Count</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr class="total-row"><td colspan="2">Grand Total</td><td id="mvrGrandTotal">0.00</td></tr></tfoot>
+      </table>
     </div>
 
-    <script>
-        // Mock users data (should be in users.js)
-        const users = {
-            "admin": { password: "admin123", role: "supervisor", name: "Admin User" },
-            "cashier1": { password: "cashier123", role: "cashier", name: "John Doe" },
-            "supervisor1": { password: "super123", role: "supervisor", name: "Jane Smith" }
-        };
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-money-bill-alt"></i> Petty Cash Count - USD</h2>
+      </div>
+      <table class="denomination-table" id="pettyUSDTable">
+        <thead><tr><th>Denomination USD</th><th>Count</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr class="total-row"><td colspan="2">Grand Total</td><td id="pettyUSDGrandTotal">0.00</td></tr></tfoot>
+      </table>
+    </div>
 
-        // Current application state
-        let appState = {
-            cashierOpen: false,
-            usdSales: 0,
-            mvrSales: 0,
-            usdPetty: 500.00,
-            mvrPetty: 2000.00,
-            currentAction: null,
-            currentShift: null,
-            shiftData: null
-        };
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-money-bill-alt"></i> Petty Cash Count - MVR</h2>
+      </div>
+      <table class="denomination-table" id="pettyMVRTable">
+        <thead><tr><th>Denomination MVR</th><th>Count</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr class="total-row"><td colspan="2">Grand Total</td><td id="pettyMVRGrandTotal">0.00</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
 
-        // DOM Elements
-        const usdInputs = {
-            100: document.getElementById('usd-100'),
-            50: document.getElementById('usd-50'),
-            20: document.getElementById('usd-20'),
-            10: document.getElementById('usd-10'),
-            5: document.getElementById('usd-5'),
-            1: document.getElementById('usd-1'),
-            coins: document.getElementById('usd-coins')
-        };
+  <div class="summary">
+    <h2><i class="fas fa-calculator"></i> Reconciliation Summary</h2>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span>Total Cash USD:</span>
+        <span id="totalCashUSD">0.00</span>
+      </div>
+      <div class="summary-item">
+        <span>Total Cash MVR:</span>
+        <span id="totalCashMVR">0.00</span>
+      </div>
+      <div class="summary-item">
+        <span>Total Petty Cash USD:</span>
+        <span id="totalPettyUSD">0.00</span>
+      </div>
+      <div class="summary-item">
+        <span>Total Petty Cash MVR:</span>
+        <span id="totalPettyMVR">0.00</span>
+      </div>
+      <div class="summary-item total">
+        <span>Grand Total USD:</span>
+        <span id="grandTotalUSD">0.00</span>
+      </div>
+      <div class="summary-item total">
+        <span>Grand Total MVR:</span>
+        <span id="grandTotalMVR">0.00</span>
+      </div>
+    </div>
+  </div>
+</div>
 
-        const mvrInputs = {
-            1000: document.getElementById('mvr-1000'),
-            500: document.getElementById('mvr-500'),
-            100: document.getElementById('mvr-100'),
-            50: document.getElementById('mvr-50'),
-            20: document.getElementById('mvr-20'),
-            10: document.getElementById('mvr-10'),
-            5: document.getElementById('mvr-5'),
-            2: document.getElementById('mvr-2'),
-            1: document.getElementById('mvr-1')
-        };
+<script>
+// ===== Denominations =====
+const usdDenoms = [100,50,20,10,5,1];
+const mvrDenoms = [1000,500,100,50,20,5,1];
 
-        // Initialize totals
-        let usdCountedTotal = 0;
-        let mvrCountedTotal = 0;
+function createDenominationTable(denoms, tbodySelector, grandTotalSelector){
+  const tbody = document.querySelector(tbodySelector);
+  const grandEl = document.querySelector(grandTotalSelector);
+  function updateGrandTotal(){
+    let total=0;
+    document.querySelectorAll(`${tbodySelector} .row-total`).forEach(c=>{total+=Number(c.textContent)});
+    grandEl.textContent = total.toFixed(2);
+    updateSummary();
+  }
+  denoms.forEach(v=>{
+    const row = document.createElement("tr");
+    const tdDenom=document.createElement("td"); tdDenom.textContent=v; row.appendChild(tdDenom);
+    const tdCount=document.createElement("td"); const input=document.createElement("input"); input.type="number"; input.min=0; input.value=0; tdCount.appendChild(input); row.appendChild(tdCount);
+    const tdTotal=document.createElement("td"); tdTotal.classList.add("row-total"); tdTotal.textContent="0.00"; row.appendChild(tdTotal);
+    input.addEventListener("input",()=>{tdTotal.textContent=((Number(input.value)||0)*v).toFixed(2); updateGrandTotal();});
+    tbody.appendChild(row);
+  });
+}
 
-        // Check for active shift
-        function checkActiveShift() {
-            // In a real implementation, this would fetch from a shared database or API
-            const shiftData = localStorage.getItem('shiftData');
-            if (shiftData) {
-                const parsedData = JSON.parse(shiftData);
-                appState.shiftData = parsedData;
-                
-                if (parsedData.currentShift) {
-                    // There is an active shift
-                    appState.currentShift = parsedData.currentShift;
-                    document.getElementById('noShiftNotification').style.display = 'none';
-                    enableCashierOperations();
-                    updateShiftDisplay();
-                    return true;
-                }
-            }
-            
-            // No active shift
-            appState.currentShift = null;
-            document.getElementById('noShiftNotification').style.display = 'flex';
-            disableCashierOperations();
-            return false;
-        }
+createDenominationTable(usdDenoms,"#usdTable tbody","#usdGrandTotal");
+createDenominationTable(mvrDenoms,"#mvrTable tbody","#mvrGrandTotal");
+createDenominationTable(usdDenoms,"#pettyUSDTable tbody","#pettyUSDGrandTotal");
+createDenominationTable(mvrDenoms,"#pettyMVRTable tbody","#pettyMVRGrandTotal");
 
-        // Enable cashier operations when there's an active shift
-        function enableCashierOperations() {
-            // Enable denomination inputs
-            Object.values(usdInputs).forEach(input => {
-                input.disabled = false;
-            });
-            Object.values(mvrInputs).forEach(input => {
-                input.disabled = false;
-            });
-            
-            // Enable action buttons
-            document.getElementById('open-cashier-btn').disabled = false;
-            document.getElementById('refresh-sales-btn').disabled = false;
-            document.getElementById('update-petty-btn').disabled = false;
-            
-            // Show sales content
-            document.getElementById('sales-content').style.display = 'block';
-            document.getElementById('sales-loading').style.display = 'none';
-        }
+// ===== Current Date =====
+const today=new Date();
+const yyyy=today.getFullYear(), mm=String(today.getMonth()+1).padStart(2,'0'), dd=String(today.getDate()).padStart(2,'0');
+const currentDate=`${yyyy}-${mm}-${dd}`;
+document.getElementById("currentDate").textContent=currentDate;
 
-        // Disable cashier operations when there's no active shift
-        function disableCashierOperations() {
-            // Disable denomination inputs
-            Object.values(usdInputs).forEach(input => {
-                input.disabled = true;
-            });
-            Object.values(mvrInputs).forEach(input => {
-                input.disabled = true;
-            });
-            
-            // Disable action buttons
-            document.getElementById('open-cashier-btn').disabled = true;
-            document.getElementById('close-cashier-btn').disabled = true;
-            document.getElementById('refresh-sales-btn').disabled = true;
-            document.getElementById('update-petty-btn').disabled = true;
-            
-            // Hide sales content
-            document.getElementById('sales-content').style.display = 'none';
-            document.getElementById('sales-loading').style.display = 'none';
-        }
+// ===== Firebase Shift & Sales =====
+const shiftNoSpan = document.getElementById("shiftNo");
+const totalUSDEl = document.getElementById("totalUSD");
+const totalMVREl = document.getElementById("totalMVR");
 
-        // Update shift display information
-        function updateShiftDisplay() {
-            if (!appState.currentShift) return;
-            
-            const shiftIcon = document.getElementById('currentShiftIcon');
-            const shiftTitle = document.getElementById('currentShiftTitle');
-            const shiftDetails = document.getElementById('currentShiftDetails');
-            
-            const isMorning = appState.currentShift.type === 'morning';
-            
-            shiftIcon.className = isMorning ? 'shift-icon shift-morning' : 'shift-icon shift-evening';
-            shiftIcon.innerHTML = isMorning ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-            
-            shiftTitle.textContent = `${isMorning ? 'Morning' : 'Evening'} Shift (Active)`;
-            shiftDetails.textContent = `Opened by ${appState.currentShift.openedBy} at ${formatTime(appState.currentShift.openedAt)}`;
-            
-            // Update timer
-            updateShiftTimer();
-        }
+db.collection("shifts").where("status","==","open").limit(1).onSnapshot(snap=>{
+  if(snap.empty){ 
+    shiftNoSpan.textContent="No shift"; 
+    totalUSDEl.textContent="0.00"; 
+    totalMVREl.textContent="0.00"; 
+    return;
+  }
+  const shiftData=snap.docs[0].data();
+  const shiftNo = shiftData.shiftNo;
+  const shiftName = shiftNo===1?"Morning":"Evening";
+  shiftNoSpan.textContent=shiftNo;
 
-        // Update the shift timer
-        function updateShiftTimer() {
-            if (!appState.currentShift) return;
-            
-            const now = new Date();
-            const openedAt = new Date(appState.currentShift.openedAt);
-            const diff = now - openedAt;
-            
-            const hours = Math.floor(diff / 3600000);
-            const minutes = Math.floor((diff % 3600000) / 60000);
-            const seconds = Math.floor((diff % 60000) / 1000);
-            
-            document.getElementById('currentShiftTimer').textContent = 
-                `Duration: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }
+  // Cash USD
+  db.collection("payments").where("date","==",currentDate).where("shift","==",shiftName).where("paymentType","==","Cash").where("currency","==","USD")
+    .onSnapshot(paySnap=>{
+      let t=0;
+      paySnap.forEach(d=>{
+        const p=d.data(); 
+        if(!p.voided) t+=Number(p.total||0)
+      }); 
+      totalUSDEl.textContent=t.toFixed(2); 
+      updateSummary();
+    });
 
-        // Fetch sales data from Firebase for current shift and date
-        function fetchSalesData() {
-            if (!checkActiveShift()) {
-                showError("No Active Shift", "Cannot fetch sales data without an active shift.");
-                return;
-            }
-            
-            showLoading(true);
-            
-            // In a real scenario, this would come from Firebase with date and shift filters
-            setTimeout(() => {
-                const isMorning = appState.currentShift.type === 'morning';
-                
-                // Different sales amounts for different shifts
-                appState.usdSales = isMorning ? 1245.75 : 1845.25;
-                appState.mvrSales = isMorning ? 18732.50 : 22567.80;
-                
-                // Update UI
-                document.getElementById('usd-sales').textContent = `$${appState.usdSales.toFixed(2)}`;
-                document.getElementById('mvr-sales').textContent = `${appState.mvrSales.toFixed(2)} MVR`;
-                document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
-                document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
-                
-                // Set petty cash adjustment inputs
-                document.getElementById('usd-petty-adjust').value = appState.usdPetty.toFixed(2);
-                document.getElementById('mvr-petty-adjust').value = appState.mvrPetty.toFixed(2);
-                
-                // Calculate expected totals
-                const usdExpected = appState.usdSales + appState.usdPetty;
-                const mvrExpected = appState.mvrSales + appState.mvrPetty;
-                
-                document.getElementById('usd-expected').textContent = `$${usdExpected.toFixed(2)}`;
-                document.getElementById('mvr-expected').textContent = `${mvrExpected.toFixed(2)} MVR`;
-                
-                // Update differences
-                calculateDifferences(usdExpected, mvrExpected);
-                
-                showLoading(false);
-                
-                return {
-                    usdExpected,
-                    mvrExpected
-                };
-            }, 1000);
-        }
+  // Cash MVR
+  db.collection("payments").where("date","==",currentDate).where("shift","==",shiftName).where("paymentType","==","Cash").where("currency","==","MVR")
+    .onSnapshot(paySnap=>{
+      let t=0;
+      paySnap.forEach(d=>{
+        const p=d.data(); 
+        if(!p.voided) t+=Number(p.total||0)
+      }); 
+      totalMVREl.textContent=t.toFixed(2); 
+      updateSummary();
+    });
+});
 
-        // Show/hide loading indicator
-        function showLoading(show) {
-            document.getElementById('sales-loading').style.display = show ? 'flex' : 'none';
-            document.getElementById('sales-content').style.display = show ? 'none' : 'block';
-        }
+// ===== Petty Cash =====
+const pettyUSDEl = document.getElementById("pettyUSD");
+const pettyMVREl = document.getElementById("pettyMVR");
+const cashierStatusEl = document.getElementById("cashierStatus");
 
-        // Format time for display
-        function formatTime(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
+db.collection("pettyCash").limit(1).onSnapshot(snap=>{
+  if(!snap.empty){
+    const data = snap.docs[0].data();
+    pettyUSDEl.textContent = Number(data.USD||0).toFixed(2);
+    pettyMVREl.textContent = Number(data.MVR||0).toFixed(2);
+    
+    // Set cashier button label according to current status if exists
+    if(data.cashierStatus){
+      currentStatus = data.cashierStatus;
+      cashierBtn.textContent = currentStatus==="open"?"Close Cashier":"Open Cashier";
+      cashierStatusEl.textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+      cashierBtn.classList.toggle("btn-danger", currentStatus==="open");
+      cashierBtn.classList.toggle("btn-success", currentStatus!=="open");
+    } else { 
+      cashierBtn.textContent = "Open Cashier";
+      cashierBtn.classList.add("btn-success");
+    }
+    updateSummary();
+  }
+});
 
-        // Calculate USD total
-        function calculateUSDTotal() {
-            let total = 0;
-            
-            // Calculate each denomination
-            const usd100 = parseInt(usdInputs[100].value) * 100;
-            const usd50 = parseInt(usdInputs[50].value) * 50;
-            const usd20 = parseInt(usdInputs[20].value) * 20;
-            const usd10 = parseInt(usdInputs[10].value) * 10;
-            const usd5 = parseInt(usdInputs[5].value) * 5;
-            const usd1 = parseInt(usdInputs[1].value) * 1;
-            const usdCoins = parseFloat(usdInputs.coins.value);
-            
-            total = usd100 + usd50 + usd20 + usd10 + usd5 + usd1 + usdCoins;
-            
-            // Update individual totals
-            document.getElementById('usd-100-total').value = `$${usd100.toFixed(2)}`;
-            document.getElementById('usd-50-total').value = `$${usd50.toFixed(2)}`;
-            document.getElementById('usd-20-total').value = `$${usd20.toFixed(2)}`;
-            document.getElementById('usd-10-total').value = `$${usd10.toFixed(2)}`;
-            document.getElementById('usd-5-total').value = `$${usd5.toFixed(2)}`;
-            document.getElementById('usd-1-total').value = `$${usd1.toFixed(2)}`;
-            document.getElementById('usd-coins-total').value = `$${usdCoins.toFixed(2)}`;
-            
-            usdCountedTotal = total;
-            document.getElementById('usd-total').textContent = `$${total.toFixed(2)}`;
-            document.getElementById('usd-counted').textContent = `$${total.toFixed(2)}`;
-            
-            return total;
-        }
+// ===== Reconciliation Summary =====
+function updateSummary(){
+  const totalCashUSD = Number(totalUSDEl.textContent) + Number(document.getElementById("usdGrandTotal").textContent);
+  const totalCashMVR = Number(totalMVREl.textContent) + Number(document.getElementById("mvrGrandTotal").textContent);
+  const totalPettyUSD = Number(pettyUSDEl.textContent) + Number(document.getElementById("pettyUSDGrandTotal").textContent);
+  const totalPettyMVR = Number(pettyMVREl.textContent) + Number(document.getElementById("pettyMVRGrandTotal").textContent);
 
-        // Calculate MVR total
-        function calculateMVRTotal() {
-            let total = 0;
-            
-            // Calculate each denomination
-            const mvr1000 = parseInt(mvrInputs[1000].value) * 1000;
-            const mvr500 = parseInt(mvrInputs[500].value) * 500;
-            const mvr100 = parseInt(mvrInputs[100].value) * 100;
-            const mvr50 = parseInt(mvrInputs[50].value) * 50;
-            const mvr20 = parseInt(mvrInputs[20].value) * 20;
-            const mvr10 = parseInt(mvrInputs[10].value) * 10;
-            const mvr5 = parseInt(mvrInputs[5].value) * 5;
-            const mvr2 = parseInt(mvrInputs[2].value) * 2;
-            const mvr1 = parseInt(mvrInputs[1].value) * 1;
-            
-            total = mvr1000 + mvr500 + mvr100 + mvr50 + mvr20 + mvr10 + mvr5 + mvr2 + mvr1;
-            
-            // Update individual totals
-            document.getElementById('mvr-1000-total').value = `${mvr1000.toFixed(2)} MVR`;
-            document.getElementById('mvr-500-total').value = `${mvr500.toFixed(2)} MVR`;
-            document.getElementById('mvr-100-total').value = `${mvr100.toFixed(2)} MVR`;
-            document.getElementById('mvr-50-total').value = `${mvr50.toFixed(2)} MVR`;
-            document.getElementById('mvr-20-total').value = `${mvr20.toFixed(2)} MVR`;
-            document.getElementById('mvr-10-total').value = `${mvr10.toFixed(2)} MVR`;
-            document.getElementById('mvr-5-total').value = `${mvr5.toFixed(2)} MVR`;
-            document.getElementById('mvr-2-total').value = `${mvr2.toFixed(2)} MVR`;
-            document.getElementById('mvr-1-total').value = `${mvr1.toFixed(2)} MVR`;
-            
-            mvrCountedTotal = total;
-            document.getElementById('mvr-total').textContent = `${total.toFixed(2)} MVR`;
-            document.getElementById('mvr-counted').textContent = `${total.toFixed(2)} MVR`;
-            
-            return total;
-        }
+  document.getElementById("totalCashUSD").textContent = totalCashUSD.toFixed(2);
+  document.getElementById("totalCashMVR").textContent = totalCashMVR.toFixed(2);
+  document.getElementById("totalPettyUSD").textContent = totalPettyUSD.toFixed(2);
+  document.getElementById("totalPettyMVR").textContent = totalPettyMVR.toFixed(2);
+  document.getElementById("grandTotalUSD").textContent = (totalCashUSD + totalPettyUSD).toFixed(2);
+  document.getElementById("grandTotalMVR").textContent = (totalCashMVR + totalPettyMVR).toFixed(2);
+}
 
-        // Calculate differences and update tally status
-        function calculateDifferences(usdExpected, mvrExpected) {
-            const usdDifference = usdCountedTotal - usdExpected;
-            const mvrDifference = mvrCountedTotal - mvrExpected;
-            
-            const usdTallyElement = document.getElementById('usd-tally');
-            const mvrTallyElement = document.getElementById('mvr-tally');
-            const closeButton = document.getElementById('close-cashier-btn');
-            
-            // USD Tally Status
-            if (usdDifference === 0) {
-                usdTallyElement.textContent = "Tallying";
-                usdTallyElement.className = 'tally-status tally-success';
-            } else {
-                usdTallyElement.textContent = `Off by $${Math.abs(usdDifference).toFixed(2)}`;
-                usdTallyElement.className = 'tally-status tally-error';
-            }
-            
-            // MVR Tally Status
-            if (mvrDifference === 0) {
-                mvrTallyElement.textContent = "Tallying";
-                mvrTallyElement.className = 'tally-status tally-success';
-            } else {
-                mvrTallyElement.textContent = `Off by ${Math.abs(mvrDifference).toFixed(2)} MVR`;
-                mvrTallyElement.className = 'tally-status tally-error';
-            }
-            
-            // Enable close button only if cashier is open and both currencies tally
-            if (appState.cashierOpen && usdDifference === 0 && mvrDifference === 0) {
-                closeButton.disabled = false;
-            } else {
-                closeButton.disabled = true;
-            }
-            
-            return {
-                usdDifference,
-                mvrDifference
-            };
-        }
+// ===== Logged-in User =====
+const user = JSON.parse(localStorage.getItem("loggedInUser")) || {username:"Unknown", Level:"User"};
+document.getElementById("sidebarUsername").textContent = user.username;
+document.getElementById("sidebarLevel").textContent = user.Level;
 
-        // Show modal
-        function showModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
-        }
+// ===== Cashier Open/Close =====
+const cashierBtn = document.getElementById("cashierBtn");
+const cashierMsg = document.getElementById("cashierMsg");
+let currentStatus = "closed";
 
-        // Hide modal
-        function hideModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+function checkTotalsTally(){
+  const totalCashUSD = Number(document.getElementById("totalUSD").textContent);
+  const totalCashMVR = Number(document.getElementById("totalMVR").textContent);
+  const denomUSD = Number(document.getElementById("usdGrandTotal").textContent);
+  const denomMVR = Number(document.getElementById("mvrGrandTotal").textContent);
+  const pettyUSD = Number(document.getElementById("pettyUSD").textContent);
+  const pettyMVR = Number(document.getElementById("pettyMVR").textContent);
+  const pettyUSDCount = Number(document.getElementById("pettyUSDGrandTotal").textContent);
+  const pettyMVRCount = Number(document.getElementById("pettyMVRGrandTotal").textContent);
 
-        // Authenticate user
-        function authenticateUser(username, password) {
-            return new Promise((resolve, reject) => {
-                // Simulate authentication
-                setTimeout(() => {
-                    if (users[username] && users[username].password === password) {
-                        resolve(users[username]);
-                    } else {
-                        reject(new Error("Invalid username or password"));
-                    }
-                }, 500);
-            });
-        }
+  if( totalCashUSD + denomUSD === pettyUSD + pettyUSDCount && totalCashMVR + denomMVR === pettyMVR + pettyMVRCount ){
+    cashierBtn.disabled = false;
+    cashierMsg.textContent = "Totals are balanced. You can proceed.";
+    cashierMsg.className = "status-message status-success";
+  } else { 
+    cashierBtn.disabled = true;
+    cashierMsg.textContent = "Totals don't match. Please reconcile before proceeding.";
+    cashierMsg.className = "status-message status-error";
+  }
+}
 
-        // Update petty cash amounts
-        function updatePettyCash(usdAmount, mvrAmount) {
-            appState.usdPetty = parseFloat(usdAmount);
-            appState.mvrPetty = parseFloat(mvrAmount);
-            
-            // Update UI
-            document.getElementById('usd-petty').textContent = `$${appState.usdPetty.toFixed(2)}`;
-            document.getElementById('mvr-petty').textContent = `${appState.mvrPetty.toFixed(2)} MVR`;
-            
-            // Recalculate expected totals
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateDifferences(usdExpected, mvrExpected);
-        }
+// Watch totals
+["usdGrandTotal","mvrGrandTotal","pettyUSDGrandTotal","pettyMVRGrandTotal"].forEach(id=>{
+  document.getElementById(id).addEventListener("DOMSubtreeModified", checkTotalsTally);
+});
+["totalUSD","totalMVR","pettyUSD","pettyMVR"].forEach(id=>{
+  const el = document.getElementById(id);
+  const observer = new MutationObserver(checkTotalsTally);
+  observer.observe(el,{childList:true});
+});
 
-        // Open cashier
-        function openCashier() {
-            if (!checkActiveShift()) {
-                showError("No Active Shift", "Cannot open cashier without an active shift.");
-                return;
-            }
-            
-            appState.cashierOpen = true;
-            document.getElementById('cashierStatus').textContent = "Cashier: Open";
-            document.getElementById('cashierStatus').className = 'tally-status tally-success';
-            document.getElementById('open-cashier-btn').disabled = true;
-            
-            // Reset counts
-            Object.values(usdInputs).forEach(input => {
-                if (input.id !== 'usd-coins') {
-                    input.value = '0';
-                } else {
-                    input.value = '0.00';
-                }
-            });
-            
-            Object.values(mvrInputs).forEach(input => {
-                input.value = '0';
-            });
-            
-            calculateUSDTotal();
-            calculateMVRTotal();
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateDifferences(usdExpected, mvrExpected);
-        }
+cashierBtn.addEventListener("click",()=>{
+  const newStatus = currentStatus==="open"?"closed":"open";
+  db.collection("pettyCash").doc("current").set({
+    currentCashier: user.username,
+    cashierStatus: newStatus,
+    lastUpdated: new Date()
+  },{merge:true}).then(()=>{
+    cashierMsg.textContent = "Cashier status updated to: " + newStatus;
+    cashierMsg.className = "status-message status-success";
+    currentStatus = newStatus;
+    cashierBtn.textContent = newStatus==="open"?"Close Cashier":"Open Cashier";
+    cashierStatusEl.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+    cashierBtn.classList.toggle("btn-danger", newStatus==="open");
+    cashierBtn.classList.toggle("btn-success", newStatus!=="open");
+  }).catch(err=>{
+    console.error(err); 
+    cashierMsg.textContent="Error updating cashier status";
+    cashierMsg.className = "status-message status-error";
+  });
+});
 
-        // Close cashier
-        function closeCashier() {
-            appState.cashierOpen = false;
-            document.getElementById('cashierStatus').textContent = "Cashier: Closed";
-            document.getElementById('cashierStatus').className = 'tally-status tally-error';
-            document.getElementById('close-cashier-btn').disabled = true;
-            document.getElementById('open-cashier-btn').disabled = false;
-        }
-
-        // Show success message
-        function showSuccess(title, message) {
-            document.getElementById('success-title').textContent = title;
-            document.getElementById('success-message').textContent = message;
-            showModal('success-modal');
-        }
-
-        // Show error message
-        function showError(title, message) {
-            document.getElementById('error-message').textContent = message;
-            showModal('error-modal');
-        }
-
-        // Event Listeners
-        document.getElementById('open-cashier-btn').addEventListener('click', () => {
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateUSDTotal();
-            calculateMVRTotal();
-            const { usdDifference, mvrDifference } = calculateDifferences(usdExpected, mvrExpected);
-            
-            if (usdDifference === 0 && mvrDifference === 0) {
-                appState.currentAction = 'open';
-                document.getElementById('auth-title').textContent = "Open Cashier";
-                document.getElementById('auth-message').textContent = "Enter your credentials to open the cashier";
-                showModal('auth-modal');
-            } else {
-                let errorMsg = "Cannot open cashier. Cash counts must tally first.";
-                if (usdDifference !== 0) {
-                    errorMsg += ` USD is ${usdDifference > 0 ? 'over' : 'under'} by $${Math.abs(usdDifference).toFixed(2)}.`;
-                }
-                if (mvrDifference !== 0) {
-                    errorMsg += ` MVR is ${mvrDifference > 0 ? 'over' : 'under'} by ${Math.abs(mvrDifference).toFixed(2)} MVR.`;
-                }
-                document.getElementById('error-message').textContent = errorMsg;
-                showModal('error-modal');
-            }
-        });
-
-        document.getElementById('close-cashier-btn').addEventListener('click', () => {
-            const { usdExpected, mvrExpected } = fetchSalesData();
-            calculateUSDTotal();
-            calculateMVRTotal();
-            const { usdDifference, mvrDifference } = calculateDifferences(usdExpected, mvrExpected);
-            
-            if (usdDifference === 0 && mvrDifference === 0) {
-                appState.currentAction = 'close';
-                document.getElementById('auth-title').textContent = "Close Cashier";
-                document.getElementById('auth-message').textContent = "Enter your credentials to close the cashier";
-                showModal('auth-modal');
-            } else {
-                let errorMsg = "Cannot close cashier. Cash counts must tally first.";
-                if (usdDifference !== 0) {
-                    errorMsg += ` USD is ${usdDifference > 0 ? 'over' : 'under'} by $${Math.abs(usdDifference).toFixed(2)}.`;
-                }
-                if (mvrDifference !== 0) {
-                    errorMsg += ` MVR is ${mvrDifference > 0 ? 'over' : 'under'} by ${Math.abs(mvrDifference).toFixed(2)} MVR.`;
-                }
-                document.getElementById('error-message').textContent = errorMsg;
-                showModal('error-modal');
-            }
-        });
-
-        document.getElementById('update-petty-btn').addEventListener('click', () => {
-            const usdAmount = document.getElementById('usd-petty-adjust').value;
-            const mvrAmount = document.getElementById('mvr-petty-adjust').value;
-            
-            appState.currentAction = 'update_petty';
-            document.getElementById('auth-title').textContent = "Update Petty Cash";
-            document.getElementById('auth-message').textContent = "Supervisor credentials required to update petty cash";
-            showModal('auth-modal');
-        });
-
-        document.getElementById('refresh-sales-btn').addEventListener('click', () => {
-            fetchSalesData();
-        });
-
-        document.getElementById('view-shift-management').addEventListener('click', () => {
-            // In a real implementation, this would navigate to the shift management page
-            alert("This would open the Shift Management system in a real implementation.");
-        });
-
-        document.getElementById('auth-submit-btn').addEventListener('click', () => {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            authenticateUser(username, password)
-                .then(user => {
-                    hideModal('auth-modal');
-                    
-                    if (appState.currentAction === 'open') {
-                        openCashier();
-                        document.getElementById('success-title').textContent = "Cashier Opened";
-                        document.getElementById('success-message').textContent = "The cashier has been successfully opened.";
-                        showModal('success-modal');
-                    } else if (appState.currentAction === 'close') {
-                        closeCashier();
-                        document.getElementById('success-title').textContent = "Cashier Closed";
-                        document.getElementById('success-message').textContent = "The cashier has been successfully closed.";
-                        showModal('success-modal');
-                    } else if (appState.currentAction === 'update_petty') {
-                        const usdAmount = document.getElementById('usd-petty-adjust').value;
-                        const mvrAmount = document.getElementById('mvr-petty-adjust').value;
-                        updatePettyCash(usdAmount, mvrAmount);
-                        document.getElementById('success-title').textContent = "Petty Cash Updated";
-                        document.getElementById('success-message').textContent = "Petty cash amounts have been successfully updated.";
-                        showModal('success-modal');
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('error-message').textContent = error.message;
-                    showModal('error-modal');
-                });
-        });
-
-        document.getElementById('auth-cancel-btn').addEventListener('click', () => {
-            hideModal('auth-modal');
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-        });
-
-        document.getElementById('success-ok-btn').addEventListener('click', () => {
-            hideModal('success-modal');
-        });
-
-        document.getElementById('error-ok-btn').addEventListener('click', () => {
-            hideModal('error-modal');
-        });
-
-        // Add input event listeners to auto-calculate
-        Object.values(usdInputs).forEach(input => {
-            input.addEventListener('input', () => {
-                calculateUSDTotal();
-                const { usdExpected, mvrExpected } = fetchSalesData();
-                calculateDifferences(usdExpected, mvrExpected);
-            });
-        });
-
-        Object.values(mvrInputs).forEach(input => {
-            input.addEventListener('input', () => {
-                calculateMVRTotal();
-                const { usdExpected, mvrExpected } = fetchSalesData();
-                calculateDifferences(usdExpected, mvrExpected);
-            });
-        });
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check for active shift
-            checkActiveShift();
-            
-            // Set up periodic shift checking
-            setInterval(checkActiveShift, 5000); // Check every 5 seconds
-            
-            // Set up shift timer
-            setInterval(updateShiftTimer, 1000);
-        });
-    </script>
+// Initial check
+setTimeout(checkTotalsTally, 1000);
+</script>
 </body>
 </html>
